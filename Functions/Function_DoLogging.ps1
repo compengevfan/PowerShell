@@ -28,4 +28,4 @@ Function DoLogging
     }
 }
 
-DoLogging 
+DoLogging -LogType Info -LogString "This is a log entry..."
