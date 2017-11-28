@@ -33,6 +33,7 @@ foreach ($Disk in $Disks)
         $BatchFileOutput += "$BeginCommand $InputLocation $Title $OutputLocation$EndCommand"
 
         $EpisodeNumber++
+        $EpisodeCount--
     }
     Write-Host "Going to next disk..."
 }
