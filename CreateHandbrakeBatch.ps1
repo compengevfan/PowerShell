@@ -17,6 +17,7 @@ $Disks = gci $Path
 
 foreach ($Disk in $Disks)
 {
+    Write-Host "Processing disk: $($Disk.FullName)"
     [int]$EpisodeCount = Read-Host "How many episodes on this disk?"
 
     while($EpisodeCount -ne 0)
