@@ -28,7 +28,7 @@ foreach ($Disk in $Disks)
 
         $OutputLocation = '-o "\\STORAGE1\Media\TV Shows\' + "$SeriesName\Season $SeasonNumber\$SeriesName - s$SeasonNumber" + "e$EpisodeNumber"
 
-        $BatchFileOutput += "$BeginCommand $InputLocation $Title $OutputLocation$EndCommand`n"
+        $BatchFileOutput += "$BeginCommand $InputLocation $Title $OutputLocation$EndCommand`r`n"
 
         $EpisodeNumber++
         $EpisodeCount--
@@ -37,4 +37,4 @@ foreach ($Disk in $Disks)
 }
 
 if (!(Test-Path $("G:\Cloud\Dropbox\EpisodeTracker" + "\$SeriesName"))) { New-Item "$("G:\Cloud\Dropbox\EpisodeTracker" + "\$SeriesName")" -ItemType directory }
-$BatchFileOutput | Out-File $("G:\Cloud\Dropbox\EpisodeTracker" + "\$SeriesName\" + "Season $SeasonNumber" + ".bat")
+$BatchFileOutput | Out-File $("G:\Cloud\Dropbox\EpisodeTracker" + "\$SeriesName\" + "Season $SeasonNumber" + ".bat") -Encoding ascii
