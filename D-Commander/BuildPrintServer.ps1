@@ -26,7 +26,7 @@ $emailServer = "smtp.ff.p10"
 
 Check-PowerCLI
 
-if (!(Test-Path .\~Logs)) { New-Item -Name "~Logs" -ItemType Directory | Out-Null }
+if (!(Test-Path .\~Logs)) { New-Item -Name "Logs" -ItemType Directory | Out-Null }
 
 cls
 #Check to make sure we have a JSON file location and if so, get the info.
@@ -48,6 +48,12 @@ if ($ConnectedvCenter.Count -eq 0)
         if ($ConnectedvCenter.Count -eq 0 -or $ConnectedvCenter -eq $null){ DoLogging -LogType Warn -LogString "vCenter Connection Failed. Please try again or press Control-C to exit..."; Start-Sleep -Seconds 2 }
     } while ($ConnectedvCenter.Count -eq 0)
 }
+
+##################
+#Obtain local credentials needed to modify the guest OS
+##################
+
+#$LocalCreds = Get-Credential -Message "Please provide the username and password for the local Administrator account."
 
 ##################
 #Obtain domain credentials
