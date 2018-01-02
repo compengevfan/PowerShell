@@ -10,7 +10,7 @@ Function DoLogging
     )
 
     $TimeStamp = Get-Date -Format 'yyyy-MM-dd HH:mm:ss'
-    "$TimeStamp $LogString" | Out-File .\Logs\$InputFileName + " " + $ScriptStarted + ".txt" -append
+    "$TimeStamp $LogString" | Out-File .\~Logs\$InputFileName + " " + $ScriptStarted + ".txt" -append
 
     Write-Host -F DarkGray "[" -NoNewLine
     Write-Host -F Green "*" -NoNewLine
@@ -23,7 +23,7 @@ Function DoLogging
         Err
         {
             Write-Host -F Red $LogString
-            Send-MailMessage -smtpserver $emailServer -to $emailTo -from $emailFrom -subject "Cloud-O-Mite Encountered an Error" -body (Get-Content .\Logs\$InputFileName + " " + $ScriptStarted + ".txt")
+            Send-MailMessage -smtpserver $emailServer -to $emailTo -from $emailFrom -subject "Cloud-O-Mite Encountered an Error" -body (Get-Content .\~Logs\$InputFileName + " " + $ScriptStarted + ".txt")
         }
     }
 }

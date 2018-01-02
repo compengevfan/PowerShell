@@ -1,3 +1,7 @@
+﻿[CmdletBinding()]
+Param(
+)
+
 Function DoLogging
 {
     Param(
@@ -6,20 +10,22 @@ Function DoLogging
     )
 
     $TimeStamp = Get-Date -Format 'yyyy-MM-dd HH:mm:ss'
-    "$TimeStamp $LogString" | Out-File .\~Logs\"$ScriptName $InputFileName $ScriptStarted.log" -append
+    "$TimeStamp $LogString" | Out-File .\~Logs\$InputFileName + " " + $ScriptStarted + ".txt" -append
 
     Write-Host -F DarkGray "[" -NoNewLine
     Write-Host -F Green "*" -NoNewLine
     Write-Host -F DarkGray "] " -NoNewLine
     Switch ($LogType)
     {
-        Succ { Write-Host -F Green $LogString }
-        Info { Write-Host -F White $LogString }
+        Succ { Write-Host $LogString -F Green }
+        Info { Write-Host $LogString }
         Warn { Write-Host -F Yellow $LogString }
         Err
         {
             Write-Host -F Red $LogString
-            if ($SendEmail) { $EmailBody = Get-Content .\~Logs\"$ScriptName $InputFileName $ScriptStarted.log" | Out-String; Send-MailMessage -smtpserver $emailServer -to $emailTo -from $emailFrom -subject "Cloud-O-Mite Encountered an Error" -body $EmailBody }
+            Send-MailMessage -smtpserver $emailServer -to $emailTo -from $emailFrom -subject "Cloud-O-Mite Encountered an Error" -body (Get-Content .\~Logs\$InputFileName + " " + $ScriptStarted + ".txt")
         }
     }
 }
+
+DoLogging -LogType Info -LogString "This is a log entry..."
