@@ -31,6 +31,33 @@ Function DoLogging
     }
 }
 
+Function Check-PowerCLI
+{
+    Param(
+    )
+
+    if (!(Get-Module -Name VMware.VimAutomation.Core))
+    {
+        $PrevPath = Get-Location
+
+	    write-host ("Adding PowerCLI...")
+        if (Test-Path "C:\Program Files (x86)\VMware\Infrastructure\vSphere PowerCLI\Scripts")
+        {
+            cd "C:\Program Files (x86)\VMware\Infrastructure\vSphere PowerCLI\Scripts"
+	        .\Initialize-PowerCLIEnvironment.ps1
+        }
+        if (Test-Path "C:\Program Files (x86)\VMware\Infrastructure\PowerCLI\Scripts")
+        {
+            cd "C:\Program Files (x86)\VMware\Infrastructure\PowerCLI\Scripts"
+            .\Initialize-PowerCLIEnvironment.ps1
+        }
+
+        cd $PrevPath
+
+	    write-host ("Loaded PowerCLI.")
+    }
+}
+
 $ScriptStarted = Get-Date -Format MM-dd-yyyy_hh-mm-ss
 $ScriptName = $MyInvocation.MyCommand.Name
 
@@ -43,9 +70,12 @@ $emailServer = "smtp.ff.p10"
 
 if (!(Test-Path .\~Logs)) { New-Item -Name "~Logs" -ItemType Directory | Out-Null }
 
-#
-#Import-Module Rubrik
-#
+Check-PowerCLI
+
+if (!(Get-Module -Name Rubrik)) { Import-Module Rubrik }
+
+Connect-VIServer iad-vc001.fanatics.corp
+
 #Connect-Rubrik IAD-RUBK001
 
 #Get a list of all Template backup SLA's and create empty array for snapshot request data
@@ -72,7 +102,7 @@ while($true)
         Start-Sleep 30
     }
 
-    if ($Complete) { Write-Host "Snapshots complete."; break }
+    if ($Complete) { break }
 }
 
 #Gather all snapshot endpoints
