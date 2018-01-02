@@ -1,0 +1,23 @@
+{
+	"ClusterInfo": [
+		{
+			"Node1": "TAFQ-NODE101",
+			"Node2": "TAFQ-NODE102",
+			"WinClusterName": "CLS110-TAFQ",
+			"RoleName": "TAFQ-CLS110",
+			"WinClusterIP": "",
+			"RoleIP": ""
+		}
+	],
+	
+	"AdditionalDisks": [
+		{
+			"MPName": "Data1",
+			"Size": "50"
+		},
+		{
+			"MPName": "Log1",
+			"Size": "25"
+		}
+	]
+}

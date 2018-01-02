@@ -1,0 +1,26 @@
+{
+	"Scopes": [
+		{
+			"ScopeName": "Warehouse Wired - VLAN 1000",
+			"StartIP": "10.142.100.1",
+			"EndIP": "10.142.100.254",
+			"SubnetMask": "255.255.255.0",
+			"LeaseDuration": "8.00:00:00",
+			"Gateway": "10.142.100.1",
+			"DNS1": "10.142.98.23",
+			"DNS2": "10.142.98.24",
+			"Domain": "footballfanatics.wh"
+		},
+		{
+			"ScopeName": "Warehouse Wireless - VLAN 1040",
+			"StartIP": "10.142.104.1",
+			"EndIP": "10.142.105.254",
+			"SubnetMask": "255.255.254.0",
+			"LeaseDuration": "8.00:00:00",
+			"Gateway": "10.142.104.1",
+			"DNS1": "10.142.98.21",
+			"DNS2": "10.142.98.22",
+			"Domain": "fanatics.corp"
+		}
+	]
+}

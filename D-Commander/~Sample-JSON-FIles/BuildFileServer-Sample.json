@@ -1,0 +1,12 @@
+{
+	"DiskLayout": [
+		{
+			"DriveLetter": "G",
+			"Size": "100"
+		},
+		{
+			"DriveLetter": "H",
+			"Size": "150"
+		}
+	]
+}
