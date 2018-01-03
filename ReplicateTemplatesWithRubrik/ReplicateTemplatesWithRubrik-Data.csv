@@ -1,0 +1,16 @@
+RubrikDevice,Cluster,Host,Datastore
+CHNQ-Edge001,CHNQ,chnq-vs01.fanatics.corp,CHNQ-DS01
+COPQ-Edge001,COPQ,copq-vs01.fanatics.corp,copq-vs-prod-ds1
+DFIQ-Edge001,DFIQ,dfiq-vs01.fanatics.corp,nbiq-vs-prod-ds01
+DFW-Edge001,DFW,dfw-vs01.fanatics.corp,DFW-VS-DS01
+FAKW-Edge001,FAKW,fakw-vs01.fanatics.corp,FAKW-VS-DS01
+FROW-Edge001,FROW,frow-vs01.fanatics.corp,frow-vs-prod-ds1
+JAXF-RUBK001,JAXF-Prod,jaxf-vs01.fanatics.corp,jaxf-vs-prod-ds01
+JXFD-Edge001,JXFD,jxfd-vs03.fanatics.corp,jxfd-vs-prod-ds01
+JXFQ-Edge001,JXFQ,jxfq-vs04.fanatics.corp,jxfq-vs-prod-ds01
+JXFW-RUBK001,JXFW,jxfw-vs01.fanatics.corp,JXFW-VS-DS01
+LVNW-Edge001,LVNW,lvnw-vs01.fanatics.corp,LVNW-VS-DS01
+NYNS-Edge001,NYNS,nyns-vs01.fanatics.corp,NYNS-VS-PROD-DS1
+SMCQ-Edge001,SMCQ-PROD,smcq-vs01.fanatics.corp,SMCQ-VS-DS01
+SUFW-RUBK001,MRFW,mrfw-vs01.fanatics.corp,sufw-vs-prod-ds01
+TAFQ-RUBK001,TAFQ,tafq-vs01.fanatics.corp,TAFQ-VS-DS01

@@ -101,5 +101,8 @@ $Command = "Install-WindowsFeature Print-Services -IncludeAllSubFeature -Include
 $InvokeOutput = Invoke-VMScript -VM $($DataFromFile.VMInfo.VMName) -ScriptText $Command -GuestCredential $DomainCredentials -ScriptType Powershell
 DoLogging -LogType Info -LogString $InvokeOutput
 
+DoLogging -LogType Info -LogString "Triggering server restart to complete the feature install..."
+Restart-VM -VM $($DataFromFile.VMInfo.VMName) -Confirm:$false
+
 DoLogging -LogType Succ -LogString "Your print server has been successfully configured!!!"
 if ($SendEmail) { $EmailBody = Get-Content .\~Logs\"$ScriptName $InputFileName $ScriptStarted.log" | Out-String; Send-MailMessage -smtpserver $emailServer -to $emailTo -from $emailFrom -subject "Print Server Deployed!!!" -body $EmailBody }

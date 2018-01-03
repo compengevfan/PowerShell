@@ -139,7 +139,7 @@ $FileToMove = Get-Item $FSFile
 Move-Item -Path $FileToMove -Destination .\~Processed-JSON-Files -Force
 
 DoLogging -LogType Info -LogString "Triggering server restart to complete the feature install..."
-Restart-VM -VM $($DataFromFile.VMInfo.VMName)
+Restart-VM -VM $($DataFromFile.VMInfo.VMName) -Confirm:$false
 
 DoLogging -LogType Succ -LogString "Your file server has been successfully configured!!!"
 if ($SendEmail) { $EmailBody = Get-Content .\~Logs\"$ScriptName $InputFileName $ScriptStarted.log" | Out-String; Send-MailMessage -smtpserver $emailServer -to $emailTo -from $emailFrom -subject "File Server Deployed!!!" -body $EmailBody }
