@@ -2,7 +2,7 @@ RubrikDevice,Cluster,Host,Datastore
 CHNQ-Edge001,CHNQ,chnq-vs01.fanatics.corp,CHNQ-DS01
 COPQ-Edge001,COPQ,copq-vs01.fanatics.corp,copq-vs-prod-ds1
 DFIQ-Edge001,DFIQ,dfiq-vs01.fanatics.corp,nbiq-vs-prod-ds01
-DFW-Edge001,DFW,dfw-vs01.fanatics.corp,DFW-VS-DS01
+DFW-Edge001,DFW-Prod,dfw-vs01.fanatics.corp,DFW-VS-DS01
 FAKW-Edge001,FAKW,fakw-vs01.fanatics.corp,FAKW-VS-DS01
 FROW-Edge001,FROW,frow-vs01.fanatics.corp,frow-vs-prod-ds1
 JAXF-RUBK001,JAXF-Prod,jaxf-vs01.fanatics.corp,jaxf-vs-prod-ds01

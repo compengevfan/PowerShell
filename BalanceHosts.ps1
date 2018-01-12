@@ -5,7 +5,7 @@ $ConnectedvCenterCount = $global:DefaultVIServers.Count
 if ($ConnectedvCenterCount -eq 0) { $vCenter = Read-Host -Prompt ("Please enter the name of the vCenter Server"); Connect-VIServer $vCenter }
 $Cluster = Read-Host -Prompt ("Please enter the name of the cluster to be balanced")
 
-#Retrieve datastores from cluster
+#Retrieve hosts from cluster
 $HostsToBalance = Get-Cluster $Cluster | Get-VMHost | ? {$_.ConnectionState -eq "Connected"} | Sort-Object MemoryUsageGB
 
 #Find datastore with least and most free space

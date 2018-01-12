@@ -29,7 +29,8 @@ $emailServer = "smtp.ff.p10"
 
 Check-PowerCLI
 
-if (!(Test-Path .\~Logs)) { New-Item -Name "Logs" -ItemType Directory | Out-Null }
+if (!(Test-Path .\~Logs)) { New-Item -Name "~Logs" -ItemType Directory | Out-Null }
+if (!(Test-Path .\~Processed-JSON-Files)) { New-Item -Name "~Processed-JSON-Files" -ItemType Directory | Out-Null }
 
 cls
 #Check to make sure we have a JSON file location and if so, get the info.
@@ -90,9 +91,12 @@ $Scopes = $DataFromFile2.Scopes
 foreach($Scope in $Scopes)
 {
     DoLogging -LogType Info -LogString "Adding scope $($Scope.ScopeName)..."
-    $Command = "Add-DhcpServerv4Scope -Name $($Scope.ScopeName) -StartRange $($Scope.StartIP) -EndRange $($Scope.EndIp) -SubnetMask $($Scope.SubnetMask)"
+    $Command = "Add-DhcpServerv4Scope -Name '$($Scope.ScopeName)' -StartRange $($Scope.StartIP) -EndRange $($Scope.EndIp) -SubnetMask $($Scope.SubnetMask)"
     $InvokeOutput = Invoke-VMScript -VM $($DataFromFile.VMInfo.VMName) -ScriptText $Command -GuestCredential $DomainCredentials -ScriptType Powershell
     DoLogging -LogType Info -LogString $InvokeOutput
 }
 
 #Register the DHCP server in AD DSL Add-DhcpServerInDC -DnsName wds1.iammred.net -IPAddress 192.168.0.152
+
+DoLogging -LogType Succ -LogString "Your DHCP server has been successfully configured!!!"
+if ($SendEmail) { $EmailBody = Get-Content .\~Logs\"$ScriptName $InputFileName $ScriptStarted.log" | Out-String; Send-MailMessage -smtpserver $emailServer -to $emailTo -from $emailFrom -subject "DHCP Server Deployed!!!" -body $EmailBody }
