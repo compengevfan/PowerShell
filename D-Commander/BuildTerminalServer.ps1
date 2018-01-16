@@ -1,7 +1,6 @@
-[CmdletBinding()]
+ï»¿[CmdletBinding()]
 Param(
     [Parameter()] [string] $VMFile,
-    [Parameter()] [string] $DHCPFile,
     [Parameter()] $SendEmail = $true
 )
 
@@ -18,12 +17,10 @@ $InputFileName = Get-Item $VMFile | % {$_.BaseName}
 $ScriptStarted = Get-Date -Format MM-dd-yyyy_hh-mm-ss
 $ScriptName = $MyInvocation.MyCommand.Name
 
-if ($DHCPFile -eq "" -or $DHCPFile -eq $null) { cls; Write-Host "Please select a File Server config JSON file..."; $DHCPFile = Get-FileName }
-
 ##################
 #Email Variables
 ###################emailTo is a comma separated list of strings eg. "email1","email2"
-$emailFrom = "BuildDHCPServer@fanatics.com"
+$emailFrom = "BuildTerminalServer@fanatics.com"
 $emailTo = "cdupree@fanatics.com"
 $emailServer = "smtp.ff.p10"
 
@@ -37,11 +34,6 @@ cls
 DoLogging -LogType Info -LogString "Importing JSON Data File: $VMFile..."
 $DataFromFile = ConvertFrom-JSON (Get-Content $VMFile -raw)
 if ($DataFromFile -eq $null) { DoLogging -LogType Err -LogString "Error importing JSON file. Please verify proper syntax and file name."; exit }
-
-#Check to make sure we have a JSON file location and if so, get the info.
-DoLogging -LogType Info -LogString "Importing JSON Data File: $DHCPFile..."
-$DataFromFile2 = ConvertFrom-JSON (Get-Content $DHCPFile -raw)
-if ($DataFromFile2 -eq $null) { DoLogging -LogType Err -LogString "Error importing JSON file. Please verify proper syntax and file name."; exit }
 
 #If not connected to a vCenter, connect.
 $ConnectedvCenter = $global:DefaultVIServers
@@ -80,23 +72,53 @@ if ($DomainCredentials -eq $null)
 
 .\Cloud-O-MITE.ps1 -InputFile $VMFile -DomainCredentials $DomainCredentials
 
-#Add DHCP Server Roles to Server
-DoLogging -LogType Info -LogString "Installing DHCP role..."
-$Command = "Install-WindowsFeature DHCP –IncludeManagementTools"
+$DiskNumber = 2
+$VolumeNumber = 4
+
+#Expand G dive to 100GB
+DoLogging -LogType Info -LogString "Expanding G drive to 100 GB..."
+Get-HardDisk -VM $($DataFromFile.VMInfo.VMName) | where {$_.Name -eq "Hard disk 3"} | Set-HardDisk -CapacityGB 100 -Confirm:$false | Out-Null
+Invoke-VMScript -VM $($DataFromFile.VMInfo.VMName) -ScriptText "ECHO RESCAN > C:\DiskPart.txt && ECHO SELECT Volume G >> C:\DiskPart.txt && ECHO EXTEND >> C:\DiskPart.txt && ECHO EXIT >> C:\DiskPart.txt && DiskPart.exe /s C:\DiskPart.txt && DEL C:\DiskPart.txt /Q" -ScriptType BAT -GuestCredential $DomainCredentials
+
+#Add Terminal Server Role to Server
+$Command = "Install-WindowsFeature RDS-RD-Server -IncludeAllSubFeature -IncludeManagementTools"
 $InvokeOutput = Invoke-VMScript -VM $($DataFromFile.VMInfo.VMName) -ScriptText $Command -GuestCredential $DomainCredentials -ScriptType Powershell
 DoLogging -LogType Info -LogString $InvokeOutput
 
-$Scopes = $DataFromFile2.Scopes
+DoLogging -LogType Info -LogString "Triggering server restart to complete the feature install..."
+Restart-VMGuest -VM $($DataFromFile.VMInfo.VMName) -Confirm:$false | Out-Null
 
-foreach($Scope in $Scopes)
+#Wait for VMware tools to come back
+$Ready = $false
+while (!($Ready))
 {
-    DoLogging -LogType Info -LogString "Adding scope $($Scope.ScopeName)..."
-    $Command = "Add-DhcpServerv4Scope -Name '$($Scope.ScopeName)' -StartRange $($Scope.StartIP) -EndRange $($Scope.EndIp) -SubnetMask $($Scope.SubnetMask)"
-    $InvokeOutput = Invoke-VMScript -VM $($DataFromFile.VMInfo.VMName) -ScriptText $Command -GuestCredential $DomainCredentials -ScriptType Powershell
-    DoLogging -LogType Info -LogString $InvokeOutput
+    $ToolsStatus = (Get-VM -Name $($DataFromFile.VMInfo.VMName)).Guest.ExtensionData.ToolsStatus
+    if ($ToolsStatus -eq "toolsOK" -or $ToolsStatus -eq "toolsOld") { $Ready = $true }
+    Start-Sleep 5
 }
 
-#Register the DHCP server in AD DSL Add-DhcpServerInDC -DnsName wds1.iammred.net -IPAddress 192.168.0.152
+#Copy users and programdata folder from C to G
+Start-Sleep 30
+#DoLogging -LogType Info -LogString "Copying 'Users' folder from C drive to G drive..."
+#$Command = "robocopy c:\Users g:\Users /MIR /R:0 /W:0 /nfl /njh /njs /ndl /nc /ns"
+#Invoke-VMScript -VM $($DataFromFile.VMInfo.VMName) -ScriptText $Command -GuestCredential $DomainCredentials -ScriptType Powershell | Out-Null
+##DoLogging -LogType Info -LogString $InvokeOutput
 
-DoLogging -LogType Succ -LogString "Your DHCP server has been successfully configured!!!"
-if ($SendEmail) { $EmailBody = Get-Content .\~Logs\"$ScriptName $InputFileName $ScriptStarted.log" | Out-String; Send-MailMessage -smtpserver $emailServer -to $emailTo -from $emailFrom -subject "DHCP Server Deployed!!!" -body $EmailBody }
+DoLogging -LogType Info -LogString "Copying 'ProgramData' folder from C drive to G drive..."
+$Command = "robocopy c:\ProgramData g:\ProgramData /MIR /R:0 /W:0 /nfl /njh /njs /ndl /nc /ns"
+Invoke-VMScript -VM $($DataFromFile.VMInfo.VMName) -ScriptText $Command -GuestCredential $DomainCredentials -ScriptType Powershell | Out-Null
+#DoLogging -LogType Info -LogString $InvokeOutput
+
+#Copy reg file to terminal server
+DoLogging -LogType Info -LogString "Copying reg file to guest..."
+Copy-VMGuestFile -Source .\TerminalServerRegKeys.reg -Destination C:\temp\ -Force -VM $($DataFromFile.VMInfo.VMName) -GuestCredential $DomainCredentials -LocalToGuest
+
+$Command = "regedit.exe /s c:\temp\TerminalServerRegKeys.reg"
+$InvokeOutput = Invoke-VMScript -VM $($DataFromFile.VMInfo.VMName) -ScriptText $Command -GuestCredential $DomainCredentials
+DoLogging -LogType Info -LogString $InvokeOutput
+
+DoLogging -LogType Info -LogString "Triggering server restart to apply registry changes..."
+Restart-VMGuest -VM $($DataFromFile.VMInfo.VMName) -Confirm:$false | Out-Null
+
+DoLogging -LogType Succ -LogString "Your terminal server has been successfully configured!!!"
+if ($SendEmail) { $EmailBody = Get-Content .\~Logs\"$ScriptName $InputFileName $ScriptStarted.log" | Out-String; Send-MailMessage -smtpserver $emailServer -to $emailTo -from $emailFrom -subject "Terminal Server Deployed!!!" -body $EmailBody }

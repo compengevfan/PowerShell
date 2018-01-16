@@ -33,7 +33,8 @@ $emailFrom = "Cloud-O-MITE@fanatics.com"
 $emailTo = "cdupree@fanatics.com"
 $emailServer = "smtp.ff.p10"
 
-if (!(Test-Path .\~Logs)) { New-Item -Name "Logs" -ItemType Directory | Out-Null }
+if (!(Test-Path .\~Logs)) { New-Item -Name "~Logs" -ItemType Directory | Out-Null }
+if (!(Test-Path .\~Processed-JSON-Files)) { New-Item -Name "~Processed-JSON-Files" -ItemType Directory | Out-Null }
 
 ##################
 #Check for VMware

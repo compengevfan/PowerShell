@@ -29,7 +29,8 @@ $emailServer = "smtp.ff.p10"
 
 Check-PowerCLI
 
-if (!(Test-Path .\~Logs)) { New-Item -Name "Logs" -ItemType Directory | Out-Null }
+if (!(Test-Path .\~Logs)) { New-Item -Name "~Logs" -ItemType Directory | Out-Null }
+if (!(Test-Path .\~Processed-JSON-Files)) { New-Item -Name "~Processed-JSON-Files" -ItemType Directory | Out-Null }
 
 cls
 #Check to make sure we have a JSON file location and if so, get the info.
