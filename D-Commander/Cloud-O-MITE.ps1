@@ -8,7 +8,7 @@ Param(
 ##################
 #System Variables
 ##################
-$ErrorActionPreference = "SilentlyContinue"
+#$ErrorActionPreference = "SilentlyContinue"
 Set-PowerCLIConfiguration -InvalidCertificateAction ignore -confirm:$false
 
 #Import functions
@@ -185,7 +185,7 @@ $TempCustomizationSpec | Get-OSCustomizationNicMapping | Set-OSCustomizationNicM
 
 #Create the VM
 DoLogging -LogType Info -LogString "Deploying VM..."
-New-VM -Name $($DataFromFile.VMInfo.VMName) -Template $TemplateToUse -ResourcePool $($DataFromFile.VMInfo.Cluster) -Datastore $DataStore -Location $Folder -DiskStorageFormat Thick -OSCustomizationSpec $TempCustomizationSpec | Out-Null
+New-VM -Name $($DataFromFile.VMInfo.VMName) -Template $TemplateToUse -ResourcePool $($DataFromFile.VMInfo.Cluster) -Datastore $DataStore -Location $Folder -OSCustomizationSpec $TempCustomizationSpec | Out-Null
 
 Start-Sleep 5
 
@@ -250,7 +250,7 @@ DoLogging -LogType Info -LogString "Removing temporary customization spec..."
 Remove-OSCustomizationSpec -OSCustomizationSpec $($DataFromFile.VMInfo.VMName) -Confirm:$false
 
 DoLogging -LogType Info -LogString "Waiting a while after customization for Windows to stabilize..."
-Start-Sleep 300
+Start-Sleep 60
 
 #Move server to appropriate OU, if OU in the JSON does not exist, the server gets moved to the "Servers" OU.
 DoLogging -LogType Info -LogString "Verifying OU '$($DataFromFile.GuestInfo.OU)' exists..."

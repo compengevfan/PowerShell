@@ -50,8 +50,8 @@ $DataFromFile3 = ConvertFrom-JSON (Get-Content $ClusterConfig -raw)
 if ($DataFromFile3 -eq $null) { DoLogging -LogType Err -LogString "Error importing JSON file. Please verify proper syntax and file name."; exit }
 
 #Get the array of disks from the json file and verify that it's not too many...
-$DisksToAdd = $ClusterConfig.AdditionalDisks
-if ($DisksToAdd.Count -gt 15) { DoLogging -LogType Err -LogString "This script doesn't support more than 15 data disks, including the G Drive. Please build VM with Cloud-o-MITE and add disks manually or reduce the number of data disks."; exit }
+$DisksToAdd = $DataFromFile3.AdditionalDisks
+if ($DisksToAdd.Count -gt 12) { DoLogging -LogType Err -LogString "This script doesn't support more than 15 data disks, including the G, M and Q Drives. Please build VM with Cloud-o-MITE and add disks manually or reduce the number of data disks."; exit }
 
 #If not connected to a vCenter, connect.
 $ConnectedvCenter = $global:DefaultVIServers
@@ -100,7 +100,7 @@ Get-HardDisk -VM $($DataFromFile2.VMInfo.VMName) | Where-Object { $_.Name -eq "H
 #Shutdown the nodes 
 DoLogging -LogType Info -LogString "Shutting down Node 1..."
 Shutdown-VMGuest $($DataFromFile.VMInfo.VMName) -Confirm:$false | Out-Null
-Clear-Variable PowerState
+if ($Powerstate -ne $null) { Clear-Variable PowerState }
 while ($PowerState -ne "PoweredOff")
 {
     Start-Sleep 5
@@ -109,7 +109,7 @@ while ($PowerState -ne "PoweredOff")
 
 DoLogging -LogType Info -LogString "Shutting down Node 2..."
 Shutdown-VMGuest $($DataFromFile2.VMInfo.VMName) -Confirm:$false | Out-Null
-Clear-Variable PowerState
+if ($Powerstate -ne $null) { Clear-Variable PowerState }
 while ($PowerState -ne "PoweredOff")
 {
     Start-Sleep 5
@@ -149,12 +149,87 @@ $spec.deviceChange[0].device = $G_Drive2.ExtensionData
 $spec.deviceChange[0].device.unitNumber = 0
 $SecondNode.ExtensionData.ReconfigVM($spec)
 
-$DiskNumber = 2
-$VolumeNumber = 4
-
 #Adding additional disks listed in cluster config file
-foreach()
+DoLogging -LogType Info -LogString "Creating additional shared disks..."
+DoLogging -LogType Info -LogString "Creating Q drive on Node 1..."
+$NewDisk = New-HardDisk -VM $FirstNode -Controller $NewController1 -CapacityGB 5 -StorageFormat EagerZeroedThick -Datastore $($DataFromFile3.ClusterInfo.DedicatedDS)
+DoLogging -LogType Info -LogString "Adding Q drive to Node 2..."
+New-HardDisk -VM $SecondNode -Controller $NewController2 -DiskPath $($NewDisk.Filename) | Out-Null
+
+DoLogging -LogType Info -LogString "Creating M drive on Node 1..."
+$NewDisk = New-HardDisk -VM $FirstNode -Controller $NewController1 -CapacityGB 5 -StorageFormat EagerZeroedThick -Datastore $($DataFromFile3.ClusterInfo.DedicatedDS)
+DoLogging -LogType Info -LogString "Adding M drive to Node 2..."
+New-HardDisk -VM $SecondNode -Controller $NewController2 -DiskPath $($NewDisk.Filename) | Out-Null
+
+foreach($DiskToAdd in $DisksToAdd)
 {
-    New-HardDisk -VM $FirstNode -Controller $NewController -CapacityGB 10 -StorageFormat Thick
+    DoLogging -LogType Info -LogString "Creating $($DiskToAdd.MPName) disk on Node 1..."
+    $NewDisk = New-HardDisk -VM $FirstNode -Controller $NewController1 -CapacityGB $($DiskToAdd.Size) -StorageFormat EagerZeroedThick -Datastore $($DataFromFile3.ClusterInfo.DedicatedDS)
+    DoLogging -LogType Info -LogString "Adding $($DiskToAdd.MPName) disk to Node 2..."
+    New-HardDisk -VM $SecondNode -Controller $NewController2 -DiskPath $($NewDisk.Filename) | Out-Null
 }
 
+#Power the VMs on
+DoLogging -LogType Info -LogString "Shared disks created. Powering on Node 1..."
+Start-VM $FirstNode | Out-Null
+
+DoLogging -LogType Info -LogString "Waiting for VMware tools to start..."
+$Ready = $false
+while (!($Ready))
+{
+    $ToolsStatus = (Get-VM -Name $FirstNode).Guest.ExtensionData.ToolsStatus
+    if ($ToolsStatus -eq "toolsOK" -or $ToolsStatus -eq "toolsOld") { $Ready = $true }
+    Start-Sleep 5
+}
+Clear-Variable ToolsStatus
+
+DoLogging -LogType Info -LogString "Powering on Node 2..."
+Start-VM $SecondNode | Out-Null
+
+DoLogging -LogType Info -LogString "Waiting for VMware tools to start..."
+$Ready = $false
+while (!($Ready))
+{
+    $ToolsStatus = (Get-VM -Name $SecondNode).Guest.ExtensionData.ToolsStatus
+    if ($ToolsStatus -eq "toolsOK" -or $ToolsStatus -eq "toolsOld") { $Ready = $true }
+    Start-Sleep 5
+}
+Clear-Variable ToolsStatus
+
+#Initialize and Format all disks
+$GuestDiskNumber = 2
+$GuestVolumeNumber = 4
+
+#G Drive
+$ScriptText = "ECHO RESCAN > C:\DiskPart.txt && ECHO SELECT Disk $GuestDiskNumber >> C:\DiskPart.txt && ECHO attributes disk clear readonly >> C:\DiskPart.txt && ECHO online disk >> C:\DiskPart.txt && ECHO convert gpt >> C:\DiskPart.txt && ECHO create partition primary >> C:\DiskPart.txt && ECHO select partition 1 >> C:\DiskPart.txt && ECHO select volume $GuestVolumeNumber >> C:\DiskPart.txt && ECHO format FS=NTFS label=MPRoot QUICK >> C:\DiskPart.txt && ECHO assign letter=G >> C:\DiskPart.txt && ECHO EXIT >> C:\DiskPart.txt && DiskPart.exe /s C:\DiskPart.txt && DEL C:\DiskPart.txt /Q"
+$DiskPartOutput = Invoke-VMScript -VM $FirstNode -ScriptText $ScriptText -ScriptType BAT -GuestCredential $DomainCredentials
+DoLogging -LogType Info -LogString $DiskPartOutput
+
+$GuestVolumeNumber++
+$GuestDiskNumber++
+
+#Q Drive
+$ScriptText = "ECHO RESCAN > C:\DiskPart.txt && ECHO SELECT Disk $GuestDiskNumber >> C:\DiskPart.txt && ECHO attributes disk clear readonly >> C:\DiskPart.txt && ECHO online disk >> C:\DiskPart.txt && ECHO convert gpt >> C:\DiskPart.txt && ECHO create partition primary >> C:\DiskPart.txt && ECHO select partition 1 >> C:\DiskPart.txt && ECHO select volume $GuestVolumeNumber >> C:\DiskPart.txt && ECHO format FS=NTFS label=QUORUM QUICK >> C:\DiskPart.txt && ECHO assign letter=Q >> C:\DiskPart.txt && ECHO EXIT >> C:\DiskPart.txt && DiskPart.exe /s C:\DiskPart.txt && DEL C:\DiskPart.txt /Q"
+$DiskPartOutput = Invoke-VMScript -VM $FirstNode -ScriptText $ScriptText -ScriptType BAT -GuestCredential $DomainCredentials
+DoLogging -LogType Info -LogString $DiskPartOutput
+
+$GuestVolumeNumber++
+$GuestDiskNumber++
+
+#M Drive
+$ScriptText = "ECHO RESCAN > C:\DiskPart.txt && ECHO SELECT Disk $GuestDiskNumber >> C:\DiskPart.txt && ECHO attributes disk clear readonly >> C:\DiskPart.txt && ECHO convert gpt >> C:\DiskPart.txt && ECHO create partition primary >> C:\DiskPart.txt && ECHO select partition 1 >> C:\DiskPart.txt && ECHO select volume $GuestVolumeNumber >> C:\DiskPart.txt && ECHO format FS=NTFS label=MSDTC QUICK >> C:\DiskPart.txt && ECHO assign letter=M >> C:\DiskPart.txt && ECHO EXIT >> C:\DiskPart.txt && DiskPart.exe /s C:\DiskPart.txt && DEL C:\DiskPart.txt /Q"
+$DiskPartOutput = Invoke-VMScript -VM $FirstNode -ScriptText $ScriptText -ScriptType BAT -GuestCredential $DomainCredentials
+DoLogging -LogType Info -LogString $DiskPartOutput
+
+$GuestVolumeNumber++
+$GuestDiskNumber++
+
+foreach ($DiskToAdd in $DisksToAdd)
+{
+    $ScriptText = "mkdir G:\$($DiskToAdd.MPName) && ECHO RESCAN > C:\DiskPart.txt && ECHO SELECT Disk $GuestDiskNumber >> C:\DiskPart.txt && ECHO attributes disk clear readonly >> C:\DiskPart.txt && ECHO online disk >> C:\DiskPart.txt && ECHO convert gpt >> C:\DiskPart.txt && ECHO create partition primary >> C:\DiskPart.txt && ECHO select partition 1 >> C:\DiskPart.txt && ECHO select volume $GuestVolumeNumber >> C:\DiskPart.txt && ECHO format FS=NTFS label=$($DiskToAdd.MPName) QUICK >> C:\DiskPart.txt && ECHO assign mount=G:\$($DiskToAdd.MPName) >> C:\DiskPart.txt && ECHO EXIT >> C:\DiskPart.txt && DiskPart.exe /s C:\DiskPart.txt && DEL C:\DiskPart.txt /Q"
+    $DiskPartOutput = Invoke-VMScript -VM $FirstNode -ScriptText $ScriptText -ScriptType BAT -GuestCredential $DomainCredentials
+    DoLogging -LogType Info -LogString $DiskPartOutput
+
+    $GuestVolumeNumber++
+    $GuestDiskNumber++
+}
