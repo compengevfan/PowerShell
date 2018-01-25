@@ -185,7 +185,7 @@ $TempCustomizationSpec | Get-OSCustomizationNicMapping | Set-OSCustomizationNicM
 
 #Create the VM
 DoLogging -LogType Info -LogString "Deploying VM..."
-New-VM -Name $($DataFromFile.VMInfo.VMName) -Template $TemplateToUse -ResourcePool $($DataFromFile.VMInfo.Cluster) -Datastore $DataStore -Location $Folder -OSCustomizationSpec $TempCustomizationSpec | Out-Null
+New-VM -Name $($DataFromFile.VMInfo.VMName) -Template $TemplateToUse -ResourcePool $($DataFromFile.VMInfo.Cluster) -Datastore $DataStore -Location $Folder -DiskStorageFormat Thick -OSCustomizationSpec $TempCustomizationSpec | Out-Null
 
 Start-Sleep 5
 

@@ -99,9 +99,9 @@ while (!($Ready))
 
 #Copy users and programdata folder from C to G
 Start-Sleep 30
-#DoLogging -LogType Info -LogString "Copying 'Users' folder from C drive to G drive..."
-#$Command = "robocopy c:\Users g:\Users /MIR /R:0 /W:0 /nfl /njh /njs /ndl /nc /ns"
-#Invoke-VMScript -VM $($DataFromFile.VMInfo.VMName) -ScriptText $Command -GuestCredential $DomainCredentials -ScriptType Powershell | Out-Null
+DoLogging -LogType Info -LogString "Copying 'Users\Public' folder from C drive to G drive..."
+$Command = "robocopy C:\Users\Public G:\Users\Public /MIR /R:0 /W:0 /nfl /njh /njs /ndl /nc /ns"
+Invoke-VMScript -VM $($DataFromFile.VMInfo.VMName) -ScriptText $Command -GuestCredential $DomainCredentials -ScriptType Powershell | Out-Null
 ##DoLogging -LogType Info -LogString $InvokeOutput
 
 DoLogging -LogType Info -LogString "Copying 'ProgramData' folder from C drive to G drive..."

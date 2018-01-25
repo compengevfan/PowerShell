@@ -1,6 +1,6 @@
 ﻿[CmdletBinding()]
 Param(
-    [Parameter()] [string] $InputFile,
+    [Parameter()] [string] $VMFile,
     [Parameter()] $SendEmail = $true
 )
 
@@ -11,9 +11,9 @@ $ErrorActionPreference = "SilentlyContinue"
 . .\Functions\function_DoLogging.ps1
 . .\Functions\function_Check-PowerCLI.ps1
 
-if ($InputFile -eq "" -or $InputFile -eq $null) { cls; Write-Host "Please select a JSON file..."; $InputFile = Get-FileName }
+if ($VMFile -eq "" -or $VMFile -eq $null) { cls; Write-Host "Please select a JSON file..."; $VMFile = Get-FileName }
 
-$InputFileName = Get-Item $InputFile | % {$_.BaseName}
+$InputFileName = Get-Item $VMFile | % {$_.BaseName}
 $ScriptStarted = Get-Date -Format MM-dd-yyyy_hh-mm-ss
 $ScriptName = $MyInvocation.MyCommand.Name
 
@@ -31,8 +31,8 @@ if (!(Test-Path .\~Processed-JSON-Files)) { New-Item -Name "~Processed-JSON-File
 
 cls
 #Check to make sure we have a JSON file location and if so, get the info.
-DoLogging -LogType Info -LogString "Importing JSON Data File: $InputFile..."
-$DataFromFile = ConvertFrom-JSON (Get-Content $InputFile -raw)
+DoLogging -LogType Info -LogString "Importing JSON Data File: $VMFile..."
+$DataFromFile = ConvertFrom-JSON (Get-Content $VMFile -raw)
 if ($DataFromFile -eq $null) { DoLogging -LogType Err -LogString "Error importing JSON file. Please verify proper syntax and file name."; exit }
 
 #If not connected to a vCenter, connect.
@@ -80,9 +80,9 @@ if ($DomainCredentials -eq $null)
     }
 }
 
-.\Cloud-O-MITE.ps1 -InputFile $InputFile -DomainCredentials $DomainCredentials
+.\Cloud-O-MITE.ps1 -InputFile $VMFile -DomainCredentials $DomainCredentials
 
-$SecurityGroups = Import-Csv c:\temp\BuildPrintServer-Data.csv
+$SecurityGroups = Import-Csv .\BuildPrintServer-Data.csv
 
 ForEach($SecurityGroup in $SecurityGroups)
 {

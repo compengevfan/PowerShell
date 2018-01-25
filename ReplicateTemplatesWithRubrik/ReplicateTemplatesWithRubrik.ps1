@@ -2,58 +2,12 @@
 Param(
 )
 
-Function DoLogging
-{
-    Param(
-        [Parameter(Mandatory=$true)][ValidateSet("Succ","Info","Warn","Err")] [string] $LogType,
-        [Parameter()] [string] $LogString
-    )
+$ErrorActionPreference = "SilentlyContinue"
+Set-PowerCLIConfiguration -InvalidCertificateAction ignore -confirm:$false
 
-    $TimeStamp = Get-Date -Format 'yyyy-MM-dd HH:mm:ss'
-    "$TimeStamp $LogString" | Out-File .\~Logs\"$ScriptName $ScriptStarted.log" -append
-
-    Write-Host -F DarkGray "[" -NoNewLine
-    Write-Host -F Green "*" -NoNewLine
-    Write-Host -F DarkGray "] " -NoNewLine
-    Switch ($LogType)
-    {
-        Succ { Write-Host -F Green $LogString }
-        Info { Write-Host -F White $LogString }
-        Warn { Write-Host -F Yellow $LogString }
-        Err
-        {
-            Write-Host -F Red $LogString
-            $EmailBody = Get-Content .\~Logs\"$ScriptName $ScriptStarted.log" | Out-String; Send-MailMessage -smtpserver $emailServer -to $emailTo -from $emailFrom -subject "Template Replication Encountered an Error" -body $EmailBody
-        }
-    }
-}
-
-Function Check-PowerCLI
-{
-    Param(
-    )
-
-    if (!(Get-Module -Name VMware.VimAutomation.Core))
-    {
-        $PrevPath = Get-Location
-
-	    write-host ("Adding PowerCLI...")
-        if (Test-Path "C:\Program Files (x86)\VMware\Infrastructure\vSphere PowerCLI\Scripts")
-        {
-            cd "C:\Program Files (x86)\VMware\Infrastructure\vSphere PowerCLI\Scripts"
-	        .\Initialize-PowerCLIEnvironment.ps1
-        }
-        if (Test-Path "C:\Program Files (x86)\VMware\Infrastructure\PowerCLI\Scripts")
-        {
-            cd "C:\Program Files (x86)\VMware\Infrastructure\PowerCLI\Scripts"
-            .\Initialize-PowerCLIEnvironment.ps1
-        }
-
-        cd $PrevPath
-
-	    write-host ("Loaded PowerCLI.")
-    }
-}
+#Import functions
+. .\Functions\function_DoLogging
+. .\Functions\function_Check-PowerCLI.ps1
 
 $ScriptStarted = Get-Date -Format MM-dd-yyyy_hh-mm-ss
 $ScriptName = $MyInvocation.MyCommand.Name
@@ -89,15 +43,15 @@ if ($ConnectedvCenter.Count -eq 0)
     } while ($ConnectedvCenter.Count -eq 0)
 }
 
-DoLogging -LogType Info -LogString "Locating all existing templates and targeting for termination..."
-$TemplatesGoByeBye = Get-Template TPL_* | Sort-Object name
-
-foreach ($Template in $TemplatesGoByeBye)
-{
-    DoLogging -LogType Info -LogString "Deleting template '$($Template.Name)...'"
-    Remove-Template $Template -DeletePermanently -Confirm:$false
-    DoLogging -LogType Succ -LogString "Template '$($Template.Name) deleted...'"
-}
+#DoLogging -LogType Info -LogString "Locating all existing templates and targeting for termination..."
+#$TemplatesGoByeBye = Get-Template TPL_* | Sort-Object name
+#
+#foreach ($Template in $TemplatesGoByeBye)
+#{
+#    DoLogging -LogType Info -LogString "Deleting template '$($Template.Name)...'"
+#    Remove-Template $Template -DeletePermanently -Confirm:$false
+#    DoLogging -LogType Succ -LogString "Template '$($Template.Name) deleted...'"
+#}
 
 DoLogging -LogType Info -LogString "Connecting to IAD Rubrik..."
 Connect-Rubrik IAD-RUBK001 -Credential $RubrikCred | Out-Null
@@ -106,7 +60,7 @@ if ($RubrikClusterID -eq "" -or $RubrikClusterID -eq $null) { DoLogging -LogType
 
 #Get a list of all Template backup SLA's and create empty array for snapshot request data
 DoLogging -LogType Info -LogString "Obtaining a list of all Gold Template SLAs..."
-$SLAs = Get-RubrikSLA | where { $_.Name -like "Gold Templates*" } | Sort-Object Name
+$SLAs = Get-RubrikSLA | where { $_.Name -like "*FAKW*" } | Sort-Object Name
 if ($SLAs -eq "" -or $SLAs -eq $null) { DoLogging -LogType Err -LogString "No template SLAs found on the IAD Rubrik!!! Script exiting"; exit }
 $Snapshots = @()
 
@@ -223,6 +177,11 @@ while ($true)
             $PowerState = $LocalGoldCopy.PowerState
             if ($PowerState -eq "PoweredOn") 
             {
+                switch ($($LocalGoldCopy.GuestID))
+                {
+                    windows7Server64Guest { $ExistingTemplate = "TPL_$($Site.Cluster)_2K8R2";if ((Get-Template $ExistingTemplate) -ne $null) { DoLogging -LogType Info -LogString "Deleting $ExistingTemplate...";Remove-Template $ExistingTemplate -DeletePermanently -Confirm:$false } }
+                    windows8Server64Guest { $ExistingTemplate = "TPL_$($Site.Cluster)_2K12R2";if ((Get-Template $ExistingTemplate) -ne $null) { DoLogging -LogType Info -LogString "Deleting $ExistingTemplate...";Remove-Template $ExistingTemplate -DeletePermanently -Confirm:$false } }
+                }
                 DoLogging -LogType Info -LogString "Converting '$($LocalGoldCopy.Name)' at '$($Site.Cluster)' to template..."
                 DoLogging -LogType Info -LogString "Waiting for VMware tools to start..."
                 $Ready = $false
@@ -257,9 +216,6 @@ while ($true)
     if ($Complete) { break }
     Start-Sleep 60
 }
-
-#Create templates in DEVQC (IAD and JAX)
-
 
 DoLogging -LogType Succ -LogString "Template replication has completed successfully!!!"
 $EmailBody = Get-Content .\~Logs\"$ScriptName $ScriptStarted.log" | Out-String; Send-MailMessage -smtpserver $emailServer -to $emailTo -from $emailFrom -subject "Template Replication Completed!!!" -body $EmailBody
