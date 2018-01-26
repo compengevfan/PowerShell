@@ -60,7 +60,7 @@ if ($RubrikClusterID -eq "" -or $RubrikClusterID -eq $null) { DoLogging -LogType
 
 #Get a list of all Template backup SLA's and create empty array for snapshot request data
 DoLogging -LogType Info -LogString "Obtaining a list of all Gold Template SLAs..."
-$SLAs = Get-RubrikSLA | where { $_.Name -like "*FAKW*" } | Sort-Object Name
+$SLAs = Get-RubrikSLA | where { $_.Name -like "Gold Templates*" } | Sort-Object Name
 if ($SLAs -eq "" -or $SLAs -eq $null) { DoLogging -LogType Err -LogString "No template SLAs found on the IAD Rubrik!!! Script exiting"; exit }
 $Snapshots = @()
 
@@ -93,16 +93,25 @@ $TplsForIAD = Get-Cluster IAD-Prod | Get-VM TPL_Gold*
 foreach ($TplForIAD in $TplsForIAD)
 {
     $TplName = ($TplForIAD.Name).replace("GOLD","IAD-PROD")
+    if ((Get-Template $TplName) -ne $null)
+    {
+        DoLogging -LogType Info -LogString "Deleting $TplName..."
+        Remove-Template $TplName -DeletePermanently -Confirm:$false
+    }
     New-VM -VM $TplForIAD -Datastore $(Get-Datastore IAD-VS-DS01) -DiskStorageFormat Thick -Name $TplName -VMHost iad-vs01.fanatics.corp | Out-Null
     Get-VM $TplName | Set-VM -ToTemplate -Confirm:$false | Out-Null
 }
 
 #Create templates at IAD-DEVQC from the GOLD VMs
 DoLogging -LogType Info -LogString "IAD-Prod templates created. Creating templates in IAD-DEVQC..."
-$TplsForIAD = Get-Cluster IAD-Prod | Get-VM TPL_Gold*
 foreach ($TplForIAD in $TplsForIAD)
 {
     $TplName = ($TplForIAD.Name).replace("GOLD","IAD-DEVQC")
+    if ((Get-Template $TplName) -ne $null)
+    {
+        DoLogging -LogType Info -LogString "Deleting $TplName..."
+        Remove-Template $TplName -DeletePermanently -Confirm:$false
+    }
     New-VM -VM $TplForIAD -Datastore $(Get-Datastore IAD-DEVQC-VS-DS01) -DiskStorageFormat Thick -Name $TplName -VMHost iad-devqc-vs01.fanatics.corp | Out-Null
     Get-VM $TplName | Set-VM -ToTemplate -Confirm:$false | Out-Null
 }
