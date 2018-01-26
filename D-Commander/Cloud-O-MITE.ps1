@@ -8,7 +8,7 @@ Param(
 ##################
 #System Variables
 ##################
-#$ErrorActionPreference = "SilentlyContinue"
+$ErrorActionPreference = "SilentlyContinue"
 Set-PowerCLIConfiguration -InvalidCertificateAction ignore -confirm:$false
 
 #Import functions
