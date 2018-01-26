@@ -13,7 +13,6 @@ $ErrorActionPreference = "SilentlyContinue"
 
 if ($VMFile -eq "" -or $VMFile -eq $null) { cls; Write-Host "Please select a VM config JSON file..."; $VMFile = Get-FileName }
 
-$InputFileName = Get-Item $VMFile | % {$_.BaseName}
 $ScriptStarted = Get-Date -Format MM-dd-yyyy_hh-mm-ss
 $ScriptName = $MyInvocation.MyCommand.Name
 
@@ -121,4 +120,4 @@ DoLogging -LogType Info -LogString "Triggering server restart to apply registry 
 Restart-VMGuest -VM $($DataFromFile.VMInfo.VMName) -Confirm:$false | Out-Null
 
 DoLogging -LogType Succ -LogString "Your terminal server has been successfully configured!!!"
-if ($SendEmail) { $EmailBody = Get-Content .\~Logs\"$ScriptName $InputFileName $ScriptStarted.log" | Out-String; Send-MailMessage -smtpserver $emailServer -to $emailTo -from $emailFrom -subject "Terminal Server Deployed!!!" -body $EmailBody }
+if ($SendEmail) { $EmailBody = Get-Content .\~Logs\"$ScriptName $ScriptStarted.log" | Out-String; Send-MailMessage -smtpserver $emailServer -to $emailTo -from $emailFrom -subject "Terminal Server Deployed!!!" -body $EmailBody }

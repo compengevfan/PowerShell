@@ -13,14 +13,6 @@
 	
 	"AdditionalDisks": [
 		{
-			"MPName": "Q",
-			"Size": "5"
-		},
-		{
-			"MPName": "M",
-			"Size": "5"
-		},
-		{
 			"MPName": "Data1",
 			"Size": "50"
 		},

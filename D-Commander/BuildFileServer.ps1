@@ -14,7 +14,6 @@ $ErrorActionPreference = "SilentlyContinue"
 
 if ($VMFile -eq "" -or $VMFile -eq $null) { cls; Write-Host "Please select a VM config JSON file..."; $VMFile = Get-FileName }
 
-$InputFileName = Get-Item $VMFile | % {$_.BaseName}
 $ScriptStarted = Get-Date -Format MM-dd-yyyy_hh-mm-ss
 $ScriptName = $MyInvocation.MyCommand.Name
 
@@ -140,7 +139,7 @@ $FileToMove = Get-Item $FSFile
 Move-Item -Path $FileToMove -Destination .\~Processed-JSON-Files -Force
 
 DoLogging -LogType Info -LogString "Triggering server restart to complete the feature install..."
-Restart-VM -VM $($DataFromFile.VMInfo.VMName) -Confirm:$false
+Restart-VMGuest -VM $($DataFromFile.VMInfo.VMName) -Confirm:$false
 
 DoLogging -LogType Succ -LogString "Your file server has been successfully configured!!!"
-if ($SendEmail) { $EmailBody = Get-Content .\~Logs\"$ScriptName $InputFileName $ScriptStarted.log" | Out-String; Send-MailMessage -smtpserver $emailServer -to $emailTo -from $emailFrom -subject "File Server Deployed!!!" -body $EmailBody }
+if ($SendEmail) { $EmailBody = Get-Content .\~Logs\"$ScriptName $ScriptStarted.log" | Out-String; Send-MailMessage -smtpserver $emailServer -to $emailTo -from $emailFrom -subject "File Server Deployed!!!" -body $EmailBody }

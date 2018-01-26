@@ -13,7 +13,6 @@ $ErrorActionPreference = "SilentlyContinue"
 
 if ($VMFile -eq "" -or $VMFile -eq $null) { cls; Write-Host "Please select a JSON file..."; $VMFile = Get-FileName }
 
-$InputFileName = Get-Item $VMFile | % {$_.BaseName}
 $ScriptStarted = Get-Date -Format MM-dd-yyyy_hh-mm-ss
 $ScriptName = $MyInvocation.MyCommand.Name
 
@@ -106,4 +105,4 @@ DoLogging -LogType Info -LogString "Triggering server restart to complete the fe
 Restart-VM -VM $($DataFromFile.VMInfo.VMName) -Confirm:$false
 
 DoLogging -LogType Succ -LogString "Your print server has been successfully configured!!!"
-if ($SendEmail) { $EmailBody = Get-Content .\~Logs\"$ScriptName $InputFileName $ScriptStarted.log" | Out-String; Send-MailMessage -smtpserver $emailServer -to $emailTo -from $emailFrom -subject "Print Server Deployed!!!" -body $EmailBody }
+if ($SendEmail) { $EmailBody = Get-Content .\~Logs\"$ScriptName $ScriptStarted.log" | Out-String; Send-MailMessage -smtpserver $emailServer -to $emailTo -from $emailFrom -subject "Print Server Deployed!!!" -body $EmailBody }

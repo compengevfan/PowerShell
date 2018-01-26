@@ -22,7 +22,6 @@ Set-PowerCLIConfiguration -InvalidCertificateAction ignore -confirm:$false
 #if there is no input file, present an explorer window for the user to select one.
 if ($InputFile -eq "" -or $InputFile -eq $null) { cls; Write-Host "Please select a JSON file..."; $InputFile = Get-FileName }
 
-$InputFileName = Get-Item $InputFile | % {$_.BaseName}
 $ScriptStarted = Get-Date -Format MM-dd-yyyy_hh-mm-ss
 $ScriptName = $MyInvocation.MyCommand.Name
 
@@ -274,4 +273,4 @@ $FileToMove = Get-Item $InputFile
 Move-Item -Path $FileToMove -Destination .\~Processed-JSON-Files -Force
 
 DoLogging -LogType Succ -LogString "Your VM has been successfully deployed!!!"
-if ($SendEmail) { $EmailBody = Get-Content .\~Logs\"$ScriptName $InputFileName $ScriptStarted.log" | Out-String; Send-MailMessage -smtpserver $emailServer -to $emailTo -from $emailFrom -subject "Cloud-O-Mite Deployed a VM" -body $EmailBody }
+if ($SendEmail) { $EmailBody = Get-Content .\~Logs\"$ScriptName $ScriptStarted.log" | Out-String; Send-MailMessage -smtpserver $emailServer -to $emailTo -from $emailFrom -subject "Cloud-O-Mite Deployed a VM" -body $EmailBody }

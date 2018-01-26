@@ -14,7 +14,6 @@ $ErrorActionPreference = "SilentlyContinue"
 
 if ($VMFile -eq "" -or $VMFile -eq $null) { cls; Write-Host "Please select a VM config JSON file..."; $VMFile = Get-FileName }
 
-$InputFileName = Get-Item $VMFile | % {$_.BaseName}
 $ScriptStarted = Get-Date -Format MM-dd-yyyy_hh-mm-ss
 $ScriptName = $MyInvocation.MyCommand.Name
 
@@ -98,5 +97,9 @@ foreach($Scope in $Scopes)
 
 #Register the DHCP server in AD DSL Add-DhcpServerInDC -DnsName wds1.iammred.net -IPAddress 192.168.0.152
 
+DoLogging -LogType Info -LogString "Moving JSON to the 'processed' folder..."
+$FileToMove = Get-Item $DHCPFile
+Move-Item -Path $FileToMove -Destination .\~Processed-JSON-Files -Force
+
 DoLogging -LogType Succ -LogString "Your DHCP server has been successfully configured!!!"
-if ($SendEmail) { $EmailBody = Get-Content .\~Logs\"$ScriptName $InputFileName $ScriptStarted.log" | Out-String; Send-MailMessage -smtpserver $emailServer -to $emailTo -from $emailFrom -subject "DHCP Server Deployed!!!" -body $EmailBody }
+if ($SendEmail) { $EmailBody = Get-Content .\~Logs\"$ScriptName $ScriptStarted.log" | Out-String; Send-MailMessage -smtpserver $emailServer -to $emailTo -from $emailFrom -subject "DHCP Server Deployed!!!" -body $EmailBody }
