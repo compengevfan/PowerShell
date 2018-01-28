@@ -5,7 +5,7 @@
 			"Datacenter": "TAFQ",
 			"Cluster": "TAFQ",
 			"FolderPath": "TAFQ/Discovered virtual machine",
-			"VMName": "TAFQ-FS002",
+			"VMName": "TAFQ-BLAH101",
 			"Datastore": "TAFQ-VS",
 		  	"PortGroup": "vlan980-Servers",
 			"Owner": "Dupree",
@@ -19,13 +19,13 @@
 			"CustomizationSpec": "Windows-Corp-KMS",
 			"vCPUs": "4",
 			"RAM": "12",
-			"IPAddress": "10.142.98.60",
+			"IPAddress": "10.142.98.30",
 			"SubnetMask": "255.255.255.0",
 			"Gateway": "10.142.98.1",
 			"Domain": "fanatics.corp",
 			"DNS1": "10.142.98.21",
 			"DNS2": "10.142.98.22",
-			"OU": "Servers/TAFQ"
+			"OU": "Terminal Server Users/FROW/Consolidation"
 		}
 	]
 }
