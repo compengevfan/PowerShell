@@ -1,7 +1,7 @@
 {
 	"VMInfo": [
 		{
-			"vCenter": "iad-vc001.fanatics.corp",
+			"vCenter": "discography.evorigin.com",
 			"Datacenter": "TAFQ",
 			"Cluster": "TAFQ",
 			"FolderPath": "TAFQ/Discovered virtual machine",
@@ -22,7 +22,7 @@
 			"IPAddress": "10.142.98.30",
 			"SubnetMask": "255.255.255.0",
 			"Gateway": "10.142.98.1",
-			"Domain": "fanatics.corp",
+			"Domain": "evorigin.com",
 			"DNS1": "10.142.98.21",
 			"DNS2": "10.142.98.22",
 			"OU": "Terminal Server Users/FROW/Consolidation"

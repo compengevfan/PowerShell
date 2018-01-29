@@ -81,7 +81,9 @@ if ($DomainCredentials -eq $null)
     }
 }
 
-.\Cloud-O-MITE.ps1 -InputFile $VMFile -DomainCredentials $DomainCredentials
+DoLogging -LogType Info -LogString "Calling Cloud-O-MITE to build the VM..."
+$Code = .\Cloud-O-MITE.ps1 -InputFile $VMFile -DomainCredentials $DomainCredentials
+if ($Code -eq 66) { DoLogging -LogType Err -LogString "VM build failed. Exiting build script."; exit }
 
 $DiskNumber = 2
 $VolumeNumber = 4

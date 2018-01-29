@@ -111,20 +111,20 @@ $TemplateToFind = "TPL_" + $($DataFromFile.VMInfo.Cluster) + "_" + $($DataFromFi
 DoLogging -LogType Info -LogString "Locating Template $TemplateToFind"
 $TemplateToUse = Get-Template $TemplateToFind
 if ($TemplateToUse -ne $null) { DoLogging -LogType Succ -LogString "Template found..." }
-else { DoLogging -LogType Err -LogString "Template NOT found!!! Script Exiting!!!"; exit }
+else { DoLogging -LogType Err -LogString "Template NOT found!!! Script Exiting!!!"; return 66 }
 
 #Find the Folder. If it is not found, exit.
 DoLogging -LogType Info -LogString "Parsing folder path to find proper location..."
 $Folder = $null
 $Folder = Get-FolderByPath -Path $($DataFromFile.VMInfo.FolderPath)
 if ($Folder -ne $null) { DoLogging -LogType Succ -LogString "Location found..." }
-else { DoLogging -LogType Err -LogString "Location NOT found!!! Script Exiting!!!"; exit }
+else { DoLogging -LogType Err -LogString "Location NOT found!!! Script Exiting!!!"; return 66 }
 
 #Find the customization spec. If it is not found, exit.
 DoLogging -LogType Info -LogString "Locating Customization Spec $($DataFromFile.GuestInfo.CustomizationSpec)..."
 $OSCustSpec = Get-OSCustomizationSpec $($DataFromFile.GuestInfo.CustomizationSpec)
 if ($OSCustSpec -ne $null) { DoLogging -LogType Succ -LogString "Customization Spec found..." }
-else { DoLogging -LogType Err -LogString "Customization Spec NOT found!!! Script Exiting!!!"; exit }
+else { DoLogging -LogType Err -LogString "Customization Spec NOT found!!! Script Exiting!!!"; return 66 }
 
 #Find the Portgroup. Check for vDS first; if not found, check for standard. If it is not found, exit.
 DoLogging -LogType Info -LogString "Locating PortGroup $($DataFromFile.VMInfo.PortGroup)..."
@@ -134,7 +134,7 @@ if ($PortGroup -eq $null)
 {
     $PortGroup = Get-Datacenter $($DataFromFile.VMInfo.DataCenter) | Get-VirtualPortGroup | where Name -eq $($DataFromFile.VMInfo.PortGroup)
     if ($PortGroup -ne $null) { DoLogging -LogType Succ -LogString "PortGroup found..."; $PortType = "std" }
-    else { DoLogging -LogType Err -LogString "PortGroup NOT found!!! Script Exiting!!!"; exit }
+    else { DoLogging -LogType Err -LogString "PortGroup NOT found!!! Script Exiting!!!"; return 66 }
 }
 
 #Find the Datastore. First, look for a DS Cluster. If not found, look for DS. If it is not found, exit.
@@ -142,7 +142,7 @@ DoLogging -LogType Info -LogString "Locating Datastore Cluster $($DataFromFile.V
 $DataStore = Get-DatastoreCluster $($DataFromFile.VMInfo.Datastore)
 if ($DataStore -eq $null) { $DataStore = Get-Datastore $($DataFromFile.VMInfo.Datastore) }
 if ($DataStore -ne $null) { DoLogging -LogType Succ -LogString "Storage found..." }
-else { DoLogging -LogType Err -LogString "Storage NOT found!!! Script Exiting!!!"; exit }
+else { DoLogging -LogType Err -LogString "Storage NOT found!!! Script Exiting!!!"; return 66 }
 
 ##################
 #Perform Sanity Checks (Name not in use, IP not in use, etc)
@@ -151,19 +151,19 @@ else { DoLogging -LogType Err -LogString "Storage NOT found!!! Script Exiting!!!
 #Verify that VM name does not exist
 $CheckName = Get-VM $($DataFromFile.VMInfo.VMName)
 if ($CheckName -eq $null) { DoLogging -LogType Succ -LogString "New VM name not found..." }
-else { DoLogging -LogType Err -LogString "New VM name found!!! Script Exiting!!!"; exit }
+else { DoLogging -LogType Err -LogString "New VM name found!!! Script Exiting!!!"; return 66 }
 
 #Verify that the IP address is not one of the first 20 IPs in the subnet.
 
 #Verify that IP address is not assigned to another VM.
 $CheckIPAddress = Find-VmByAddress -IP $($DataFromFile.GuestInfo.IPaddress)
 if ($CheckIPAddress -eq $null) { DoLogging -LogType Succ -LogString "New VM IP not found..." }
-else { DoLogging -LogType Err -LogString "New VM IP found!!! Script Exiting!!!"; exit }
+else { DoLogging -LogType Err -LogString "New VM IP found!!! Script Exiting!!!"; return 66 }
 
 #Verify that the IP address does not respond to ping.
 $CheckIPAddress = Test-Connection $($DataFromFile.GuestInfo.IPaddress) -Count 1
 if ($CheckIPAddress -eq $null) { DoLogging -LogType Succ -LogString "New VM IP does not respond to ping..." }
-else { DoLogging -LogType Err -LogString "New VM IP does respond to ping!!! Script Exiting!!!"; exit }
+else { DoLogging -LogType Err -LogString "New VM IP does respond to ping!!! Script Exiting!!!"; return 66 }
 
 ##################
 #Display VM Info for verification before build
@@ -189,7 +189,7 @@ New-VM -Name $($DataFromFile.VMInfo.VMName) -Template $TemplateToUse -ResourcePo
 Start-Sleep 5
 
 #Verify VM Deployed, update specs, power on and wait for customization to complete.
-if ((Get-VM $($DataFromFile.VMInfo.VMName)) -eq $null) { DoLogging -LogType Err -LogString "VM Deploy failed!!! Script exiting!!!";exit }
+if ((Get-VM $($DataFromFile.VMInfo.VMName)) -eq $null) { DoLogging -LogType Err -LogString "VM Deploy failed!!! Script exiting!!!"; return 66 }
 else
 {
     DoLogging -LogType Info -LogString "Updating VM Specs..."

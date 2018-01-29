@@ -147,3 +147,23 @@ function Get-FolderByPath{
     }
   }
 }
+
+function Wait_Tools
+{
+    $Ready = $false
+    while (!($Ready))
+    {
+        $ToolsStatus = (Get-VM -Name $($DataFromFile.VMInfo.VMName)).Guest.ExtensionData.ToolsStatus
+        if ($ToolsStatus -eq "toolsOK" -or $ToolsStatus -eq "toolsOld") { $Ready = $true }
+        Start-Sleep 5
+    }
+}
+
+function Wait_Shutdown
+{
+    while ($PowerState -eq "PoweredOn")
+    {
+        Start-Sleep 5
+        $PowerState = (Get-VM $($LocalGoldCopy.Name)).PowerState
+    }
+}
