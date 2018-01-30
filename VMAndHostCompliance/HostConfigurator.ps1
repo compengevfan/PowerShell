@@ -4,6 +4,9 @@ Param(
     [Parameter()] [string] $HostToCheck
 )
 
+$ScriptPath = $PSScriptRoot
+cd $ScriptPath
+
 . .\Functions\function_Check-PowerCLI.ps1
 . .\Functions\function_Connect-vCenter.ps1
 . .\Functions\Function_DoLogging.ps1
@@ -23,6 +26,21 @@ if ($HostToCheck -eq "") { $HostToCheck = Read-Host "Please enter the name of th
 $HostToConfig = Get-VMHost $HostToCheck
 
 if ($HostToConfig -eq $null -or $HostToConfig -eq "") { DoLogging -LogType Err -LogString "Host does not exist in $vCenter. Script Exiting."; exit }
+
+##################
+#Verify ESXi build number. If wrong, exit.
+##################
+DoLogging -LogType Info -LogString "Checking ESXi build number..."
+$OSInfo = Get-View -ViewType HostSystem -Filter @{"Name"=$($HostToConfig).Name} -Property Name,Config.Product | foreach {$_.Name, $_.Config.Product}
+if ($OSInfo.Build -eq 5572656)
+{
+    DoLogging -LogType Info -LogString "ESXi build number is correct..."
+}
+else
+{
+    DoLogging -LogType Err -LogString "ESXi build number is incorrect!!! Please install the proper version of ESXi and try again. Script Exiting!!!"
+    exit
+}
 
 ##################
 #NTP Servers
@@ -73,46 +91,76 @@ else
 DoLogging -LogType Info -LogString "Getting host mapping information from data file..."
 $DataFromFile = Import-Csv .\HostConfigurator-Data.csv
 
+$ParentCluster = $HostToConfig.Parent.Name
+
+$ProperInfo = $DataFromFile | ? { $_.Cluster -eq $ParentCluster }
+
 DoLogging -LogType Info -LogString "Getting Domain, domain look up, DNS Servers and Gateway information..."
-$Network = Get-VMHostNetwork -VMHost $VMHost
+$Network = Get-VMHostNetwork -VMHost $HostToCheck
 
 DoLogging -LogType Info -LogString "Checking domain name..."
-if ($Network.DomainName -ne "evorigin.com")
+if ($Network.DomainName -ne $($ProperInfo.Domain))
 {
-	Set-VMHostNetwork $Network -DomainName "evorigin.com"
+    DoLogging -LogType Warn -LogString "Domain name is incorrect..."
+	Set-VMHostNetwork $Network -DomainName $($ProperInfo.Domain) | Out-Null
+    DoLogging -LogType Succ -LogString "Domain has been updated."
 }
 else
 {
-    DoLogging -LogType Succ -LogString "."
+    DoLogging -LogType Succ -LogString "Domain name is correct."
 }
 
 DoLogging -LogType Info -LogString "Checking search domain..."
-if ($Network.SearchDomain -ne "evorigin.com")
+if ($Network.SearchDomain -ne $($ProperInfo.Domain))
 {
-	Set-VMHostNetwork $Network -SearchDomain "evorigin.com"
+    DoLogging -LogType Warn -LogString "Search domain is incorrect..."
+	Set-VMHostNetwork $Network -SearchDomain $($ProperInfo.Domain) | Out-Null
+    DoLogging -LogType Succ -LogString "Search domain has been updated."
 }
 else
 {
-    DoLogging -LogType Succ -LogString "."
+    DoLogging -LogType Succ -LogString "Search domain is correct."
 }
 
 DoLogging -LogType Info -LogString "Checking Gateway"
-if ($Network.VMKernelGateway -ne "192.168.1.1")
+if ($Network.VMKernelGateway -ne $($ProperInfo.Gateway))
 {
-	Set-VMHostNetwork $Network -VMKernelGateway "192.168.1.1"
+    DoLogging -LogType Warn -LogString "Gateway is incorrect..."
+	Set-VMHostNetwork $Network -VMKernelGateway $($ProperInfo.Gateway) | Out-Null
+    DoLogging -LogType Succ -LogString "Gateway has been updated."
 }
 else
 {
-    DoLogging -LogType Succ -LogString "."
+    DoLogging -LogType Succ -LogString "Gateway is correct."
 }
 
 DoLogging -LogType Info -LogString "Checking DNS Servers"
-if (($Network.DnsAddress -contains "192.168.1.101") -and (($Network.DnsAddress.Count -eq 1) -or ($Network.DnsAddress.Count -eq $NULL)))
+if ($Network.DnsAddress -contains $($ProperInfo.DNS1) -and $Network.DnsAddress -contains $($ProperInfo.DNS2) -and $Network.DnsAddress.Count -eq 2)
 {
-	write-host ("Checked, OK!")
+	DoLogging -LogType Succ -LogString "DNS servers are correct."
 }
 else #If the DNS servers are not correct, fix them.
 {
-	Set-VMHostNetwork $Network -DnsAddress "192.168.1.101"
+    DoLogging -LogType Warn -LogString "DNS servers are incorrect..."
+	Set-VMHostNetwork $Network -DnsAddress @("$($ProperInfo.DNS1)","$($ProperInfo.DNS2)") | Out-Null
+    DoLogging -LogType Warn -LogString "DNS servers have been updated."
+}
+
+##################
+#Check power management policy
+##################
+DoLogging -LogType Info -LogString "Checking power management policy..."
+$vmhostview = Get-View -ViewType Hostsystem -Filter @{"Name"=$($HostToConfig).Name} -Property ConfigManager.PowerSystem
+$powerpolicy = Get-View $vmhostview.ConfigManager.PowerSystem
+$powerpolicy | Select -ExpandProperty Info | Select -ExpandProperty CurrentPolicy
+if ($($powerpolicy.Info.CurrentPolicy.Key) -eq 1)
+{
+    DoLogging -LogType Succ -LogString "Power management policy is set to 'High Performance'."
+}
+else
+{
+    DoLogging -LogType Warn -LogString "Power management policy is incorrect..."
+    $powerpolicy.ConfigurePowerPolicy(1)
+    DoLogging -LogType Succ -LogString "Power management policy has been updated."
 }
 
