@@ -5,12 +5,6 @@ Param(
     [Parameter()] $SendEmail = $true
 )
 
-##################
-#System Variables
-##################
-$ErrorActionPreference = "SilentlyContinue"
-Set-PowerCLIConfiguration -InvalidCertificateAction ignore -confirm:$false
-
 #Import functions
 . .\Functions\function_Get-FileName
 . .\Functions\function_Get-FolderByPath
@@ -18,6 +12,12 @@ Set-PowerCLIConfiguration -InvalidCertificateAction ignore -confirm:$false
 . .\Functions\function_DoLogging
 . .\Functions\function_ConvertToDN
 . .\Functions\function_Check-PowerCLI.ps1
+
+##################
+#System Variables
+##################
+$ErrorActionPreference = "SilentlyContinue"
+Set-PowerCLIConfiguration -InvalidCertificateAction ignore -confirm:$false
 
 #if there is no input file, present an explorer window for the user to select one.
 if ($InputFile -eq "" -or $InputFile -eq $null) { cls; Write-Host "Please select a JSON file..."; $InputFile = Get-FileName }

@@ -49,6 +49,8 @@ Function DoLogging
         [Parameter()] [string] $LogString
     )
 
+    if (!(Test-Path .\~Logs)) { New-Item -Name "~Logs" -ItemType Directory | Out-Null }
+
     $TimeStamp = Get-Date -Format 'yyyy-MM-dd HH:mm:ss'
     "$TimeStamp $LogString" | Out-File .\~Logs\"$ScriptName $ScriptStarted.log" -append
 
@@ -189,3 +191,13 @@ function Connect-vCenter
         } while ($ConnectedvCenter.Count -eq 0)
     }
 }
+
+Export-ModuleMember -Function 'Check-PowerCLI'
+Export-ModuleMember -Function 'ConvertToDN'
+Export-ModuleMember -Function 'DoLogging'
+Export-ModuleMember -Function 'Find-VmByAddress'
+Export-ModuleMember -Function 'Get-FileName'
+Export-ModuleMember -Function 'Get-FolderByPath'
+Export-ModuleMember -Function 'Wait-Tools'
+Export-ModuleMember -Function 'Wait-Shutdown'
+Export-ModuleMember -Function 'Connect-vCenter'
