@@ -55,13 +55,13 @@ else
 #Verify host name is FQDN. If wrong, exit.
 ##################
 DoLogging -LogType Info -LogString "Verifying hostname includes domain name..."
-if ($HostToConfig.Name -contains "$ProperInfo.Domain")
+if ($HostToConfig.Name -like "*$($ProperInfo.Domain)")
 {
     DoLogging -LogType Succ -LogString "Hostname contains the proper domain."
 }
 else
 {
-    DoLogging -LogType Err -LogString "Hostname does not contain the proper domain!!! Please correct the hostname and try again. SCript Exiting!!!"
+    DoLogging -LogType Err -LogString "Hostname does not contain the proper domain!!! Please correct the hostname and try again. Script Exiting!!!"
     exit
 }
 
@@ -237,5 +237,29 @@ else
             }
         }
     }
+}
+
+##################
+#VAAI and ALUA Config Check
+##################
+DoLogging -LogType Info -LogString "Checking HardwareAcceleratedMove setting..."
+$VAAIConfig = Get-AdvancedSetting -Entity $HostToConfig -Name DataMover.HardwareAcceleratedMove
+if ($VAAIConfig."DataMover.HardwareAcceleratedMove" -ne 1)
+{
+	$VAAIConfig | Set-AdvancedSetting -Value 1
+}
+
+DoLogging -LogType Info -LogString "Checking HardwareAcceleratedInit setting..."
+$VAAIConfig = Get-AdvancedSetting -Entity $HostToConfig -Name DataMover.HardwareAcceleratedInit
+if ($VAAIConfig."DataMover.HardwareAcceleratedInit" -ne 1)
+{
+	$VAAIConfig | Set-AdvancedSetting -Value 1
+}
+
+DoLogging -LogType Info -LogString "Checking HardwareAcceleratedLocking setting..."
+$VAAIConfig = Get-AdvancedSetting -Entity $HostToConfig -Name VMFS3.HardwareAcceleratedLocking
+if ($VAAIConfig."VMFS3.HardwareAcceleratedLocking" -ne 1)
+{
+	$VAAIConfig | Set-AdvancedSetting -Value 1
 }
 
