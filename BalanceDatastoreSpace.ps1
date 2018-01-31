@@ -1,8 +1,14 @@
-﻿#Check for vCenter Server Connection
-$ConnectedvCenterCount = $global:DefaultVIServers.Count
+﻿[CmdletBinding()]
+Param(
+)
 
-#Obtain info from user
-if ($ConnectedvCenterCount -eq 0) { $vCenter = Read-Host -Prompt ("Please enter the name of the vCenter Server"); Connect-VIServer $vCenter }
+#Import functions
+. .\Functions\function_Check-PowerCLI.ps1
+. .\Functions\function_Connect-vCenter.ps1
+
+Check-PowerCLI
+
+Connect-vCenter
 
 $DatastoreCluster = Read-Host -Prompt ("Please enter the name of the datastore cluster to be balanced")
 

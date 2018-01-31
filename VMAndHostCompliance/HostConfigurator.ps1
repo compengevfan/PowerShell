@@ -10,6 +10,8 @@ cd $ScriptPath
 . .\Functions\function_Check-PowerCLI.ps1
 . .\Functions\function_Connect-vCenter.ps1
 . .\Functions\Function_DoLogging.ps1
+. .\Functions\function_Get-AlarmActionState.ps1
+. .\Functions\function_Set-AlarmActionState.ps1
 
 Check-PowerCLI
 
@@ -27,6 +29,13 @@ $HostToConfig = Get-VMHost $HostToCheck
 
 if ($HostToConfig -eq $null -or $HostToConfig -eq "") { DoLogging -LogType Err -LogString "Host does not exist in $vCenter. Script Exiting."; exit }
 
+DoLogging -LogType Info -LogString "Getting host mapping information from data file..."
+$DataFromFile = Import-Csv .\HostConfigurator-Data.csv
+
+$ParentCluster = $HostToConfig.Parent.Name
+
+$ProperInfo = $DataFromFile | ? { $_.Cluster -eq $ParentCluster }
+
 ##################
 #Verify ESXi build number. If wrong, exit.
 ##################
@@ -39,6 +48,20 @@ if ($OSInfo.Build -eq 5572656)
 else
 {
     DoLogging -LogType Err -LogString "ESXi build number is incorrect!!! Please install the proper version of ESXi and try again. Script Exiting!!!"
+    exit
+}
+
+##################
+#Verify host name is FQDN. If wrong, exit.
+##################
+DoLogging -LogType Info -LogString "Verifying hostname includes domain name..."
+if ($HostToConfig.Name -contains "$ProperInfo.Domain")
+{
+    DoLogging -LogType Succ -LogString "Hostname contains the proper domain."
+}
+else
+{
+    DoLogging -LogType Err -LogString "Hostname does not contain the proper domain!!! Please correct the hostname and try again. SCript Exiting!!!"
     exit
 }
 
@@ -88,13 +111,6 @@ else
 ##################
 #Domain, domain look up, DNS Servers and Gateway is correct
 ##################
-DoLogging -LogType Info -LogString "Getting host mapping information from data file..."
-$DataFromFile = Import-Csv .\HostConfigurator-Data.csv
-
-$ParentCluster = $HostToConfig.Parent.Name
-
-$ProperInfo = $DataFromFile | ? { $_.Cluster -eq $ParentCluster }
-
 DoLogging -LogType Info -LogString "Getting Domain, domain look up, DNS Servers and Gateway information..."
 $Network = Get-VMHostNetwork -VMHost $HostToCheck
 
@@ -152,7 +168,6 @@ else #If the DNS servers are not correct, fix them.
 DoLogging -LogType Info -LogString "Checking power management policy..."
 $vmhostview = Get-View -ViewType Hostsystem -Filter @{"Name"=$($HostToConfig).Name} -Property ConfigManager.PowerSystem
 $powerpolicy = Get-View $vmhostview.ConfigManager.PowerSystem
-$powerpolicy | Select -ExpandProperty Info | Select -ExpandProperty CurrentPolicy
 if ($($powerpolicy.Info.CurrentPolicy.Key) -eq 1)
 {
     DoLogging -LogType Succ -LogString "Power management policy is set to 'High Performance'."
@@ -162,5 +177,65 @@ else
     DoLogging -LogType Warn -LogString "Power management policy is incorrect..."
     $powerpolicy.ConfigurePowerPolicy(1)
     DoLogging -LogType Succ -LogString "Power management policy has been updated."
+}
+
+##################
+#Check alarm actions
+##################
+DoLogging -LogType Info -LogString "Checking alarm action setting..."
+$AlarmActionState = Get-AlarmActionState -Entity $HostToConfig -Recurse:$false
+if ($($AlarmActionState.'Alarm actions enabled') -eq "True")
+{
+    DoLogging -LogType Succ -LogString "Alarm actions are enabled."
+}
+else
+{
+    DoLogging -LogType Warn -LogString "Alarm actions are disabled..."
+    Set-AlarmActionState -Entity $HostToConfig -Enabled:$true -Recurse:$false
+    DoLogging -LogType Succ -LogString "Alatm actions enabled."
+}
+
+##################
+#Check virtual switch config excluding "voice" clusters
+##################
+if ($ParentCluster -like "*Voice")
+{
+    DoLogging -LogType Info -LogString "Host is a member of a voice cluster. Skipping switch config checks."
+}
+else
+{
+    DoLogging -LogType Info -LogString "Obtaining standard switch configuration..."
+    $StandardSwitches = Get-VirtualSwitch -VMHost $HostToConfig -Standard
+    if ($StandardSwitches.Nic.Count -gt 0)
+    {
+        DoLogging -LogType Err -LogString "There is a standard switch on this host with physical NICs attached to it!!!"
+        DoLogging -LogType Err -LogString "This MUST be corrected before putting the host in production!!!"
+        DoLogging -LogType Err -LogString "To prevent loss of connectivity, this script will not correct this automatically!!!"
+    }
+    DoLogging -LogType Info -LogString "Obtaining distributed switch configuration..."
+    $DistributedSwitches = Get-VDSwitch -VMHost $HostToConfig
+    if ($DistributedSwitches -eq $null -or $DistributedSwitches -eq "")
+    {
+        DoLogging -LogType Err -LogString "$HostToConfig is not joined to a distributed switch!!!"
+        DoLogging -LogType Err -LogString "This MUST be corrected before putting the host in production!!!"
+        DoLogging -LogType Err -LogString "To prevent loss of connectivity, this script will not correct this automatically!!!"
+    }
+    else
+    {
+        foreach ($DistributedSwitch in $DistributedSwitches)
+        {
+            $Nics = Get-VMHostNetworkAdapter -VMHost $HostToConfig -DistributedSwitch $DistributedSwitch -Physical | sort name
+            if ($Nics.Count -lt 2)
+            {
+                DoLogging -LogType Err -LogString "Distributed switch '$DistributedSwitch' does not have at least 2 physical NICs!!!"
+                DoLogging -LogType Err -LogString "This MUST be corrected before putting the host in production!!!"
+                DoLogging -LogType Err -LogString "To prevent loss of connectivity, this script will not correct this automatically!!!"
+            }
+            else
+            {
+                DoLogging -LogType Succ -LogString "Distributed switch '$DistributedSwitch' has at lease 2 physical NICs."
+            }
+        }
+    }
 }
 

@@ -1,9 +1,14 @@
-﻿#Check for vCenter Server Connection
-$ConnectedvCenterCount = $global:DefaultVIServers.Count
+﻿[CmdletBinding()]
+Param(
+)
 
-#Obtain info from user
-if ($ConnectedvCenterCount -eq 0) { $vCenter = Read-Host -Prompt ("Please enter the name of the vCenter Server"); Connect-VIServer $vCenter }
-$Cluster = Read-Host -Prompt ("Please enter the name of the cluster to be balanced")
+#Import functions
+. .\Functions\function_Check-PowerCLI.ps1
+. .\Functions\function_Connect-vCenter.ps1
+
+Check-PowerCLI
+
+Connect-vCenter
 
 #Retrieve hosts from cluster
 $HostsToBalance = Get-Cluster $Cluster | Get-VMHost | ? {$_.ConnectionState -eq "Connected"} | Sort-Object MemoryUsageGB
