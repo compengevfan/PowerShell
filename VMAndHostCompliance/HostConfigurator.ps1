@@ -29,6 +29,8 @@ $HostToConfig = Get-VMHost $HostToCheck
 
 if ($HostToConfig -eq $null -or $HostToConfig -eq "") { DoLogging -LogType Err -LogString "Host does not exist in $vCenter. Script Exiting."; exit }
 
+$CompellentAttached = Read-Host "Is this host connected to a Compellent array (y/n)?"
+
 DoLogging -LogType Info -LogString "Getting host mapping information from data file..."
 $DataFromFile = Import-Csv .\HostConfigurator-Data.csv
 
@@ -242,24 +244,29 @@ else
 ##################
 #VAAI and ALUA Config Check
 ##################
-DoLogging -LogType Info -LogString "Checking HardwareAcceleratedMove setting..."
-$VAAIConfig = Get-AdvancedSetting -Entity $HostToConfig -Name DataMover.HardwareAcceleratedMove
-if ($VAAIConfig."DataMover.HardwareAcceleratedMove" -ne 1)
+if ($CompellentAttached -eq "y")
 {
-	$VAAIConfig | Set-AdvancedSetting -Value 1
-}
+    DoLogging -LogType Info -LogString "Host is attached to Compellent, checking and configuring VAAI and ALUA settings..."
+    DoLogging -LogType Info -LogString "Checking HardwareAcceleratedMove setting..."
+    $VAAIConfig = Get-AdvancedSetting -Entity $HostToConfig -Name DataMover.HardwareAcceleratedMove
+    if ($VAAIConfig."DataMover.HardwareAcceleratedMove" -ne 1)
+    {
+	    $VAAIConfig | Set-AdvancedSetting -Value 1
+    }
 
-DoLogging -LogType Info -LogString "Checking HardwareAcceleratedInit setting..."
-$VAAIConfig = Get-AdvancedSetting -Entity $HostToConfig -Name DataMover.HardwareAcceleratedInit
-if ($VAAIConfig."DataMover.HardwareAcceleratedInit" -ne 1)
-{
-	$VAAIConfig | Set-AdvancedSetting -Value 1
-}
+    DoLogging -LogType Info -LogString "Checking HardwareAcceleratedInit setting..."
+    $VAAIConfig = Get-AdvancedSetting -Entity $HostToConfig -Name DataMover.HardwareAcceleratedInit
+    if ($VAAIConfig."DataMover.HardwareAcceleratedInit" -ne 1)
+    {
+	    $VAAIConfig | Set-AdvancedSetting -Value 1
+    }
 
-DoLogging -LogType Info -LogString "Checking HardwareAcceleratedLocking setting..."
-$VAAIConfig = Get-AdvancedSetting -Entity $HostToConfig -Name VMFS3.HardwareAcceleratedLocking
-if ($VAAIConfig."VMFS3.HardwareAcceleratedLocking" -ne 1)
-{
-	$VAAIConfig | Set-AdvancedSetting -Value 1
-}
+    DoLogging -LogType Info -LogString "Checking HardwareAcceleratedLocking setting..."
+    $VAAIConfig = Get-AdvancedSetting -Entity $HostToConfig -Name VMFS3.HardwareAcceleratedLocking
+    if ($VAAIConfig."VMFS3.HardwareAcceleratedLocking" -ne 1)
+    {
+	    $VAAIConfig | Set-AdvancedSetting -Value 1
+    }
 
+
+}
