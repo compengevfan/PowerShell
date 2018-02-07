@@ -16,7 +16,7 @@ $ScriptName = $MyInvocation.MyCommand.Name
 #Email Variables
 ###################emailTo is a comma separated list of strings eg. "email1","email2"
 $emailFrom = "TemplateReplication@fanatics.com"
-$emailTo = "cdupree@fanatics.com"#,"devops-engineering@fanatics.com"
+$emailTo = "TEAMEntCompute@fanatics.com","devops-engineering@fanatics.com"
 $emailServer = "smtp.ff.p10"
 
 if (!(Test-Path .\~Logs)) { New-Item -Name "~Logs" -ItemType Directory | Out-Null }
@@ -43,15 +43,9 @@ if ($ConnectedvCenter.Count -eq 0)
     } while ($ConnectedvCenter.Count -eq 0)
 }
 
-#DoLogging -LogType Info -LogString "Locating all existing templates and targeting for termination..."
-#$TemplatesGoByeBye = Get-Template TPL_* | Sort-Object name
-#
-#foreach ($Template in $TemplatesGoByeBye)
-#{
-#    DoLogging -LogType Info -LogString "Deleting template '$($Template.Name)...'"
-#    Remove-Template $Template -DeletePermanently -Confirm:$false
-#    DoLogging -LogType Succ -LogString "Template '$($Template.Name) deleted...'"
-#}
+#Inform IEC and DevOps that template replication is starting.
+$EmailBody = "All,`n`nPlease be advised that the template replication process has been started in the IAD vCenter. This means that templates beginning with 'TPL_' will be deleted and recreated. The process will not interrupt the creation of a VM (the delete command will wait until the template is not being used) but may prevent you from starting a VM creation request. Note that some sites might not get updated templates due to [reasons].`n`nAdditional emails will follow to provide progress updates.`n`nAny questions, comments, or concerns should be directed to Nik Whittington or Chris Dupree.`n`nThank you!!!"
+Send-MailMessage -smtpserver $emailServer -to $emailTo -from $emailFrom -subject "Template Replication Started!!!" -Priority High -body $EmailBody
 
 DoLogging -LogType Info -LogString "Connecting to IAD Rubrik..."
 Connect-Rubrik IAD-RUBK001 -Credential $RubrikCred | Out-Null
@@ -100,6 +94,8 @@ foreach ($TplForIAD in $TplsForIAD)
     }
     New-VM -VM $TplForIAD -Datastore $(Get-Datastore IAD-VS-DS01) -DiskStorageFormat Thick -Name $TplName -VMHost iad-vs01.fanatics.corp | Out-Null
     Get-VM $TplName | Set-VM -ToTemplate -Confirm:$false | Out-Null
+    DoLogging -LogType Succ -LogString "IAD-PROD templates have been recreated and are ready for use."
+    Send-MailMessage -smtpserver $emailServer -to $emailTo -from $emailFrom -subject "Template Replication Update..." -body "IAD-PROD templates have been recreated and are ready for use."
 }
 
 #Create templates at IAD-DEVQC from the GOLD VMs
@@ -114,6 +110,8 @@ foreach ($TplForIAD in $TplsForIAD)
     }
     New-VM -VM $TplForIAD -Datastore $(Get-Datastore IAD-DEVQC-VS-DS01) -DiskStorageFormat Thick -Name $TplName -VMHost iad-devqc-vs01.fanatics.corp | Out-Null
     Get-VM $TplName | Set-VM -ToTemplate -Confirm:$false | Out-Null
+    DoLogging -LogType Succ -LogString "IAD-DEVQC templates have been recreated and are ready for use."
+    Send-MailMessage -smtpserver $emailServer -to $emailTo -from $emailFrom -subject "Template Replication Update..." -body "IAD-DEVQC templates have been recreated and are ready for use."
 }
 
 #Gather all snapshot endpoints
@@ -217,6 +215,7 @@ while ($true)
                 DoLogging -LogType Info -LogString "Converting to template..."
                 Set-VM $VMRenamed -ToTemplate -Confirm:$false | Out-Null
                 DoLogging -LogType Info -LogString "Continuing export completion checks..."
+                Send-MailMessage -smtpserver $emailServer -to $emailTo -from $emailFrom -subject "Template Replication Update..." -body "$VMRenamed template has been recreated and is ready for use."
             }
             else { $Complete = $false }
         }

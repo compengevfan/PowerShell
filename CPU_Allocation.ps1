@@ -54,11 +54,11 @@ foreach ($Cluster in $Clusters)
 		foreach ($CurrHostVM in $CurrHostVMs)
 		{
 			$HostCPUsAlloc += $CurrHostVM.NumCPU
-			$HostMemAlloc += $CurrHostVM.MemoryMB
+			$HostMemAlloc += $CurrHostVM.MemoryGB
 		}
 		
 		$HostCPUsAvail = $CurrClusterHost.NumCPU
-		$HostMemAvail = $CurrClusterHost.MemoryTotalMB
+		$HostMemAvail = $CurrClusterHost.MemoryTotalGB
 		
 		$TempString = ""
 		$TempString | out-file $FileLocation -append

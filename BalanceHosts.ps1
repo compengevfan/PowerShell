@@ -10,6 +10,7 @@ Check-PowerCLI
 
 Connect-vCenter
 
+$Cluster = Read-Host -Prompt ("Please enter the name of the cluster to be balanced")
 #Retrieve hosts from cluster
 $HostsToBalance = Get-Cluster $Cluster | Get-VMHost | ? {$_.ConnectionState -eq "Connected"} | Sort-Object MemoryUsageGB
 
