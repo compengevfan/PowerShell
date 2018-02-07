@@ -95,7 +95,7 @@ foreach ($TplForIAD in $TplsForIAD)
     New-VM -VM $TplForIAD -Datastore $(Get-Datastore IAD-VS-DS01) -DiskStorageFormat Thick -Name $TplName -VMHost iad-vs01.fanatics.corp | Out-Null
     Get-VM $TplName | Set-VM -ToTemplate -Confirm:$false | Out-Null
     DoLogging -LogType Succ -LogString "IAD-PROD templates have been recreated and are ready for use."
-    Send-MailMessage -smtpserver $emailServer -to $emailTo -from $emailFrom -subject "Template Replication Update..." -body "IAD-PROD templates have been recreated and are ready for use."
+    Send-MailMessage -smtpserver $emailServer -to $emailTo -from $emailFrom -subject "Template Replication Update..." -body "$TplName has been recreated and is ready for use."
 }
 
 #Create templates at IAD-DEVQC from the GOLD VMs
@@ -111,7 +111,7 @@ foreach ($TplForIAD in $TplsForIAD)
     New-VM -VM $TplForIAD -Datastore $(Get-Datastore IAD-DEVQC-VS-DS01) -DiskStorageFormat Thick -Name $TplName -VMHost iad-devqc-vs01.fanatics.corp | Out-Null
     Get-VM $TplName | Set-VM -ToTemplate -Confirm:$false | Out-Null
     DoLogging -LogType Succ -LogString "IAD-DEVQC templates have been recreated and are ready for use."
-    Send-MailMessage -smtpserver $emailServer -to $emailTo -from $emailFrom -subject "Template Replication Update..." -body "IAD-DEVQC templates have been recreated and are ready for use."
+    Send-MailMessage -smtpserver $emailServer -to $emailTo -from $emailFrom -subject "Template Replication Update..." -body "$TplName has been recreated and is ready for use."
 }
 
 #Gather all snapshot endpoints
