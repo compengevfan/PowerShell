@@ -251,21 +251,31 @@ if ($CompellentAttached -eq "y")
     $VAAIConfig = Get-AdvancedSetting -Entity $HostToConfig -Name DataMover.HardwareAcceleratedMove
     if ($VAAIConfig."DataMover.HardwareAcceleratedMove" -ne 1)
     {
-	    $VAAIConfig | Set-AdvancedSetting -Value 1
+	    $VAAIConfig | Set-AdvancedSetting -Value 1 -Confirm:$false | Out-Null
     }
 
     DoLogging -LogType Info -LogString "Checking HardwareAcceleratedInit setting..."
     $VAAIConfig = Get-AdvancedSetting -Entity $HostToConfig -Name DataMover.HardwareAcceleratedInit
     if ($VAAIConfig."DataMover.HardwareAcceleratedInit" -ne 1)
     {
-	    $VAAIConfig | Set-AdvancedSetting -Value 1
+	    $VAAIConfig | Set-AdvancedSetting -Value 1 -Confirm:$false | Out-Null
     }
 
     DoLogging -LogType Info -LogString "Checking HardwareAcceleratedLocking setting..."
     $VAAIConfig = Get-AdvancedSetting -Entity $HostToConfig -Name VMFS3.HardwareAcceleratedLocking
     if ($VAAIConfig."VMFS3.HardwareAcceleratedLocking" -ne 1)
     {
-	    $VAAIConfig | Set-AdvancedSetting -Value 1
+	    $VAAIConfig | Set-AdvancedSetting -Value 1 -Confirm:$false | Out-Null
+    }
+
+    DoLogging -LogType Info -LogString "Checking default path selection policy setting..."
+    $esxcli = Get-EsxCli -V2 -VMHost $HostToConfig
+    if ($($esxcli.storage.nmp.satp.list.Invoke() | where {$_.Name -eq "VMW_SATP_ALUA"}).DefaultPSP -ne "VMW_PSP_RR")
+    {
+        DoLogging -LogType Warn -LogString "Default path selection policy is incorrect..."
+        $esxcli.storage.nmp.satp.set.Invoke(@{defaultpsp="VMW_PSP_RR";satp="VMW_SATP_ALUA"}) | Out-Null
+        DoLogging -LogType Succ -LogString "Default path selection policy updated."
+        DoLogging -LogType Warn -LogString "!!!THIS CHANGE REQUIRES A HOST REBOOT!!!"
     }
 
 

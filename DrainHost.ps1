@@ -1,8 +1,16 @@
-﻿$SnapinCheck = get-pssnapin -Name VMware.VimAutomation.Core -ErrorAction SilentlyContinue
+﻿[CmdletBinding()]
+Param(
+)
 
-if ($SnapinCheck -eq $NULL) { Write-Host "VMware Snapin Not Loaded..."; exit }
+$ScriptPath = $PSScriptRoot
+cd $ScriptPath
 
-if ($global:DefaultVIServers.Count -eq 0) { Write-Host "Not Connected to a VCenter..."; exit }
+. .\Functions\function_Check-PowerCLI.ps1
+. .\Functions\function_Connect-vCenter.ps1
+. .\Functions\Function_DoLogging.ps1
+
+Check-PowerCLI
+Connect-vCenter
 
 if ($Cluster_Name -eq $NULL) { $Cluster_Name = Read-Host "What is the name of the cluster?" }
 
@@ -18,7 +26,7 @@ if ($($Cluster.DrsEnabled))
 
 $Hosts_In_Cluster = Get-Cluster $Cluster | Get-VMHost | Sort-Object Name
 
-$i = 0
+$i = 1
 
 $Hosts_In_Array = @()
 cls
@@ -40,11 +48,11 @@ foreach ($Host_In_Array in $Hosts_In_Array)
 
 $Selection = Read-Host "Please select the host you would like to drain"
 
-$Host_To_Drain = $Hosts_In_Array[$Selection]
+$Host_To_Drain = $Hosts_In_Array[$Selection - 1]
 
 $Hosts_Minus_One = $Hosts_In_Array | Where-Object { $_.HostName -ne $Host_To_Drain.HostName }
 
-$VMs_To_Migrate = Get-VMHost $Host_To_Update.HostName | Get-VM | Where-Object {$_.PowerState -eq "PoweredOn"}
+$VMs_To_Migrate = Get-VMHost $Host_To_Drain.HostName | Get-VM | Where-Object {$_.PowerState -eq "PoweredOn"}
 $VMs_To_Migrate_Count = $VMs_To_Migrate.Count
 $VMc = 1
 
@@ -68,6 +76,6 @@ foreach ($VM_To_Migrate in $VMs_To_Migrate)
 
 Set-Cluster -Cluster $Cluster -DrsAutomationLevel FullyAutomated -Confirm:$false
 
-Set-VMHost -VMHost $Host_To_Update.HostName -State Maintenance -Evacuate:$true
+Set-VMHost -VMHost $Host_To_Drain.HostName -State Maintenance -Evacuate:$true
 
 Set-Cluster -Cluster $Cluster -DrsAutomationLevel $Stored_DRS_Level -Confirm:$false
