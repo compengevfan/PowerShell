@@ -1,11 +1,15 @@
-$SnapinCheck = get-pssnapin -Name VMware.VimAutomation.Core -ErrorAction SilentlyContinue
+[CmdletBinding()]
+Param(
+    [Parameter()] [string] $vCenter
+)
 
-if ($SnapinCheck -eq $NULL)
-{
-	write-host ("Adding VMware Snapin...")
-	add-pssnapin VMware.VimAutomation.Core
-	write-host ("Complete")
-}
+#Import functions
+. .\Functions\function_Check-PowerCLI.ps1
+. .\Functions\function_Connect-vCenter.ps1
+
+Check-PowerCLI
+
+Connect-vCenter -vCenter $vCenter
 
 if (!(Test-Path "C:\ScriptOutput"))
 {

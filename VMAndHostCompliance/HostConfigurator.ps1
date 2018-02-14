@@ -194,7 +194,7 @@ else
 {
     DoLogging -LogType Warn -LogString "Alarm actions are disabled..."
     Set-AlarmActionState -Entity $HostToConfig -Enabled:$true -Recurse:$false
-    DoLogging -LogType Succ -LogString "Alatm actions enabled."
+    DoLogging -LogType Succ -LogString "Alarm actions enabled."
 }
 
 ##################
@@ -235,7 +235,7 @@ else
             }
             else
             {
-                DoLogging -LogType Succ -LogString "Distributed switch '$DistributedSwitch' has at lease 2 physical NICs."
+                DoLogging -LogType Succ -LogString "Distributed switch '$DistributedSwitch' has at least 2 physical NICs."
             }
         }
     }
@@ -249,27 +249,35 @@ if ($CompellentAttached -eq "y")
     DoLogging -LogType Info -LogString "Host is attached to Compellent, checking and configuring VAAI and ALUA settings..."
     DoLogging -LogType Info -LogString "Checking HardwareAcceleratedMove setting..."
     $VAAIConfig = Get-AdvancedSetting -Entity $HostToConfig -Name DataMover.HardwareAcceleratedMove
-    if ($VAAIConfig."DataMover.HardwareAcceleratedMove" -ne 1)
+    if ($VAAIConfig.Value -ne 1)
     {
+        DoLogging -LogType Warn -LogString "HardwareAcceleratedMove is incorrect..."
 	    $VAAIConfig | Set-AdvancedSetting -Value 1 -Confirm:$false | Out-Null
     }
+    else { DoLogging -LogType Succ -LogString "HardwareAcceleratedMove setting is correct." }
 
     DoLogging -LogType Info -LogString "Checking HardwareAcceleratedInit setting..."
     $VAAIConfig = Get-AdvancedSetting -Entity $HostToConfig -Name DataMover.HardwareAcceleratedInit
-    if ($VAAIConfig."DataMover.HardwareAcceleratedInit" -ne 1)
+    if ($VAAIConfig.Value -ne 1)
     {
+        DoLogging -LogType Warn -LogString "HardwareAcceleratedInit is incorrect..."
 	    $VAAIConfig | Set-AdvancedSetting -Value 1 -Confirm:$false | Out-Null
     }
+    else { DoLogging -LogType Succ -LogString "HardwareAcceleratedInit setting is correct." }
 
     DoLogging -LogType Info -LogString "Checking HardwareAcceleratedLocking setting..."
     $VAAIConfig = Get-AdvancedSetting -Entity $HostToConfig -Name VMFS3.HardwareAcceleratedLocking
-    if ($VAAIConfig."VMFS3.HardwareAcceleratedLocking" -ne 1)
+    if ($VAAIConfig.Value -ne 1)
     {
+        DoLogging -LogType Warn -LogString "HardwareAcceleratedLocking is incorrect..."
 	    $VAAIConfig | Set-AdvancedSetting -Value 1 -Confirm:$false | Out-Null
     }
+    else { DoLogging -LogType Succ -LogString "HardwareAcceleratedLocking setting is correct." }
 
-    DoLogging -LogType Info -LogString "Checking default path selection policy setting..."
+    DoLogging -LogType Info -LogString "Connecting to the the host's CLI..."
     $esxcli = Get-EsxCli -V2 -VMHost $HostToConfig
+
+    DoLogging -LogType Info -LogString "Checking default path selection policy setting for SATP 'VMW_SATP_ALUA'..."
     if ($($esxcli.storage.nmp.satp.list.Invoke() | where {$_.Name -eq "VMW_SATP_ALUA"}).DefaultPSP -ne "VMW_PSP_RR")
     {
         DoLogging -LogType Warn -LogString "Default path selection policy is incorrect..."
@@ -277,6 +285,18 @@ if ($CompellentAttached -eq "y")
         DoLogging -LogType Succ -LogString "Default path selection policy updated."
         DoLogging -LogType Warn -LogString "!!!THIS CHANGE REQUIRES A HOST REBOOT!!!"
     }
+    else { DoLogging -LogType Succ -LogString "Path Selection Policy setting is correct." }
 
-
+    DoLogging -LogType Info -LogString "Checking Compellent volume Storage Array Type..."
+    $CompellentVolumeCheck = $esxcli.storage.nmp.device.list.Invoke() | ? { $_.DeviceDisplayName -like "COMPELNT*" -and $_.StorageArrayType -ne "VMW_SATP_ALUA" }
+    if ($CompellentVolumeCheck -ne $null)
+    {
+        foreach($Volume in $CompellentVolumeCheck)
+        {
+            DoLogging -LogType Warn -LogString "Setting Storage Array Type for volume $($Volume.Device)..."
+            $esxcli.storage.nmp.device.set.Invoke(@{device=$($Volume.Device);psp="VMW_SATP_ALUA"})
+            DoLogging -LogType Succ -LogString "Storage Array Type set."
+        }
+    }
+    else { DoLogging -LogType Succ -LogString "All Compellent volumes are set to the correct Storage Array Type." }
 }

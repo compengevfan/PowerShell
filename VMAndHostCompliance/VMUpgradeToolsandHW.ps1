@@ -1,40 +1,50 @@
 ﻿[CmdletBinding()]
 Param(
-    [Parameter()] [string] $InputFile,
-    [Parameter()] $DomainCredentials = $null,
-    [Parameter()] $SendEmail = $true
+    [Parameter()] [string] $vCenter,
+    [Parameter()] [string] $InputFile
 )
 
+$ScriptPath = $PSScriptRoot
+cd $ScriptPath
+
+. .\Functions\function_Check-PowerCLI.ps1
+. .\Functions\function_Connect-vCenter.ps1
+. .\Functions\function_Get-FileName.ps1
+. .\Functions\function_Wait-Shutdown.ps1
+
+Check-PowerCLI
+
 ##################
-#System Variables
+#System/Global Variables
 ##################
 $ErrorActionPreference = "SilentlyContinue"
-Set-PowerCLIConfiguration -InvalidCertificateAction ignore -confirm:$false
+$ScriptStarted = Get-Date -Format MM-dd-yyyy_hh-mm-ss
+$ScriptName = $MyInvocation.MyCommand.Name
 
-#Import functions
-. .\Functions\function_DoLogging
-. .\Functions\function_Check-PowerCLI.ps1
+Connect-vCenter -vCenter $vCenter
 
-##################
-#Email Variables
-###################emailTo is a comma separated list of strings eg. "email1","email2"
-$emailFrom = "Cloud-O-MITE@fanatics.com"
-$emailTo = "cdupree@fanatics.com"
-$emailServer = "smtp.ff.p10"
+#if there is no input file, present an explorer window for the user to select one.
+if ($InputFile -eq "" -or $InputFile -eq $null) { cls; Write-Host "Please select an input file..."; $InputFile = Get-FileName }
 
-if (!(Test-Path .\~Logs)) { New-Item -Name "~Logs" -ItemType Directory | Out-Null }
+#Grab the list of servers to upgrade
+$VMsToUpdate = Get-Content $InputFile
 
-#If not connected to a vCenter, connect.
-$ConnectedvCenter = $global:DefaultVIServers
-if ($ConnectedvCenter.Count -eq 0)
+#Upgrade VMs
+$VMCount = $VMsToUpdate.Count
+i = 1
+foreach ($VMToUpdate in $VMsToUpdate)
 {
-    do
-    {
-        if ($ConnectedvCenter.Count -eq 0 -or $ConnectedvCenter -eq $null) {  DoLogging -LogType Info -LogString "Attempting to connect to vCenter server $($DataFromFile.VMInfo.vCenter)" }
-        
-        Connect-VIServer $($DataFromFile.VMInfo.vCenter) | Out-Null
-        $ConnectedvCenter = $global:DefaultVIServers
+    Write-Progress -Activity "Processing VMs" -status "Checking Server $i of $VMCount" -percentComplete ($i / $VMCount*100)
 
-        if ($ConnectedvCenter.Count -eq 0 -or $ConnectedvCenter -eq $null){ DoLogging -LogType Warn -LogString "vCenter Connection Failed. Please try again or press Control-C to exit..."; Start-Sleep -Seconds 2 }
-    } while ($ConnectedvCenter.Count -eq 0)
+    $Blah = Get-VM $VMToUpdate
+    $Blah | Update-Tools
+    Wait-Tools -VM $Blah -TimeoutSeconds 600
+
+    Shutdown-VMGuest $Blah -Confirm:$false
+    Set-VM $Blah -Version v11 -Confirm:$false
+    Start-VM $Blah
+    Wait-Tools -VM $Blah -TimeoutSeconds 600
+    Restart-VMGuest $Blah
+
+    i++
 }
