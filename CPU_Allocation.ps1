@@ -4,8 +4,11 @@ Param(
 )
 
 #Import functions
-. .\Functions\function_Check-PowerCLI.ps1
-. .\Functions\function_Connect-vCenter.ps1
+#. .\Functions\function_Check-PowerCLI.ps1
+#. .\Functions\function_Connect-vCenter.ps1
+
+if (!(Get-Module -ListAvailable -Name DupreeFunctions)) { Write-Host "'DupreeFunctions' module not available!!! Please check with Dupree!!! Script exiting!!!" -ForegroundColor Red; exit }
+if (!(Get-Module -Name DupreeFunctions)) { Import-Module DupreeFunctions -DisableNameChecking -Global }
 
 Check-PowerCLI
 
