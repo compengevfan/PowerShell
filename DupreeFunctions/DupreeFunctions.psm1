@@ -1,17 +1,4 @@
-﻿Function Check-PowerCLI
-{
-    Param(
-    )
-
-    if (!(Get-Module -Name VMware.VimAutomation.Core))
-    {
-	    write-host ("Adding PowerCLI...")
-        Get-Module -Name VMware.VimAutomation.Core -ListAvailable | Import-Module -Global
-	    write-host ("Loaded PowerCLI.")
-    }
-}
-
-function Connect-vCenter
+﻿function Connect-vCenter
 {
     Param(
         [Parameter()] [string] $vCenter
