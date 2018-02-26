@@ -5,19 +5,31 @@ Param(
     [Parameter()] $SendEmail = $true
 )
 
-#Import functions
-. .\Functions\function_Get-FileName
-. .\Functions\function_Get-FolderByPath
-. .\Functions\function_Find-VmByAddress
-. .\Functions\function_DoLogging
-. .\Functions\function_ConvertToDN
-. .\Functions\function_Check-PowerCLI.ps1
-
-##################
-#System Variables
-##################
+$ScriptPath = $PSScriptRoot
+cd $ScriptPath
+ 
 $ErrorActionPreference = "SilentlyContinue"
-Set-PowerCLIConfiguration -InvalidCertificateAction ignore -confirm:$false
+ 
+Function Check-PowerCLI
+{
+    Param(
+    )
+ 
+    if (!(Get-Module -Name VMware.VimAutomation.Core))
+    {
+        write-host ("Adding PowerCLI...")
+        Get-Module -Name VMware* -ListAvailable | Import-Module -Global
+        write-host ("Loaded PowerCLI.")
+    }
+}
+ 
+if (!(Get-Module -ListAvailable -Name DupreeFunctions)) { Write-Host "'DupreeFunctions' module not available!!! Please check with Dupree!!! Script exiting!!!" -ForegroundColor Red; exit }
+if (!(Get-Module -Name DupreeFunctions)) { Import-Module DupreeFunctions }
+ 
+Check-PowerCLI
+Connect-vCenter
+
+##############################################################################################################################
 
 #if there is no input file, present an explorer window for the user to select one.
 if ($InputFile -eq "" -or $InputFile -eq $null) { cls; Write-Host "Please select a JSON file..."; $InputFile = Get-FileName }
@@ -36,27 +48,10 @@ if (!(Test-Path .\~Logs)) { New-Item -Name "~Logs" -ItemType Directory | Out-Nul
 if (!(Test-Path .\~Processed-JSON-Files)) { New-Item -Name "~Processed-JSON-Files" -ItemType Directory | Out-Null }
 
 ##################
-#Check for VMware
-##################
-
-Check-PowerCLI
-
-##################
 #Check for Active Directory Module
 ##################
 
 if (!(Get-Module -Name ActiveDirectory)) { Import-Module ActiveDirectory }
-
-##################
-#Check for vCenter Connection
-##################
-
-#$ConnectedvCenter = $global:DefaultVIServers
-#if ($ConnectedvCenter -ne $null)
-#{
-#    $ConnectionResponse = Read-Host "You are already connected to $ConnectedvCenter. Use existing connection? (y/n)"
-#    if ($ConnectionResponse -eq "n") { Disconnect-VIServer -Force -Confirm:$false }
-#}
 
 #Check to make sure we have a JSON file location and if so, get the info.
 DoLogging -LogType Info -LogString "Importing JSON Data File: $InputFile..."
@@ -195,6 +190,10 @@ else
     DoLogging -LogType Info -LogString "Updating VM Specs..."
     $Notes = "Deployed by " + (whoami) + " via Dupree's Script: " + (Get-Date -Format g)
     Get-VM $($DataFromFile.VMInfo.VMName) | Set-VM -MemoryGB $($DataFromFile.GuestInfo.RAM) -NumCpu $($DataFromFile.GuestInfo.vCPUs) -Description $Notes -Confirm:$false | Out-Null
+    DoLogging -LogType Info -LogString "Updating VM Owner attribute... "
+    Get-VM $($DataFromFile.VMInfo.VMName) | Set-Annotation -CustomAttribute "Owner" -Value "$($DataFromFile.VMInfo.Owner)"
+    DoLogging -LogType Info -LogString "Updating VM Purpose attribute... "
+    Get-VM $($DataFromFile.VMInfo.VMName) | Set-Annotation -CustomAttribute "Purpose" -Value "$($DataFromFile.VMInfo.Purpose)"
     switch ($PortType) 
     {
         vds { Get-NetworkAdapter -VM $($DataFromFile.VMInfo.VMName) | where Name -eq "Network adapter 1" | Set-NetworkAdapter -PortGroup $PortGroup -Confirm:$false | Set-NetworkAdapter -StartConnected:$true -Confirm:$false | Out-Null }

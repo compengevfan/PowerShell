@@ -1,0 +1,437 @@
+VMName,Owner,Purpose
+JAXF-DUO001.footballfanatics.wh,Security Team,Duo auth server
+JAXF-KAV101.FANATICS.CORP,Security Team,KAS server
+JAXF-NTRX001.FANATICS.CORP,Security Team,Netwrix
+JAXF-NTRX101.FANATICS.CORP,Security Team,Netwrix
+JAXF-OKTA001,Security Team,Okta
+JAXF-OKTA002,Security Team,Okta
+ORD-KAV002,Security team,KAS AV server
+ORD-KAV001,Security team,KAS AV server
+ORD-DUO001,Security team,Duo auth server
+ORD-PMP01,Security team,Password Mgr Pro
+JAXF-CAS01.footballfanatics.wh,Corp Systems,Exchange server -CAS
+JAXF-CAS02.footballfanatics.wh,Corp Systems,Exchange server -CAS
+JAXF-EXAR001,Corp Systems,Exchange server
+JAXF-EXCH001,Corp Systems,Exchange server
+JAXF-EXCH002,Corp Systems,Exchange server
+JAXF-EXCH003,Corp Systems,Exchange server
+JAXF-EXHB001,Corp Systems,Exchange server
+JAXF-EXHB002,Corp Systems,Exchange server
+IAD-CAS001,Corp Systems,Exchange infrastructure
+IAD-EXAR001,Corp Systems,Exchange infrastructure
+IAD-EXCH001,Corp Systems,Exchange infrastructure
+IAD-EXHB001,Corp Systems,Exchange infrastructure
+IAD-IVA001,Corp Systems,IVANTI Patch
+IAD-IVA002,Corp Systems,IVANTI Patch Database
+IAD-IVDB001,Corp Systems,IVANTI Patch Database
+IAD-MTA001,Corp Systems,SMTP Relay Server
+JAXF-MON001.FANATICS.CORP,Monitoring Engineer,PRTG monitoring server
+JAXF-MON002.FANATICS.CORP,Monitoring Engineer,PRTG monitoring server
+JAXF-MON004.FANATICS.CORP,Monitoring Engineer,PRTG monitoring server
+JAXF-MON005.FANATICS.CORP,Monitoring Engineer,PRTG monitoring server
+JAXF-MON006.FANATICS.CORP,Monitoring Engineer,PRTG monitoring server
+ORDF-MON004.fanatics.corp,Monitoring team,PRTG monitoring server
+ORD-MON002,Monitoring team,PRTG monitoring server
+ORDF-MON006.fanatics.corp,Monitoring team,PRTG monitoring server
+ORD-MON001,Monitoring team,PRTG monitoring server
+ORD-MON003,Monitoring team,PRTG monitoring server
+DEV-ERP-WK001.authentic.corp,SUFW_MRFW team,Developer workstation
+STG-ERP-CLS010.authentic.corp,SUFW_MRFW team,Test server - staging
+STG-ERP-CLS110.authentic.corp,SUFW_MRFW team,Test server - staging
+STG-ERP-SHP001.authentic.corp,SUFW_MRFW team,Test server - staging
+STG-SL-APP015.authentic.corp,SUFW_MRFW team,Test server - staging
+STG-SL-EDI015.authentic.corp,SUFW_MRFW team,Test server - staging
+STG-SL-ENG015.authentic.corp,SUFW_MRFW team,Test server - staging
+STG-SL-FDX015.authentic.corp,SUFW_MRFW team,Test server - staging
+STG-SL-FSR015.authentic.corp,SUFW_MRFW team,Test server - staging
+STG-SL-PRA015.authentic.corp,SUFW_MRFW team,Test server - staging
+STG-SL-PRC015.authentic.corp,SUFW_MRFW team,Test server - staging
+STG-SL-RPT015.authentic.corp,SUFW_MRFW team,Test server - staging
+STG-SL-SHP001.authentic.corp,SUFW_MRFW team,Test server - staging
+STG-SL-SLT015.authentic.corp,SUFW_MRFW team,Test server - staging
+STG-SL-TS1015.authentic.corp,SUFW_MRFW team,Test server - staging
+STG-SL-TS2015.authentic.corp,SUFW_MRFW team,Test server - staging
+STG-SL-TSR015.authentic.corp,SUFW_MRFW team,Test server - staging
+STG-SL-WEB015.authentic.corp,SUFW_MRFW team,Test server - staging
+SUFW-ERP-TS001.DREAMS.CORP,SUFW_MRFW team,Terminal server
+SUFW-JUMP001.footballfanatics.wh,SUFW_MRFW team,Jump server
+SUFW-SL-APP004.authentic.corp,SUFW_MRFW team,Mark said not in use
+SUFW-SL-APP015.authentic.corp,SUFW_MRFW team,SL Application Server
+SUFW-SL-EDI015.authentic.corp,SUFW_MRFW team,EDI Admin Server
+SUFW-SL-ENG015.authentic.corp,SUFW_MRFW team,Max Q Process Engine Server
+SUFW-SL-FDX015.authentic.corp,SUFW_MRFW team,FEDEX Server
+SUFW-SL-FDX025.authentic.corp,SUFW_MRFW team,FEDEX Server
+SUFW-SL-FS001.authentic.corp,SUFW_MRFW team,File server
+SUFW-SL-FSR015.authentic.corp,SUFW_MRFW team,EDI Session Server
+SUFW-SL-PRA015.authentic.corp,SUFW_MRFW team,PrintAssist Server
+SUFW-SL-PRC015.authentic.corp,SUFW_MRFW team,Process Manager Server
+SUFW-SL-RPT015.authentic.corp,SUFW_MRFW team,Report Runner Server
+SUFW-SL-SHP001.authentic.corp,SUFW_MRFW team,ConnectShip Sever
+SUFW-SL-SHP015.authentic.corp,SUFW_MRFW team,ConnectShip Sever
+SUFW-SL-SLT015.authentic.corp,SUFW_MRFW team,Slate Server
+SUFW-SL-TS1015.authentic.corp,SUFW_MRFW team,Terminal server
+SUFW-SL-TS2015.authentic.corp,SUFW_MRFW team,Terminal server
+SUFW-SL-TSR015.authentic.corp,SUFW_MRFW team,SL Task Server
+SUFW-SL-WAP015.authentic.corp,SUFW_MRFW team,SL WebApps
+SUFW-SL-WEB001.authentic.corp,SUFW_MRFW team,Web Server
+SUFW-SL-WEB002.authentic.corp,SUFW_MRFW team,Web Server
+SUFW-SL-WEB015.authentic.corp,SUFW_MRFW team,Slate Web Server
+SUFW-TS101.authentic.corp,SUFW_MRFW team,Terminal server
+ORD-INV002,Frontend,InventoryAPI
+ORD-SXML002,Frontend,SEOXML
+ORD-INV008,Frontend,InventoryAPI
+ORD-INV006,Frontend,InventoryAPI
+ORD-SXML004,Frontend,SEOXML
+ORD-INV004,Frontend,InventoryAPI
+ORD-INV003,Frontend,InventoryAPI
+ORD-SXML003,Frontend,SEOXML
+ORD-INV007,Frontend,InventoryAPI
+ORD-SXML001,Frontend,SEOXML
+ORD-INV001,Frontend,InventoryAPI
+ORD-INV005,Frontend,InventoryAPI
+JAX-SXML004,Frontend,SEOXML
+JAX-SXML001,Frontend,SEOXML
+JAX-SXML002,Frontend,SEOXML
+JAX-INV006,Frontend,InventoryAPI
+JAX-INV002,Frontend,InventoryAPI
+JAX-INV008,Frontend,InventoryAPI
+JAX-INV004,Frontend,InventoryAPI
+JAX-SXML003,Frontend,SEOXML
+JAX-INV003,Frontend,InventoryAPI
+JAX-INV001,Frontend,InventoryAPI
+JAX-INV005,Frontend,InventoryAPI
+JAX-INV007,Frontend,InventoryAPI
+ORD-PRMO002,Tools,PromoAPI
+ORD-PRMO001,Tools,PromoAPI
+ORD-PRMO003,Tools,PromoAPI
+JAX-IUP001.FF.P10,Tools,ImageUploader
+JAX-IUP002.FF.P10,Tools,ImageUploader
+JAX-WEB001.FF.P10,Tools,PartnerPortal
+SITEADMIN02,Tools,Merchcenter
+JAX-PRMO002,Tools,PromoAPI
+JAX-TOOL004,Tools,Tools services
+JAX-TOOL006,Tools,Tools services
+JAX-TOOL008,Tools,Tools services
+JAX-TOOL002,Tools,Tools services
+JAX-TOOL003,Tools,Tools services
+JAX-PRMO003,Tools,PromoAPI
+JAX-TOOL005,Tools,Tools services
+JAX-PRMO001,Tools,PromoAPI
+JAX-TOOL001,Tools,Tools services
+JAX-TOOL007,Tools,Tools services
+IAD-DEV-IBMMQ001,OMS,IBM MQ
+IAD-OMSAPP001,OMS,Sterling
+IAD-OMSAPP002,OMS,Sterling
+IAD-OMSAPP003,OMS,Sterling
+IAD-OMSINT001,OMS,Sterling
+IAD-OMSINT002,OMS,Sterling
+IAD-OMSINT003,OMS,Sterling
+IAD-OMSINT004,OMS,Sterling
+IAD-OMSPERF001,OMS,Sterling
+IAD-OMSWEB001,OMS,Sterling
+IAD-OMSWEB002,OMS,Sterling
+IAD-PROD-EAP001,OMS,Email API Service
+IAD-PROD-EAP002,OMS,Email API Service
+IAD-PROD-EAP003,OMS,Email API Service
+IAD-PROD-FRD001,OMS,Fraud Service
+IAD-PROD-FRD002,OMS,Fraud Service
+IAD-PROD-FRD003,OMS,Fraud Service
+IAD-PROD-GCP001,OMS,Giftcard Purchase service
+IAD-PROD-GCP002,OMS,Giftcard Purchase service
+IAD-PROD-GCP003,OMS,Giftcard Purchase service
+IAD-PROD-IBMMQ001,OMS,IBMMQ
+IAD-PROD-IBMMQ101,OMS,IBM MQ
+IAD-PROD-INV001,OMS,Inventory
+IAD-PROD-INV002,OMS,Inventory
+IAD-PROD-INV003,OMS,Inventory
+IAD-PROD-INV004,OMS,Inventory
+IAD-PROD-INV005,OMS,Inventory
+IAD-PROD-INV006,OMS,Inventory
+IAD-PROD-MQ001,OMS,MICROSOFT MESSAGE QUEUES
+IAD-PROD-OMSMCA002,OMS,Sterling Master Config
+IAD-PROD-PMG001,OMS,Product Image Service
+IAD-PROD-PMG002,OMS,Product Image Service
+IAD-PROD-PMG003,OMS,Product Image Service
+IAD-PROD-PPS001,OMS,payment processor service
+IAD-PROD-PPS002,OMS,payment processor service
+IAD-PROD-PPS003,OMS,payment processor service
+IAD-PROD-PPS004,OMS,payment processor service
+IAD-PROD-PPS005,OMS,payment processor service
+IAD-PROD-PPS006,OMS,payment processor service
+IAD-PROD-PPS007,OMS,payment processor service
+IAD-PROD-PPS008,OMS,payment processor service
+IAD-PROD-TAX001,OMS,Tax API
+IAD-PROD-TAX002,OMS,Tax API
+IAD-PROD-TAX003,OMS,Tax API
+IAD-QC1-IBMMQ101,OMS,IBM MQ
+JAX-ASST046,OMTandCST,FanAssist Boxes
+JAX-ASST002,OMTandCST,FanAssist Boxes
+JAX-ASST102,OMTandCST,FanAssist Boxes
+JAX-ASST042,OMTandCST,FanAssist Boxes
+JAX-ASST041,OMTandCST,FanAssist Boxes
+JAX-ASST001,OMTandCST,FanAssist Boxes
+JAX-ASST101,OMTandCST,FanAssist Boxes
+JAX-ASST045,OMTandCST,FanAssist Boxes
+JAX-OSVC104,OMTandCST,
+JAX-OSVC102,OMTandCST,
+JAX-OSVC101,OMTandCST,
+JAX-OSVC103,OMTandCST,
+JAX-OSVC004,OMTandCST,
+JAX-OSVC002,OMTandCST,
+JAX-OSVC001,OMTandCST,
+JAX-OSVC003,OMTandCST,
+JAX-OSVC105,OMTandCST,
+JAX-OSVC005,OMTandCST,
+JAX-SVC001,OMTandCST,
+JAX-SVC006,OMTandCST,
+JAX-SVC005,OMTandCST,
+JAX-SVC007,OMTandCST,
+JAX-OF002,OMTandCST,Order Funnel
+JAX-OF012,OMTandCST,Order Funnel
+JAX-OF008,OMTandCST,Order Funnel
+JAX-OF010,OMTandCST,Order Funnel
+JAX-OF011,OMTandCST,Order Funnel
+JAX-S02-OF001,OMTandCST,Order Funnel
+JAX-OF009,OMTandCST,Order Funnel
+JAX-OF001,OMTandCST,Order Funnel
+JAX-S01-OF001,OMTandCST,Order Funnel
+JAX-S03-OF001,OMTandCST,Order Funnel
+JAX-S04-OF001,OMTandCST,Order Funnel
+JAX-S05-OF001,OMTandCST,Order Funnel
+JAX-MW008,OMTandCST,
+JAX-MW002,OMTandCST,
+JAX-MW006,OMTandCST,
+JAX-MW102,OMTandCST,
+JAX-MW004,OMTandCST,
+JAX-MW003,OMTandCST,
+JAX-MW001,OMTandCST,
+JAX-MW007,OMTandCST,
+JAX-MW005,OMTandCST,
+JAX-MW101,OMTandCST,
+JAX-MW103,OMTandCST,
+JAX-ACWB001.FF.P10,OMTandCST,acertify
+JAX-ACWB002.FF.P10,OMTandCST,acertify
+JAX-TKNZ012,OMTandCST,Tokenization
+JAX-TKNZ004,OMTandCST,Tokenization
+JAX-TKNZ002,OMTandCST,Tokenization
+JAX-TKNZ006,OMTandCST,Tokenization
+JAX-TKNZ010,OMTandCST,Tokenization
+JAX-TKNZ008,OMTandCST,Tokenization
+JAX-TKNZ003,OMTandCST,Tokenization
+JAX-TKNZ005,OMTandCST,Tokenization
+JAX-TKNZ009,OMTandCST,Tokenization
+JAX-TKNZ001,OMTandCST,Tokenization
+JAX-TKNZ007,OMTandCST,Tokenization
+JAX-TKNZ011,OMTandCST,Tokenization
+CHNQ-DC001.FANATICS.CORP,TeamEntCompute,Domain controller
+CHNQ-DC002.FANATICS.CORP,TeamEntCompute,Domain controller
+CHNQ-DC003.footballfanatics.wh,TeamEntCompute,Domain controller
+CHNQ-DC004.footballfanatics.wh,TeamEntCompute,Domain controller
+CHNQ-FS001.FANATICS.CORP,TeamEntCompute,File Server
+CHNQ-PRNT001.FANATICS.CORP,TeamEntCompute,Print server
+COPQ-BKUP001.FANATICS.CORP,TeamEntCompute,Backup server
+COPQ-DC101.FANATICS.CORP,TeamEntCompute,Domain controller
+COPQ-DC102.FANATICS.CORP,TeamEntCompute,Domain controller
+COPQ-DC103.footballfanatics.wh,TeamEntCompute,Domain controller
+COPQ-DC104.footballfanatics.wh,TeamEntCompute,Domain controller
+COPQ-DHCP001.FANATICS.CORP,TeamEntCompute,DHCP server
+COPQ-FS001.FANATICS.CORP,TeamEntCompute,File Server
+COPQ-PRNT001.FANATICS.CORP,TeamEntCompute,Print server
+COPQ-PRNT002.FANATICS.CORP,TeamEntCompute,Print server
+NBIQ-DC101.FANATICS.CORP,TeamEntCompute,Domain controller
+NBIQ-DC102.FANATICS.CORP,TeamEntCompute,Domain controller
+NBIQ-DC103.footballfanatics.wh,TeamEntCompute,Domain controller
+NBIQ-DC104.footballfanatics.wh,TeamEntCompute,Domain controller
+NBIQ-DHCP001.FANATICS.CORP,TeamEntCompute,DHCP server
+NBIQ-FS001.FANATICS.CORP,TeamEntCompute,File Server
+NBIQ-MGMT001.FANATICS.CORP,TeamEntCompute,Mgmt server for infrastructure
+NBIQ-PRNT001.FANATICS.CORP,TeamEntCompute,Print server
+NBIQ-PRNT002.FANATICS.CORP,TeamEntCompute,Print server
+FAKW-BKUP001.FANATICS.CORP,TeamEntCompute,Backup server
+FAKW-DC101.FANATICS.CORP,TeamEntCompute,Domain controller
+FAKW-DC102.FANATICS.CORP,TeamEntCompute,Domain controller
+FAKW-DC103.footballfanatics.wh,TeamEntCompute,Domain controller
+FAKW-DC104.footballfanatics.wh,TeamEntCompute,Domain controller
+FAKW-DHCP001.FANATICS.CORP,TeamEntCompute,DHCP server
+FAKW-MGMT001,TeamEntCompute,Mgmt server for infrastructure
+ntp-fs001.FANATICS.CORP,TeamEntCompute,File Server
+FROW-BKUP001.FANATICS.CORP,TeamEntCompute,Backup server
+FROW-DC101.FANATICS.CORP,TeamEntCompute,Domain controller
+FROW-DC102.FANATICS.CORP,TeamEntCompute,Domain controller
+FROW-DC103.footballfanatics.wh,TeamEntCompute,Domain controller
+FROW-DC104.footballfanatics.wh,TeamEntCompute,Domain controller
+FROW-DHCP001.FANATICS.CORP,TeamEntCompute,DHCP server
+FROW-FS001.FANATICS.CORP,TeamEntCompute,File Server
+FROW-MGMT.FANATICS.CORP,TeamEntCompute,Mgmt server for infrastructure
+FROW-PRNT001.FANATICS.CORP,TeamEntCompute,Print server
+FROW-PRNT002.FANATICS.CORP,TeamEntCompute,Print server
+FROW-PRNT003.FANATICS.CORP,TeamEntCompute,Print server
+JXFD-DC001.FANATICS.CORP,TeamEntCompute,Domain controller
+JXFD-DC002.FANATICS.CORP,TeamEntCompute,Domain controller
+JXFD-DC003.footballfanatics.wh,TeamEntCompute,Domain controller
+JXFD-DC104.footballfanatics.wh,TeamEntCompute,Domain controller
+JXFD-FS001.FANATICS.CORP,TeamEntCompute,File Server
+JXFD-PRNT001.FANATICS.CORP,TeamEntCompute,Print server
+JXFQ-DC101.FANATICS.CORP,TeamEntCompute,Domain controller
+JXFQ-DC102.FANATICS.CORP,TeamEntCompute,Domain controller
+JXFQ-DC103.footballfanatics.wh,TeamEntCompute,Domain controller
+JXFQ-DC104.footballfanatics.wh,TeamEntCompute,Domain controller
+JXFQ-FS001.FANATICS.CORP,TeamEntCompute,File Server
+JXFQ-PRNT001.FANATICS.CORP,TeamEntCompute,Print server
+JXFQ-DC404.authentic.corp,TeamEntCompute,Domain controller
+JXFQ-AADC01.footballfanatics.wh,TeamEntCompute,Domain controller?
+JXFQ-DC201.FANATICS.CORP,TeamEntCompute,Domain controller
+JXFQ-SAN001.FANATICS.CORP,TeamEntCompute,SAN mgmt server
+JXFW-DC001.FANATICS.CORP,TeamEntCompute,Domain controller
+JXFW-DC004.footballfanatics.wh,TeamEntCompute,Domain controller
+JXFW-DC102.FANATICS.CORP,TeamEntCompute,Domain controller
+JXFW-DC103.footballfanatics.wh,TeamEntCompute,Domain controller
+JXFW-DHCP001,TeamEntCompute,DHCP server
+JXFW-FS001.FANATICS.CORP,TeamEntCompute,File Server
+JXFW-GAS001.FANATICS.CORP,TeamEntCompute,Goanywhere server
+JXFW-PRNT001.FANATICS.CORP,TeamEntCompute,Print server
+JXFW-PRT001.FANATICS.CORP,TeamEntCompute,Print server
+WH-DC-KYN01.kynetic.local,TeamEntCompute,Domain controller
+wh-print01.footballfanatics.wh,TeamEntCompute,Print server
+wh-print02.footballfanatics.wh,TeamEntCompute,Print server
+wh-print04.footballfanatics.wh,TeamEntCompute,Print server
+wh-print05.footballfanatics.wh,TeamEntCompute,Print server
+wh-print06.footballfanatics.wh,TeamEntCompute,Print server
+LVNW-DC001.FANATICS.CORP,TeamEntCompute,Domain controller
+LVNW-DC002.FANATICS.CORP,TeamEntCompute,Domain controller
+LVNW-DC003.footballfanatics.wh,TeamEntCompute,Domain controller
+LVNW-DC004.footballfanatics.wh,TeamEntCompute,Domain controller
+LVNW-DHCP001.FANATICS.CORP,TeamEntCompute,DHCP server
+LVNW-FS001.FANATICS.CORP,TeamEntCompute,File Server
+LVNW-GAS001.FANATICS.CORP,TeamEntCompute,Goanywhere server
+LVNW-MGMT001.FANATICS.CORP,TeamEntCompute,Mgmt server for infrastructure
+LVNW-PRNT001.FANATICS.CORP,TeamEntCompute,Print server
+LVNW-PRNT002.FANATICS.CORP,TeamEntCompute,Print server
+LVNW-PRNT003.FANATICS.CORP,TeamEntCompute,Print server
+LVNW-PRNT004.FANATICS.CORP,TeamEntCompute,Print server
+NYNS-DC001.FANATICS.CORP,TeamEntCompute,Domain controller
+NYNS-DC002.FANATICS.CORP,TeamEntCompute,Domain controller
+NYNS-DC003.footballfanatics.wh,TeamEntCompute,Domain controller
+NYNS-DC004.footballfanatics.wh,TeamEntCompute,Domain controller
+NYNS-DHCP001.FANATICS.CORP,TeamEntCompute,DHCP server
+NYNS-FS001.FANATICS.CORP,TeamEntCompute,File Server
+NYNS-MGMT001.FANATICS.CORP,TeamEntCompute,Mgmt server for infrastructure
+NYNS-PRNT001.FANATICS.CORP,TeamEntCompute,Print server
+SFCQ-FS001.FANATICS.CORP,TeamEntCompute,File Server
+SMCQ-DC001.FANATICS.CORP,TeamEntCompute,Domain controller
+SMCQ-DC002.FANATICS.CORP,TeamEntCompute,Domain controller
+SMCQ-DC003.footballfanatics.wh,TeamEntCompute,Domain controller
+SMCQ-DC004.footballfanatics.wh,TeamEntCompute,Domain controller
+SMCQ-DHCP001.FANATICS.CORP,TeamEntCompute,DHCP server
+SMCQ-MGMT001.FANATICS.CORP,TeamEntCompute,Mgmt server for infrastructure
+SMCQ-PRNT001.FANATICS.CORP,TeamEntCompute,Print server
+MRFW-DC005.DREAMS.CORP,TeamEntCompute,Domain controller
+MRFW-DC101.FANATICS.CORP,TeamEntCompute,Domain controller
+MRFW-DC102.FANATICS.CORP,TeamEntCompute,Domain controller
+MRFW-DC103.footballfanatics.wh,TeamEntCompute,Domain controller
+MRFW-DC104.footballfanatics.wh,TeamEntCompute,Domain controller
+MRFW-DC404-1.authentic.corp,TeamEntCompute,Domain controller
+MRFW-DHCP001.FANATICS.CORP,TeamEntCompute,DHCP Server
+MRFW-MGMT001.FANATICS.CORP,TeamEntCompute,Mgmt server for infrastructure
+SUFW-ERP-FS001.DREAMS.CORP,TeamEntCompute,File server
+SUFW-FS001.authentic.corp,TeamEntCompute,File server
+SUFW-FS002.authentic.corp,TeamEntCompute,File server
+SUFW-FS003.FANATICS.CORP,TeamEntCompute,File server
+SUFW-PRNT001.authentic.corp,TeamEntCompute,Print server
+SUFW-PRNT002.authentic.corp,TeamEntCompute,Print server
+SUFW-SL-TSLS001.authentic.corp,TeamEntCompute,Terminal server license server
+JAXF-CERT001.FANATICS.CORP,TeamEntCompute,Certificate servers
+JAXF-CERT002.FANATICS.CORP,TeamEntCompute,Certificate servers
+JAXF-CERT003.footballfanatic...,TeamEntCompute,Certificate servers
+JAXF-CERT004.footballfanatic...,TeamEntCompute,Certificate servers
+JAXF-DC001.FANATICS.CORP,TeamEntCompute,Domain Controller
+JAXF-DC002.FANATICS.CORP,TeamEntCompute,Domain Controller
+JAXF-DC103.footballfanatics.wh,TeamEntCompute,Domain Controller
+JAXF-DC104.footballfanatics.wh,TeamEntCompute,Domain Controller
+JAXF-DC304.DREAMS.CORP,TeamEntCompute,Domain Controller
+JAXF-DC404.authentic.corp,TeamEntCompute,Domain Controller
+JAXF-DC501.kynetic.local,TeamEntCompute,Domain Controller
+JAXF-FS001.FANATICS.CORP,TeamEntCompute,File server
+JAXF-FS002.FANATICS.CORP,TeamEntCompute,File server
+JAXF-KMS.FANATICS.CORP,TeamEntCompute,Key Management Server
+JAXF-OME001.FANATICS.CORP,TeamEntCompute,Dell OpenManage servers
+JAXF-SAN001.FANATICS.CORP,TeamEntCompute,SAN Mgmt Server
+JAXF-TASK001.FANATICS.CORP,TeamEntCompute,Remote Task server
+JAXF-TS001.FANATICS.CORP,TeamEntCompute,Terminal server
+JAXF-TS101.FANATICS.CORP,TeamEntCompute,Terminal server
+JAXF-TS102.FANATICS.CORP,TeamEntCompute,Terminal server
+JAXF-VC001.FANATICS.CORP,TeamEntCompute,Vcenter server
+JAXF-VC002.FANATICS.CORP,TeamEntCompute,Vcenter server
+JAXF-VCP001.FANATICS.CORP,TeamEntCompute,Shavlik server
+JAXF-VDI-VCS001.FANATICS.CORP,TeamEntCompute,VDI workstations
+JAXF-VDI-VCS002.FANATICS.CORP,TeamEntCompute,VDI workstations
+JAXF-VDI-VCS003.FANATICS.CORP,TeamEntCompute,VDI workstations
+JAXF-VDI-VCS004.FANATICS.CORP,TeamEntCompute,VDI workstations
+DFW-CHEF001,TeamEntCompute,TEMPLATES
+DFW-DC001,TeamEntCompute,domain controller
+DFW-DC002,TeamEntCompute,domain controller
+DFW-DC003.footballfanatics.wh,TeamEntCompute,domain controller
+DFW-DC004.footballfanatics.wh,TeamEntCompute,domain controller
+DFW-DHCP001,TeamEntCompute,DHCP
+DFW-Edge001,TeamEntCompute,Rubrik Edge device
+DFW-FS001,TeamEntCompute,TEMPLATES
+DFW-MGMT001,TeamEntCompute,TEMPLATES
+DFW-NETW001,TeamEntCompute,TEMPLATES
+MRFW-DC005.DREAMS.CORP,TeamEntCompute,Domain controller
+MRFW-DC101.FANATICS.CORP,TeamEntCompute,Domain controller
+MRFW-DC102.FANATICS.CORP,TeamEntCompute,Domain controller
+MRFW-DC103.footballfanatics.wh,TeamEntCompute,Domain controller
+MRFW-DC104.footballfanatics.wh,TeamEntCompute,Domain controller
+MRFW-DC404-1.authentic.corp,TeamEntCompute,Domain controller
+MRFW-DHCP001.FANATICS.CORP,TeamEntCompute,DHCP Server
+MRFW-MGMT001.FANATICS.CORP,TeamEntCompute,Mgmt server for infrastructure
+SUFW-ERP-FS001.DREAMS.CORP,TeamEntCompute,File server
+SUFW-FS001.authentic.corp,TeamEntCompute,File server
+SUFW-FS002.authentic.corp,TeamEntCompute,File server
+SUFW-FS003.FANATICS.CORP,TeamEntCompute,File server
+SUFW-PRNT001.authentic.corp,TeamEntCompute,Print server
+SUFW-PRNT002.authentic.corp,TeamEntCompute,Print server
+SUFW-SL-TSLS001.authentic.corp,TeamEntCompute,Terminal server license server
+IAD-ADFS001,VMCOMPUTE,TEMPLATES
+IAD-ADFS002,VMCOMPUTE,TEMPLATES
+IAD-CLNX001,VMCOMPUTE,clnx vsphere
+IAD-CLNX002,VMCOMPUTE,clnx vsphere
+IAD-DC001.fanatics,VMCOMPUTE,Domain Controller
+IAD-DC002.fanatics,VMCOMPUTE,Domain Controller
+IAD-DC003.footballfanatics.wh,VMCOMPUTE,Domain Controller
+IAD-DC004.footballfanatics.wh,VMCOMPUTE,Domain Controller
+IAD-DHCP001,VMCOMPUTE,DHCP
+IAD-GAS001,VMCOMPUTE,Goanywhere Server
+IAD-MGMT,VMCOMPUTE,Mgmt server for infrastructure
+IAD-NETW001,VMCOMPUTE,TEMPLATES
+IAD-RDK001,VMCOMPUTE,
+IAD-RHLC001,VMCOMPUTE,
+IAD-RODC003,VMCOMPUTE,Read Only Domain Controller
+IAD-RODC004,VMCOMPUTE,TEMPLATES
+IAD-TS001,VMCOMPUTE,TEMPLATES
+IAD-VC001,VMCOMPUTE,VCenter
+IAD-VUM001,VMCOMPUTE,Vcenter Update Mgr
+IAD-WAP001,VMCOMPUTE,TEMPLATES
+IAD-WAP002,VMCOMPUTE,TEMPLATES
+ORD-IMG002,TeamEntCompute,Image Server
+ORD-DC103.fanatics.corp,TeamEntCompute,Domain controller
+ORD-DC105.footballfanatics.wh,TeamEntCompute,Domain controller
+ORD-TS002,TeamEntCompute,Terminal server
+ORD-DC104.fanatics.corp,TeamEntCompute,Domain controller
+ORD-DC106.footballfanatics.wh,TeamEntCompute,Domain controller
+ORD-DC102,TeamEntCompute,Domain controller
+ORDF-MON005.fanatics.corp,TeamEntCompute,PRTG monitoring server
+ORD-IMG004,TeamEntCompute,Image server
+ORD-OME001,TeamEntCompute,Dell Open Manage Server
+ORD-VCP001,TeamEntCompute,Shavlik server
+ORD-IMG003,TeamEntCompute,Image server
+ORD-IMG011,TeamEntCompute,Image Server
+ORD-IMG001,TeamEntCompute,Image Server
+ORD-DC101,TeamEntCompute,Domain controller
+ORD-FS001,TeamEntCompute,File server
+ORD-TS001,TeamEntCompute,Terminal server
+JAX-S01-FS001,TeamEntCompute,Stack File server
+JAX-S02-FS001,TeamEntCompute,Stack File server
+JAX-S03-FS001,TeamEntCompute,Stack File server
+JAX-S04-FS001,TeamEntCompute,Stack File server
+JAX-S05-FS001,TeamEntCompute,Stack file server

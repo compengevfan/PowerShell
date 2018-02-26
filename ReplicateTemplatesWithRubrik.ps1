@@ -2,12 +2,29 @@
 Param(
 )
 
-$ErrorActionPreference = "SilentlyContinue"
-Set-PowerCLIConfiguration -InvalidCertificateAction ignore -confirm:$false
+$ScriptPath = $PSScriptRoot
+cd $ScriptPath
 
-#Import functions
-. .\Functions\function_DoLogging
-. .\Functions\function_Check-PowerCLI.ps1
+$ErrorActionPreference = "SilentlyContinue"
+ 
+Function Check-PowerCLI
+{
+    Param(
+    )
+ 
+    if (!(Get-Module -Name VMware.VimAutomation.Core))
+    {
+        write-host ("Adding PowerCLI...")
+        Get-Module -Name VMware* -ListAvailable | Import-Module -Global
+        write-host ("Loaded PowerCLI.")
+    }
+}
+ 
+if (!(Get-Module -ListAvailable -Name DupreeFunctions)) { Write-Host "'DupreeFunctions' module not available!!! Please check with Dupree!!! Script exiting!!!" -ForegroundColor Red; exit }
+if (!(Get-Module -Name DupreeFunctions)) { Import-Module DupreeFunctions }
+ 
+Check-PowerCLI
+Connect-vCenter iad-vc001.fanatics.corp
 
 $ScriptStarted = Get-Date -Format MM-dd-yyyy_hh-mm-ss
 $ScriptName = $MyInvocation.MyCommand.Name
@@ -21,27 +38,10 @@ $emailServer = "smtp.ff.p10"
 
 if (!(Test-Path .\~Logs)) { New-Item -Name "~Logs" -ItemType Directory | Out-Null }
 
-Check-PowerCLI
-
 if (!(Get-Module -Name Rubrik)) { Import-Module Rubrik }
 
 DoLogging -LogType Info -LogString "Please provide your credentials for connecting to Rubrik."
 $RubrikCred = Get-Credential -Message "Please provide your credentials for connecting to Rubrik."
-
-#If not connected to a vCenter, connect.
-$ConnectedvCenter = $global:DefaultVIServers
-if ($ConnectedvCenter.Count -eq 0)
-{
-    do
-    {
-        if ($ConnectedvCenter.Count -eq 0 -or $ConnectedvCenter -eq $null) {  DoLogging -LogType Info -LogString "Attempting to connect to IAD vCenter..." }
-        
-        Connect-VIServer iad-vc001.fanatics.corp | Out-Null
-        $ConnectedvCenter = $global:DefaultVIServers
-
-        if ($ConnectedvCenter.Count -eq 0 -or $ConnectedvCenter -eq $null){ DoLogging -LogType Warn -LogString "vCenter Connection Failed. Please try again or press Control-C to exit..."; Start-Sleep -Seconds 2 }
-    } while ($ConnectedvCenter.Count -eq 0)
-}
 
 #Inform IEC and DevOps that template replication is starting.
 $EmailBody = "All,`n`nPlease be advised that the template replication process has been started in the IAD vCenter. This means that templates beginning with 'TPL_' will be deleted and recreated. The process will not interrupt the creation of a VM (the delete command will wait until the template is not being used) but may prevent you from starting a VM creation request. Note that some sites might not get updated templates due to [reasons].`n`nAdditional emails will follow to provide progress updates.`n`nAny questions, comments, or concerns should be directed to Nik Whittington or Chris Dupree.`n`nThank you!!!"
