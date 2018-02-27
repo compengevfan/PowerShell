@@ -1,5 +1,6 @@
 ﻿[CmdletBinding()]
 Param(
+    [Parameter()] [bool] $ProcessIAD = $false
 )
 
 $ScriptPath = $PSScriptRoot
@@ -81,38 +82,44 @@ while($true)
     Start-Sleep 30
 }
 
-#Create templates at IAD-Prod from the GOLD VMs
-DoLogging -LogType Info -LogString "Backup jobs complete. Creating templates in IAD-PROD..."
-$TplsForIAD = Get-Cluster IAD-Prod | Get-VM TPL_Gold*
-foreach ($TplForIAD in $TplsForIAD)
-{
-    $TplName = ($TplForIAD.Name).replace("GOLD","IAD-PROD")
-    if ((Get-Template $TplName) -ne $null)
-    {
-        DoLogging -LogType Info -LogString "Deleting $TplName..."
-        Remove-Template $TplName -DeletePermanently -Confirm:$false
-    }
-    New-VM -VM $TplForIAD -Datastore $(Get-Datastore IAD-VS-DS01) -DiskStorageFormat Thick -Name $TplName -VMHost iad-vs01.fanatics.corp | Out-Null
-    Get-VM $TplName | Set-VM -ToTemplate -Confirm:$false | Out-Null
-    DoLogging -LogType Succ -LogString "IAD-PROD templates have been recreated and are ready for use."
-    Send-MailMessage -smtpserver $emailServer -to $emailTo -from $emailFrom -subject "Template Replication Update..." -body "$TplName has been recreated and is ready for use."
-}
+DoLogging -LogType Info -LogString "Backup jobs complete."
 
-#Create templates at IAD-DEVQC from the GOLD VMs
-DoLogging -LogType Info -LogString "IAD-Prod templates created. Creating templates in IAD-DEVQC..."
-foreach ($TplForIAD in $TplsForIAD)
+if ($ProcessIAD)
 {
-    $TplName = ($TplForIAD.Name).replace("GOLD","IAD-DEVQC")
-    if ((Get-Template $TplName) -ne $null)
+    #Create templates at IAD-Prod from the GOLD VMs
+    DoLogging -LogType Info -LogString "Creating templates in IAD-PROD..."
+    $TplsForIAD = Get-Cluster IAD-Prod | Get-VM TPL_Gold*
+    foreach ($TplForIAD in $TplsForIAD)
     {
-        DoLogging -LogType Info -LogString "Deleting $TplName..."
-        Remove-Template $TplName -DeletePermanently -Confirm:$false
+        $TplName = ($TplForIAD.Name).replace("GOLD","IAD-PROD")
+        if ((Get-Template $TplName) -ne $null)
+        {
+            DoLogging -LogType Info -LogString "Deleting $TplName..."
+            Remove-Template $TplName -DeletePermanently -Confirm:$false
+        }
+        New-VM -VM $TplForIAD -Datastore $(Get-Datastore IAD-VS-DS01) -DiskStorageFormat Thick -Name $TplName -VMHost iad-vs01.fanatics.corp | Out-Null
+        Get-VM $TplName | Set-VM -ToTemplate -Confirm:$false | Out-Null
+        DoLogging -LogType Succ -LogString "IAD-PROD templates have been recreated and are ready for use."
+        Send-MailMessage -smtpserver $emailServer -to $emailTo -from $emailFrom -subject "Template Replication Update..." -body "$TplName has been recreated and is ready for use."
     }
-    New-VM -VM $TplForIAD -Datastore $(Get-Datastore IAD-DEVQC-VS-DS01) -DiskStorageFormat Thick -Name $TplName -VMHost iad-devqc-vs01.fanatics.corp | Out-Null
-    Get-VM $TplName | Set-VM -ToTemplate -Confirm:$false | Out-Null
-    DoLogging -LogType Succ -LogString "IAD-DEVQC templates have been recreated and are ready for use."
-    Send-MailMessage -smtpserver $emailServer -to $emailTo -from $emailFrom -subject "Template Replication Update..." -body "$TplName has been recreated and is ready for use."
+
+    #Create templates at IAD-DEVQC from the GOLD VMs
+    DoLogging -LogType Info -LogString "IAD-Prod templates created. Creating templates in IAD-DEVQC..."
+    foreach ($TplForIAD in $TplsForIAD)
+    {
+        $TplName = ($TplForIAD.Name).replace("GOLD","IAD-DEVQC")
+        if ((Get-Template $TplName) -ne $null)
+        {
+            DoLogging -LogType Info -LogString "Deleting $TplName..."
+            Remove-Template $TplName -DeletePermanently -Confirm:$false
+        }
+        New-VM -VM $TplForIAD -Datastore $(Get-Datastore IAD-DEVQC-VS-DS01) -DiskStorageFormat Thick -Name $TplName -VMHost iad-devqc-vs01.fanatics.corp | Out-Null
+        Get-VM $TplName | Set-VM -ToTemplate -Confirm:$false | Out-Null
+        DoLogging -LogType Succ -LogString "IAD-DEVQC templates have been recreated and are ready for use."
+        Send-MailMessage -smtpserver $emailServer -to $emailTo -from $emailFrom -subject "Template Replication Update..." -body "$TplName has been recreated and is ready for use."
+    }
 }
+else { DoLogging -LogType Info -LogString "Skipping IAD template creation..." }
 
 #Gather all snapshot endpoints
 DoLogging -LogType Info -LogString "Obtaining a list of snapshot endpoints..."
