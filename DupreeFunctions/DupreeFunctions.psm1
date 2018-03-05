@@ -221,6 +221,8 @@ Function Get-FileName
 Function DoLogging
 {
     Param(
+        [Parameter(Mandatory=$true)] [string] $ScriptStarted,
+        [Parameter(Mandatory=$true)] [string] $ScriptName,
         [Parameter(Mandatory=$true)][ValidateSet("Succ","Info","Warn","Err")] [string] $LogType,
         [Parameter()] [string] $LogString
     )
