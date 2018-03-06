@@ -6,20 +6,35 @@ Param(
     [Parameter()] $SendEmail = $true
 )
 
-#$ErrorActionPreference = "SilentlyContinue"
+$ScriptPath = $PSScriptRoot
+cd $ScriptPath
+ 
+$ErrorActionPreference = "SilentlyContinue"
+ 
+Function Check-PowerCLI
+{
+    Param(
+    )
+ 
+    if (!(Get-Module -Name VMware.VimAutomation.Core))
+    {
+        write-host ("Adding PowerCLI...")
+        Get-Module -Name VMware* -ListAvailable | Import-Module -Global
+        write-host ("Loaded PowerCLI.")
+    }
+}
+ 
+if (!(Get-Module -ListAvailable -Name DupreeFunctions)) { Write-Host "'DupreeFunctions' module not available!!! Please check with Dupree!!! Script exiting!!!" -ForegroundColor Red; exit }
+if (!(Get-Module -Name DupreeFunctions)) { Import-Module DupreeFunctions }
+ 
+Check-PowerCLI
+Connect-vCenter
 
-#Import functions
-. .\Functions\function_Get-FileName
-. .\Functions\function_DoLogging
-. .\Functions\function_Check-PowerCLI.ps1
+##############################################################################################################################
 
 if ($VMNode1 -eq "" -or $VMNode1 -eq $null) { cls; Write-Host "Please select a JSON file for node 1..."; $VMNode1 = Get-FileName }
 if ($VMNode2 -eq "" -or $VMNode2 -eq $null) { cls; Write-Host "Please select a JSON file for node 2..."; $VMNode2 = Get-FileName }
 if ($ClusterConfig -eq "" -or $ClusterConfig -eq $null) { cls; Write-Host "Please select a JSON file for the cluster config..."; $ClusterConfig = Get-FileName }
-
-$InputFileName = Get-Item $ClusterConfig | % {$_.BaseName}
-$ScriptStarted = Get-Date -Format MM-dd-yyyy_hh-mm-ss
-$ScriptName = $MyInvocation.MyCommand.Name
 
 ##################
 #Email Variables

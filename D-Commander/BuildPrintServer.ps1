@@ -4,17 +4,33 @@ Param(
     [Parameter()] $SendEmail = $true
 )
 
+$ScriptPath = $PSScriptRoot
+cd $ScriptPath
+ 
 $ErrorActionPreference = "SilentlyContinue"
+ 
+Function Check-PowerCLI
+{
+    Param(
+    )
+ 
+    if (!(Get-Module -Name VMware.VimAutomation.Core))
+    {
+        write-host ("Adding PowerCLI...")
+        Get-Module -Name VMware* -ListAvailable | Import-Module -Global
+        write-host ("Loaded PowerCLI.")
+    }
+}
+ 
+if (!(Get-Module -ListAvailable -Name DupreeFunctions)) { Write-Host "'DupreeFunctions' module not available!!! Please check with Dupree!!! Script exiting!!!" -ForegroundColor Red; exit }
+if (!(Get-Module -Name DupreeFunctions)) { Import-Module DupreeFunctions }
+ 
+Check-PowerCLI
+Connect-vCenter
 
-#Import functions
-. .\Functions\function_Get-FileName.ps1
-. .\Functions\function_DoLogging.ps1
-. .\Functions\function_Check-PowerCLI.ps1
+##############################################################################################################################
 
 if ($VMFile -eq "" -or $VMFile -eq $null) { cls; Write-Host "Please select a JSON file..."; $VMFile = Get-FileName }
-
-$ScriptStarted = Get-Date -Format MM-dd-yyyy_hh-mm-ss
-$ScriptName = $MyInvocation.MyCommand.Name
 
 ##################
 #Email Variables
