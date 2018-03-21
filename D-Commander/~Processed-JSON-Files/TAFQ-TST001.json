@@ -19,7 +19,7 @@
 			"CustomizationSpec": "Windows-Corp-KMS",
 			"vCPUs": "4",
 			"RAM": "12",
-			"IPAddress": "10.142.98.64",
+			"IPAddress": "10.142.98.65",
 			"SubnetMask": "255.255.255.0",
 			"Gateway": "10.142.98.1",
 			"Domain": "fanatics.corp",

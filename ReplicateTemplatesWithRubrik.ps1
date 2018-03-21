@@ -1,6 +1,6 @@
 ﻿[CmdletBinding()]
 Param(
-    [Parameter()] [bool] $ProcessIAD = $false
+    [Parameter()] [bool] $ProcessIAD = $true
 )
 
 $ScriptPath = $PSScriptRoot

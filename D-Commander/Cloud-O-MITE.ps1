@@ -27,7 +27,6 @@ if (!(Get-Module -ListAvailable -Name DupreeFunctions)) { Write-Host "'DupreeFun
 if (!(Get-Module -Name DupreeFunctions)) { Import-Module DupreeFunctions }
  
 Check-PowerCLI
-Connect-vCenter
 
 ##############################################################################################################################
 
@@ -59,19 +58,7 @@ $DataFromFile = ConvertFrom-JSON (Get-Content $InputFile -raw)
 if ($DataFromFile -eq $null) { DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Err -LogString "Error importing JSON file. Please verify proper syntax and file name."; exit }
 
 #If not connected to a vCenter, connect.
-$ConnectedvCenter = $global:DefaultVIServers
-if ($ConnectedvCenter.Count -eq 0)
-{
-    do
-    {
-        if ($ConnectedvCenter.Count -eq 0 -or $ConnectedvCenter -eq $null) {  DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Attempting to connect to vCenter server $($DataFromFile.VMInfo.vCenter)" }
-        
-        Connect-VIServer $($DataFromFile.VMInfo.vCenter) | Out-Null
-        $ConnectedvCenter = $global:DefaultVIServers
-
-        if ($ConnectedvCenter.Count -eq 0 -or $ConnectedvCenter -eq $null){ DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Warn -LogString "vCenter Connection Failed. Please try again or press Control-C to exit..."; Start-Sleep -Seconds 2 }
-    } while ($ConnectedvCenter.Count -eq 0)
-}
+Connect-vCenter $($DataFromFile.VMInfo.vCenter)
 
 ##################
 #Obtain credentials needed to modify guest OS, add to domain and change OU.
@@ -191,9 +178,9 @@ else
     $Notes = "Deployed by " + (whoami) + " via Dupree's Script: " + (Get-Date -Format g)
     Get-VM $($DataFromFile.VMInfo.VMName) | Set-VM -MemoryGB $($DataFromFile.GuestInfo.RAM) -NumCpu $($DataFromFile.GuestInfo.vCPUs) -Description $Notes -Confirm:$false | Out-Null
     DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Updating VM Owner attribute... "
-    Get-VM $($DataFromFile.VMInfo.VMName) | Set-Annotation -CustomAttribute "Owner" -Value "$($DataFromFile.VMInfo.Owner)"
+    Get-VM $($DataFromFile.VMInfo.VMName) | Set-Annotation -CustomAttribute "Owner" -Value "$($DataFromFile.VMInfo.Owner)" | Out-Null
     DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Updating VM Purpose attribute... "
-    Get-VM $($DataFromFile.VMInfo.VMName) | Set-Annotation -CustomAttribute "Purpose" -Value "$($DataFromFile.VMInfo.Purpose)"
+    Get-VM $($DataFromFile.VMInfo.VMName) | Set-Annotation -CustomAttribute "Purpose" -Value "$($DataFromFile.VMInfo.Purpose)" | Out-Null
     switch ($PortType) 
     {
         vds { Get-NetworkAdapter -VM $($DataFromFile.VMInfo.VMName) | where Name -eq "Network adapter 1" | Set-NetworkAdapter -PortGroup $PortGroup -Confirm:$false | Set-NetworkAdapter -StartConnected:$true -Confirm:$false | Out-Null }

@@ -28,7 +28,6 @@ if (!(Get-Module -ListAvailable -Name DupreeFunctions)) { Write-Host "'DupreeFun
 if (!(Get-Module -Name DupreeFunctions)) { Import-Module DupreeFunctions }
  
 Check-PowerCLI
-Connect-vCenter
 
 ##############################################################################################################################
 
@@ -42,8 +41,6 @@ if ($ClusterConfig -eq "" -or $ClusterConfig -eq $null) { cls; Write-Host "Pleas
 $emailFrom = "BuildCluster@fanatics.com"
 $emailTo = "cdupree@fanatics.com"
 $emailServer = "smtp.ff.p10"
-
-Check-PowerCLI
 
 if (!(Test-Path .\~Logs)) { New-Item -Name "~Logs" -ItemType Directory | Out-Null }
 if (!(Test-Path .\~Processed-JSON-Files)) { New-Item -Name "~Processed-JSON-Files" -ItemType Directory | Out-Null }
@@ -69,19 +66,7 @@ $DisksToAdd = $DataFromFile3.AdditionalDisks
 if ($DisksToAdd.Count -gt 12) { DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Err -LogString "This script doesn't support more than 15 data disks, including the G, M and Q Drives. Please build VM with Cloud-o-MITE and add disks manually or reduce the number of data disks."; exit }
 
 #If not connected to a vCenter, connect.
-$ConnectedvCenter = $global:DefaultVIServers
-if ($ConnectedvCenter.Count -eq 0)
-{
-    do
-    {
-        if ($ConnectedvCenter.Count -eq 0 -or $ConnectedvCenter -eq $null) {  DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Attempting to connect to vCenter server $($DataFromFile.VMInfo.vCenter)" }
-        
-        Connect-VIServer $($DataFromFile.VMInfo.vCenter) | Out-Null
-        $ConnectedvCenter = $global:DefaultVIServers
-
-        if ($ConnectedvCenter.Count -eq 0 -or $ConnectedvCenter -eq $null){ DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Warn -LogString "vCenter Connection Failed. Please try again or press Control-C to exit..."; Start-Sleep -Seconds 2 }
-    } while ($ConnectedvCenter.Count -eq 0)
-}
+Connect-vCenter $($DataFromFile.VMInfo.vCenter)
 
 if ($DomainCredentials -eq $null)
 {
