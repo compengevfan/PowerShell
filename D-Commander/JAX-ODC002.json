@@ -2,12 +2,12 @@
 	"VMInfo": [
 		{
 			"vCenter": "discography.evorigin.com",
-			"Datacenter": "TAFQ",
-			"Cluster": "TAFQ",
-			"FolderPath": "TAFQ/Discovered virtual machine",
-			"VMName": "TAFQ-BLAH101",
-			"Datastore": "TAFQ-VS",
-		  	"PortGroup": "vlan980-Servers",
+			"Datacenter": "DC1",
+			"Cluster": "C1",
+			"FolderPath": "DC1/Discovered virtual machine",
+			"VMName": "JAX-ODC002",
+			"Datastore": "Storage",
+		  	"PortGroup": "JAX-Origin",
 			"Owner": "Dupree",
 			"Purpose" : "Test"
 		}
@@ -16,15 +16,15 @@
   	"GuestInfo": [
 		{
 			"OS": "2K12R2",
-			"CustomizationSpec": "Windows-Corp-KMS",
-			"vCPUs": "4",
-			"RAM": "12",
-			"IPAddress": "10.142.98.30",
+			"CustomizationSpec": "Windows-2012-R2",
+			"vCPUs": "2",
+			"RAM": "8",
+			"IPAddress": "172.16.10.100",
 			"SubnetMask": "255.255.255.0",
-			"Gateway": "10.142.98.1",
-			"Domain": "evorigin.com",
-			"DNS1": "10.142.98.21",
-			"DNS2": "10.142.98.22",
+			"Gateway": "172.16.10.254",
+			"Domain": "origin.com",
+			"DNS1": "172.16.10.101",
+			"DNS2": "172.0.0.1",
 			"OU": "Terminal Server Users/FROW/Consolidation"
 		}
 	]
