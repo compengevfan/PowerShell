@@ -1,3 +1,21 @@
+<#
+What does the script do?
+Provides CPU and RAM allocation to available ratios for all clusters and hosts managed by a vCenter server. information is written to a text file located on the C drive in a folder called "ScriptOutput".
+
+Where/How does the script run?
+The script can be run from anywhere that has access to connect to the vCenter server.
+
+What account do I run it with?
+No specific account is needed. Your own login will work.
+
+What is the syntax for executing?
+CPU_Allocation.ps1 [-vCenter <string>]
+
+What does this script need to function properly?
+1. "DupreeFunctions" PowerShell module in a path that is listed in the PSModulePath environment variable. I recommend "%ProgramFiles%\WindowsPowerShell\Modules".
+2. PowerCLI must be installed.
+#>
+
 [CmdletBinding()]
 Param(
     [Parameter()] [string] $vCenter

@@ -1,4 +1,22 @@
-﻿[CmdletBinding()]
+﻿<#
+What does the script do?
+Evacuates all VMs off a specific host one at a time and puts that host in maintenance mode.
+
+Where/How does the script run?
+The script can be run from anywhere that has access to connect to the vCenter server.
+
+What account do I run it with?
+No specific account is needed. Your own login will work.
+
+What is the syntax for executing?
+DrainHost.ps1
+
+What does this script need to function properly?
+1. "DupreeFunctions" PowerShell module in a path that is listed in the PSModulePath environment variable. I recommend "%ProgramFiles%\WindowsPowerShell\Modules".
+2. PowerCLI must be installed.
+#>
+
+[CmdletBinding()]
 Param(
 )
 

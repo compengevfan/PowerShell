@@ -1,4 +1,22 @@
-﻿[CmdletBinding()]
+﻿<#
+What does the script do?
+Balances VM workload across the hosts in a vCenter cluster.
+
+Where/How does the script run?
+The script can be run from anywhere that has access to connect to the vCenter server with the cluster to be balanced.
+
+What account do I run it with?
+No specific account is needed. Your own login will work.
+
+What is the syntax for executing?
+BalanceDatastoreSpace.ps1
+
+What does this script need to function properly?
+1. "DupreeFunctions" PowerShell module in a path that is listed in the PSModulePath environment variable. I recommend "%ProgramFiles%\WindowsPowerShell\Modules".
+2. PowerCLI must be installed.
+#>
+
+[CmdletBinding()]
 Param(
 )
 

@@ -1,8 +1,49 @@
-﻿$SnapinCheck = get-pssnapin -Name VMware.VimAutomation.Core -ErrorAction SilentlyContinue
+﻿<#
+What does the script do?
+Evacuates an ESX host one VM at a time, puts the host in maintenance mode and uses all attached update manager baseline groups to update the host.
 
-if ($SnapinCheck -eq $NULL) { Write-Host "VMware Snapin Not Loaded..."; exit }
+Where/How does the script run?
+The script can be run from anywhere that has access to connect to the vCenter server with the datastore cluster to be balanced.
 
-if ($global:DefaultVIServers.Count -eq 0) { Write-Host "Not Connected to a VCenter..."; exit }
+What account do I run it with?
+No specific account is needed. Your own login will work.
+
+What is the syntax for executing?
+PatchHost.ps1
+
+What does this script need to function properly?
+1. "DupreeFunctions" PowerShell module in a path that is listed in the PSModulePath environment variable. I recommend "%ProgramFiles%\WindowsPowerShell\Modules".
+2. PowerCLI must be installed.
+3. ESX host to be updated must have at least one baseline attached in update manager.
+#>
+
+[CmdletBinding()]
+Param(
+)
+ 
+$ScriptPath = $PSScriptRoot
+cd $ScriptPath
+ 
+$ErrorActionPreference = "SilentlyContinue"
+ 
+Function Check-PowerCLI
+{
+    Param(
+    )
+ 
+    if (!(Get-Module -Name VMware.VimAutomation.Core))
+    {
+        write-host ("Adding PowerCLI...")
+        Get-Module -Name VMware* -ListAvailable | Import-Module -Global
+        write-host ("Loaded PowerCLI.")
+    }
+}
+ 
+if (!(Get-Module -ListAvailable -Name DupreeFunctions)) { Write-Host "'DupreeFunctions' module not available!!! Please check with Dupree!!! Script exiting!!!" -ForegroundColor Red; exit }
+if (!(Get-Module -Name DupreeFunctions)) { Import-Module DupreeFunctions }
+ 
+Check-PowerCLI
+Connect-vCenter
 
 if ($Cluster_Name -eq $NULL) { $Cluster_Name = Read-Host "What is the name of the cluster?" }
 
