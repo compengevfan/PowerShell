@@ -30,6 +30,12 @@ Connect-vCenter iad-vc001.fanatics.corp
 $ScriptStarted = Get-Date -Format MM-dd-yyyy_hh-mm-ss
 $ScriptName = $MyInvocation.MyCommand.Name
 
+#List of OS Codes.
+$OSes = "2K12R2", "2K16"
+#Generate List of Template Names
+$TemplateNames = @()
+foreach ($OS in $OSes) { $TemplateNames += "TPL_GOLD_$OS"}
+
 ##################
 #Email Variables
 ###################emailTo is a comma separated list of strings eg. "email1","email2"
@@ -55,7 +61,8 @@ Send-MailMessage -smtpserver $emailServer -to $emailTo -from $emailFrom -subject
 
 #Get a list of all Template backup SLA's and create empty array for snapshot request data
 DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Obtaining a list of all Gold Template SLAs..."
-$SLAs = Get-RubrikSLA | where { $_.Name -like "Gold Templates*" } | Sort-Object Name
+#$SLAs = Get-RubrikSLA | where { $_.Name -like "Gold Templates*" } | Sort-Object Name
+$SLAs = Get-RubrikSLA | where { $_.Name -like "Gold Templates to TAFQ" } | Sort-Object Name
 if ($SLAs -eq "" -or $SLAs -eq $null) { DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Err -LogString "No template SLAs found on the IAD Rubrik!!! Script exiting"; exit }
 $Snapshots = @()
 
@@ -63,8 +70,14 @@ $Snapshots = @()
 DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Creating manual backup jobs for each SLA..."
 foreach ($SLA in $SLAs)
 {
+<<<<<<< HEAD
     $Snapshots += Get-RubrikVM -name TPL_GOLD_2K12R2 | where { $_.primaryClusterId -eq "$($RubrikClusterID.id)" } | New-RubrikSnapshot -SLA $($SLA.name) -Confirm:$false
     $Snapshots += Get-RubrikVM -name TPL_GOLD_2K16 | where { $_.primaryClusterId -eq "$($RubrikClusterID.id)" } | New-RubrikSnapshot -SLA $($SLA.name) -Confirm:$false
+=======
+    foreach ($TemplateName in $TemplateNames){ $Snapshots += Get-RubrikVM -name $TemplateName | where { $_.primaryClusterId -eq "$($RubrikClusterID.id)" } | New-RubrikSnapshot -SLA $($SLA.name) -Confirm:$false }
+    #$Snapshots += Get-RubrikVM -name TPL_GOLD_2K12R2 | where { $_.primaryClusterId -eq "$($RubrikClusterID.id)" } | New-RubrikSnapshot -SLA $($SLA.name) -Confirm:$false
+    #$Snapshots += Get-RubrikVM -name TPL_GOLD_2K8R2 | where { $_.primaryClusterId -eq "$($RubrikClusterID.id)" } | New-RubrikSnapshot -SLA $($SLA.name) -Confirm:$false
+>>>>>>> 95bf5590e7539a722bfe13cb9ac7c54822eb6a92
 }
 
 #Wait for all backups to complete
@@ -145,7 +158,7 @@ while($true)
     if ($Complete) { break }
     Start-Sleep 60
 }
-
+<#----Begin Commented Out Section for Testing----
 DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Disconnecting from IAD Rubrik..."
 Disconnect-Rubrik -Confirm:$false
 
@@ -161,19 +174,38 @@ foreach ($SLA in $SLAs)
     $RemoteRubrikClusterID = Invoke-RubrikRESTCall -Endpoint cluster/me -Method GET #gets the id of the current rubrik cluster
     $Record = $DataFromFile | where { $_.RubrikDevice -eq "$RemoteRubrik" } #gets the proper information for the current Rubrik from the data file
 
-    DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Issuing export task on $RemoteRubrik for 2K12R2 template..."
-    $Replica = Get-RubrikVM TPL_GOLD_2K12R2 | where { $_.primaryClusterId -eq "$($RubrikClusterID.id)" } | Get-RubrikSnapshot | select -First 1 #gets the ID of the replicated snapshot using the rubrik cluster ID
-    $ExportHost = $(Invoke-RubrikRESTCall -Endpoint vmware/host -Method Get).data | where { $_.name -eq "$($Record.Host)" -and $_.primaryClusterId -eq "$($RemoteRubrikClusterID.id)" } #gets the Rubrik ID of the host listed in the data file using the rubrik cluster ID
-    $ExportDatastore = $ExportHost.datastores | where { $_.name -eq $($Record.Datastore) } #gets the Rubrik ID of the datastore listed in the data file from the exporthost info above
-    $body = New-Object -TypeName PSObject -Property @{'hostId'=$($Exporthost.id);'datastoreId'=$($ExportDatastore.id)} #Assemble the POST payload for the REST API call
-    Invoke-RubrikRESTCall -Endpoint vmware/vm/snapshot/$($Replica.id)/export -Method POST -Body $body | Out-Null #make rest api call to create an export job
+    foreach ($TemplateName in $TemplateNames)
+    {
+        DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Issuing export task on $RemoteRubrik for $TemplateName..."
+        $Replica = Get-RubrikVM $TemplateName | where { $_.primaryClusterId -eq "$($RubrikClusterID.id)" } | Get-RubrikSnapshot | select -First 1 #gets the ID of the replicated snapshot using the rubrik cluster ID
+        $ExportHost = $(Invoke-RubrikRESTCall -Endpoint vmware/host -Method Get).data | where { $_.name -eq "$($Record.Host)" -and $_.primaryClusterId -eq "$($RemoteRubrikClusterID.id)" } #gets the Rubrik ID of the host listed in the data file using the rubrik cluster ID
+        $ExportDatastore = $ExportHost.datastores | where { $_.name -eq $($Record.Datastore) } #gets the Rubrik ID of the datastore listed in the data file from the exporthost info above
+        $body = New-Object -TypeName PSObject -Property @{'hostId'=$($Exporthost.id);'datastoreId'=$($ExportDatastore.id)} #Assemble the POST payload for the REST API call
+        Invoke-RubrikRESTCall -Endpoint vmware/vm/snapshot/$($Replica.id)/export -Method POST -Body $body | Out-Null #make rest api call to create an export job
+    }
 
+<<<<<<< HEAD
     DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Issuing export task on $RemoteRubrik for 2K16 template..."
     $Replica = Get-RubrikVM TPL_GOLD_2K16 | where { $_.primaryClusterId -eq "$($RubrikClusterID.id)" } | Get-RubrikSnapshot | select -First 1 #gets the ID of the replicated snapshot using the rubrik cluster ID
     $ExportHost = $(Invoke-RubrikRESTCall -Endpoint vmware/host -Method Get).data | where { $_.name -eq "$($Record.Host)" -and $_.primaryClusterId -eq "$($RemoteRubrikClusterID.id)" } #gets the Rubrik ID of the host listed in the data file using the rubrik cluster ID
     $ExportDatastore = $ExportHost.datastores | where { $_.name -eq $($Record.Datastore) } #gets the Rubrik ID of the datastore listed in the data file from the exporthost info above
     $body = New-Object -TypeName PSObject -Property @{'hostId'=$($Exporthost.id);'datastoreId'=$($ExportDatastore.id)} #Assemble the POST payload for the REST API call
     Invoke-RubrikRESTCall -Endpoint vmware/vm/snapshot/$($Replica.id)/export -Method POST -Body $body | Out-Null #make rest api call to create an export job
+=======
+    #DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Issuing export task on $RemoteRubrik for 2K12R2 template..."
+    #$Replica = Get-RubrikVM TPL_GOLD_2K12R2 | where { $_.primaryClusterId -eq "$($RubrikClusterID.id)" } | Get-RubrikSnapshot | select -First 1 #gets the ID of the replicated snapshot using the rubrik cluster ID
+    #$ExportHost = $(Invoke-RubrikRESTCall -Endpoint vmware/host -Method Get).data | where { $_.name -eq "$($Record.Host)" -and $_.primaryClusterId -eq "$($RemoteRubrikClusterID.id)" } #gets the Rubrik ID of the host listed in the data file using the rubrik cluster ID
+    #$ExportDatastore = $ExportHost.datastores | where { $_.name -eq $($Record.Datastore) } #gets the Rubrik ID of the datastore listed in the data file from the exporthost info above
+    #$body = New-Object -TypeName PSObject -Property @{'hostId'=$($Exporthost.id);'datastoreId'=$($ExportDatastore.id)} #Assemble the POST payload for the REST API call
+    #Invoke-RubrikRESTCall -Endpoint vmware/vm/snapshot/$($Replica.id)/export -Method POST -Body $body | Out-Null #make rest api call to create an export job
+    #
+    #DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Issuing export task on $RemoteRubrik for 2K8R2 template..."
+    #$Replica = Get-RubrikVM TPL_GOLD_2K8R2 | where { $_.primaryClusterId -eq "$($RubrikClusterID.id)" } | Get-RubrikSnapshot | select -First 1 #gets the ID of the replicated snapshot using the rubrik cluster ID
+    #$ExportHost = $(Invoke-RubrikRESTCall -Endpoint vmware/host -Method Get).data | where { $_.name -eq "$($Record.Host)" -and $_.primaryClusterId -eq "$($RemoteRubrikClusterID.id)" } #gets the Rubrik ID of the host listed in the data file using the rubrik cluster ID
+    #$ExportDatastore = $ExportHost.datastores | where { $_.name -eq $($Record.Datastore) } #gets the Rubrik ID of the datastore listed in the data file from the exporthost info above
+    #$body = New-Object -TypeName PSObject -Property @{'hostId'=$($Exporthost.id);'datastoreId'=$($ExportDatastore.id)} #Assemble the POST payload for the REST API call
+    #Invoke-RubrikRESTCall -Endpoint vmware/vm/snapshot/$($Replica.id)/export -Method POST -Body $body | Out-Null #make rest api call to create an export job
+>>>>>>> 95bf5590e7539a722bfe13cb9ac7c54822eb6a92
 
     Disconnect-Rubrik -Confirm:$false
 }
@@ -234,3 +266,4 @@ while ($true)
 
 DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Succ -LogString "Template replication has completed successfully!!!"
 $EmailBody = Get-Content .\~Logs\"$ScriptName $ScriptStarted.log" | Out-String; Send-MailMessage -smtpserver $emailServer -to $emailTo -from $emailFrom -subject "Template Replication Completed!!!" -body $EmailBody
+#>
