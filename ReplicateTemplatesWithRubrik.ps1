@@ -61,8 +61,8 @@ Send-MailMessage -smtpserver $emailServer -to $emailTo -from $emailFrom -subject
 
 #Get a list of all Template backup SLA's and create empty array for snapshot request data
 DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Obtaining a list of all Gold Template SLAs..."
-#$SLAs = Get-RubrikSLA | where { $_.Name -like "Gold Templates*" } | Sort-Object Name
-$SLAs = Get-RubrikSLA | where { $_.Name -like "Gold Templates to TAFQ" } | Sort-Object Name
+$SLAs = Get-RubrikSLA | where { $_.Name -like "Gold Templates*" } | Sort-Object Name
+#$SLAs = Get-RubrikSLA | where { $_.Name -like "Gold Templates to TAFQ-RUBK001" } | Sort-Object Name
 if ($SLAs -eq "" -or $SLAs -eq $null) { DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Err -LogString "No template SLAs found on the IAD Rubrik!!! Script exiting"; exit }
 $Snapshots = @()
 
@@ -70,14 +70,7 @@ $Snapshots = @()
 DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Creating manual backup jobs for each SLA..."
 foreach ($SLA in $SLAs)
 {
-<<<<<<< HEAD
-    $Snapshots += Get-RubrikVM -name TPL_GOLD_2K12R2 | where { $_.primaryClusterId -eq "$($RubrikClusterID.id)" } | New-RubrikSnapshot -SLA $($SLA.name) -Confirm:$false
-    $Snapshots += Get-RubrikVM -name TPL_GOLD_2K16 | where { $_.primaryClusterId -eq "$($RubrikClusterID.id)" } | New-RubrikSnapshot -SLA $($SLA.name) -Confirm:$false
-=======
     foreach ($TemplateName in $TemplateNames){ $Snapshots += Get-RubrikVM -name $TemplateName | where { $_.primaryClusterId -eq "$($RubrikClusterID.id)" } | New-RubrikSnapshot -SLA $($SLA.name) -Confirm:$false }
-    #$Snapshots += Get-RubrikVM -name TPL_GOLD_2K12R2 | where { $_.primaryClusterId -eq "$($RubrikClusterID.id)" } | New-RubrikSnapshot -SLA $($SLA.name) -Confirm:$false
-    #$Snapshots += Get-RubrikVM -name TPL_GOLD_2K8R2 | where { $_.primaryClusterId -eq "$($RubrikClusterID.id)" } | New-RubrikSnapshot -SLA $($SLA.name) -Confirm:$false
->>>>>>> 95bf5590e7539a722bfe13cb9ac7c54822eb6a92
 }
 
 #Wait for all backups to complete
@@ -158,7 +151,7 @@ while($true)
     if ($Complete) { break }
     Start-Sleep 60
 }
-<#----Begin Commented Out Section for Testing----
+
 DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Disconnecting from IAD Rubrik..."
 Disconnect-Rubrik -Confirm:$false
 
@@ -184,29 +177,6 @@ foreach ($SLA in $SLAs)
         Invoke-RubrikRESTCall -Endpoint vmware/vm/snapshot/$($Replica.id)/export -Method POST -Body $body | Out-Null #make rest api call to create an export job
     }
 
-<<<<<<< HEAD
-    DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Issuing export task on $RemoteRubrik for 2K16 template..."
-    $Replica = Get-RubrikVM TPL_GOLD_2K16 | where { $_.primaryClusterId -eq "$($RubrikClusterID.id)" } | Get-RubrikSnapshot | select -First 1 #gets the ID of the replicated snapshot using the rubrik cluster ID
-    $ExportHost = $(Invoke-RubrikRESTCall -Endpoint vmware/host -Method Get).data | where { $_.name -eq "$($Record.Host)" -and $_.primaryClusterId -eq "$($RemoteRubrikClusterID.id)" } #gets the Rubrik ID of the host listed in the data file using the rubrik cluster ID
-    $ExportDatastore = $ExportHost.datastores | where { $_.name -eq $($Record.Datastore) } #gets the Rubrik ID of the datastore listed in the data file from the exporthost info above
-    $body = New-Object -TypeName PSObject -Property @{'hostId'=$($Exporthost.id);'datastoreId'=$($ExportDatastore.id)} #Assemble the POST payload for the REST API call
-    Invoke-RubrikRESTCall -Endpoint vmware/vm/snapshot/$($Replica.id)/export -Method POST -Body $body | Out-Null #make rest api call to create an export job
-=======
-    #DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Issuing export task on $RemoteRubrik for 2K12R2 template..."
-    #$Replica = Get-RubrikVM TPL_GOLD_2K12R2 | where { $_.primaryClusterId -eq "$($RubrikClusterID.id)" } | Get-RubrikSnapshot | select -First 1 #gets the ID of the replicated snapshot using the rubrik cluster ID
-    #$ExportHost = $(Invoke-RubrikRESTCall -Endpoint vmware/host -Method Get).data | where { $_.name -eq "$($Record.Host)" -and $_.primaryClusterId -eq "$($RemoteRubrikClusterID.id)" } #gets the Rubrik ID of the host listed in the data file using the rubrik cluster ID
-    #$ExportDatastore = $ExportHost.datastores | where { $_.name -eq $($Record.Datastore) } #gets the Rubrik ID of the datastore listed in the data file from the exporthost info above
-    #$body = New-Object -TypeName PSObject -Property @{'hostId'=$($Exporthost.id);'datastoreId'=$($ExportDatastore.id)} #Assemble the POST payload for the REST API call
-    #Invoke-RubrikRESTCall -Endpoint vmware/vm/snapshot/$($Replica.id)/export -Method POST -Body $body | Out-Null #make rest api call to create an export job
-    #
-    #DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Issuing export task on $RemoteRubrik for 2K8R2 template..."
-    #$Replica = Get-RubrikVM TPL_GOLD_2K8R2 | where { $_.primaryClusterId -eq "$($RubrikClusterID.id)" } | Get-RubrikSnapshot | select -First 1 #gets the ID of the replicated snapshot using the rubrik cluster ID
-    #$ExportHost = $(Invoke-RubrikRESTCall -Endpoint vmware/host -Method Get).data | where { $_.name -eq "$($Record.Host)" -and $_.primaryClusterId -eq "$($RemoteRubrikClusterID.id)" } #gets the Rubrik ID of the host listed in the data file using the rubrik cluster ID
-    #$ExportDatastore = $ExportHost.datastores | where { $_.name -eq $($Record.Datastore) } #gets the Rubrik ID of the datastore listed in the data file from the exporthost info above
-    #$body = New-Object -TypeName PSObject -Property @{'hostId'=$($Exporthost.id);'datastoreId'=$($ExportDatastore.id)} #Assemble the POST payload for the REST API call
-    #Invoke-RubrikRESTCall -Endpoint vmware/vm/snapshot/$($Replica.id)/export -Method POST -Body $body | Out-Null #make rest api call to create an export job
->>>>>>> 95bf5590e7539a722bfe13cb9ac7c54822eb6a92
-
     Disconnect-Rubrik -Confirm:$false
 }
 
@@ -217,44 +187,49 @@ while ($true)
     $Complete = $true
     foreach ($Site in $DataFromFile)
     {
-        $LocalGoldCopies = Get-Cluster $($Site.Cluster) | Get-VM TPL_GOLD* | Sort-Object Name
+        $LocalGoldCopies = Get-Cluster $($Site.Cluster) | Get-VM TPL_GOLD*
         foreach ($LocalGoldCopy in $LocalGoldCopies)
         {
             $PowerState = $LocalGoldCopy.PowerState
             if ($PowerState -eq "PoweredOn") 
             {
-                switch ($($LocalGoldCopy.GuestID))
+                foreach($TemplateName in $TemplateNames)
                 {
-                    windows9Server64Guest { $ExistingTemplate = "TPL_$($Site.Cluster)_2K16";if ((Get-Template $ExistingTemplate) -ne $null) { DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Deleting $ExistingTemplate...";Remove-Template $ExistingTemplate -DeletePermanently -Confirm:$false } }
-                    windows8Server64Guest { $ExistingTemplate = "TPL_$($Site.Cluster)_2K12R2";if ((Get-Template $ExistingTemplate) -ne $null) { DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Deleting $ExistingTemplate...";Remove-Template $ExistingTemplate -DeletePermanently -Confirm:$false } }
+                    if ($LocalGoldCopy.Name -like "$TemplateName*") 
+                    {
+                        $TemplateNameModified = $TemplateName.Replace("GOLD", $($Site.Cluster))
+
+                        if ((Get-Template $TemplateNameModified) -ne $null)
+                        {
+                            DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Deleting $TemplateNameModified..."
+                            Remove-Template $TemplateNameModified -DeletePermanently -Confirm:$false
+                        }
+
+                        DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Converting '$($LocalGoldCopy.Name)' at '$($Site.Cluster)' to template..."
+                        DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Waiting for VMware tools to start..."
+                        $Ready = $false
+                        while (!($Ready))
+                        {
+                            $ToolsStatus = (Get-VM -Name $($LocalGoldCopy.Name)).Guest.ExtensionData.ToolsStatus
+                            if ($ToolsStatus -eq "toolsOK" -or $ToolsStatus -eq "toolsOld") { $Ready = $true }
+                            Start-Sleep 5
+                        }
+                        Clear-Variable ToolsStatus
+                        DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Shutting down the VM..."
+                        Shutdown-VMGuest $($LocalGoldCopy.Name) -Confirm:$false | Out-Null
+                        while ($PowerState -eq "PoweredOn")
+                        {
+                            Start-Sleep 5
+                            $PowerState = (Get-VM $($LocalGoldCopy.Name)).PowerState
+                        }
+                        DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Renaming VM..."
+                        $VMRenamed = Get-Cluster $($Site.Cluster) | Get-VM $($LocalGoldCopy.Name) | Set-VM -Name $TemplateNameModified -Confirm:$false
+                        DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Converting to template..."
+                        Set-VM $VMRenamed -ToTemplate -Confirm:$false | Out-Null
+                        DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Continuing export completion checks..."
+                        Send-MailMessage -smtpserver $emailServer -to $emailTo -from $emailFrom -subject "Template Replication Update..." -body "$VMRenamed template has been recreated and is ready for use."
+                    }
                 }
-                DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Converting '$($LocalGoldCopy.Name)' at '$($Site.Cluster)' to template..."
-                DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Waiting for VMware tools to start..."
-                $Ready = $false
-                while (!($Ready))
-                {
-                    $ToolsStatus = (Get-VM -Name $($LocalGoldCopy.Name)).Guest.ExtensionData.ToolsStatus
-                    if ($ToolsStatus -eq "toolsOK" -or $ToolsStatus -eq "toolsOld") { $Ready = $true }
-                    Start-Sleep 5
-                }
-                Clear-Variable ToolsStatus
-                DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Shutting down the VM..."
-                Shutdown-VMGuest $($LocalGoldCopy.Name) -Confirm:$false | Out-Null
-                while ($PowerState -eq "PoweredOn")
-                {
-                    Start-Sleep 5
-                    $PowerState = (Get-VM $($LocalGoldCopy.Name)).PowerState
-                }
-                DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Renaming VM..."
-                switch ($($LocalGoldCopy.GuestID))
-                {
-                    windows9Server64Guest { $NewName = "TPL_$($Site.Cluster)_2K16";$VMRenamed = Get-Cluster $($Site.Cluster) | Get-VM $($LocalGoldCopy.Name) | Set-VM -Name $NewName -Confirm:$false }
-                    windows8Server64Guest { $NewName = "TPL_$($Site.Cluster)_2K12R2";$VMRenamed = Get-Cluster $($Site.Cluster) | Get-VM $($LocalGoldCopy.Name) | Set-VM -Name $NewName -Confirm:$false }
-                }
-                DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Converting to template..."
-                Set-VM $VMRenamed -ToTemplate -Confirm:$false | Out-Null
-                DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Continuing export completion checks..."
-                Send-MailMessage -smtpserver $emailServer -to $emailTo -from $emailFrom -subject "Template Replication Update..." -body "$VMRenamed template has been recreated and is ready for use."
             }
             else { $Complete = $false }
         }
@@ -266,4 +241,3 @@ while ($true)
 
 DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Succ -LogString "Template replication has completed successfully!!!"
 $EmailBody = Get-Content .\~Logs\"$ScriptName $ScriptStarted.log" | Out-String; Send-MailMessage -smtpserver $emailServer -to $emailTo -from $emailFrom -subject "Template Replication Completed!!!" -body $EmailBody
-#>
