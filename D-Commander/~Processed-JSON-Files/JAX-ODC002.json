@@ -1,7 +1,7 @@
 {
 	"VMInfo": [
 		{
-			"vCenter": "discography.evorigin.com",
+			"vCenter": "discography.evorigin.local",
 			"Datacenter": "DC1",
 			"Cluster": "C1",
 			"FolderPath": "DC1/Discovered virtual machine",
@@ -22,10 +22,10 @@
 			"IPAddress": "172.16.10.100",
 			"SubnetMask": "255.255.255.0",
 			"Gateway": "172.16.10.254",
-			"Domain": "origin.com",
+			"Domain": "origin.local",
 			"DNS1": "172.16.10.101",
 			"DNS2": "172.0.0.1",
-			"OU": "Terminal Server Users/FROW/Consolidation"
+			"OU": "Servers"
 		}
 	]
 }
