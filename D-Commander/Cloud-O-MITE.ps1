@@ -9,6 +9,7 @@ $ScriptPath = $PSScriptRoot
 cd $ScriptPath
  
 $ErrorActionPreference = "SilentlyContinue"
+$WarningPreference = "SilentlyContinue"
  
 Function Check-PowerCLI
 {
