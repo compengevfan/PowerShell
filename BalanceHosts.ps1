@@ -23,6 +23,11 @@ Param(
 $ScriptPath = $PSScriptRoot
 cd $ScriptPath
 
+$ScriptStarted = Get-Date -Format MM-dd-yyyy_hh-mm-ss
+$ScriptName = $MyInvocation.MyCommand.Name
+
+$ErrorActionPreference = "SilentlyContinue"
+
 Function Check-PowerCLI
 {
     Param(
@@ -38,6 +43,7 @@ Function Check-PowerCLI
 
 if (!(Get-Module -ListAvailable -Name DupreeFunctions)) { Write-Host "'DupreeFunctions' module not available!!! Please check with Dupree!!! Script exiting!!!" -ForegroundColor Red; exit }
 if (!(Get-Module -Name DupreeFunctions)) { Import-Module DupreeFunctions }
+if (!(Test-Path .\~Logs)) { New-Item -Name "~Logs" -ItemType Directory | Out-Null }
 
 Check-PowerCLI
 Connect-vCenter
@@ -45,6 +51,8 @@ Connect-vCenter
 $Cluster = Read-Host -Prompt ("Please enter the name of the cluster to be balanced")
 #Retrieve hosts from cluster
 $HostsToBalance = Get-Cluster $Cluster | Get-VMHost | ? {$_.ConnectionState -eq "Connected"} | Sort-Object MemoryUsageGB
+if ($HostsToBalance -ne $null) { DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Balancing Cluster $Cluster..." }
+else { DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Err -LogString "$Cluster does not exist!!! Script Exiting!!!"; exit }
 
 #Find datastore with least and most free space
 $HostLeastUsed = $HostsToBalance | Select-Object -First 1
@@ -70,8 +78,9 @@ while ($RunAgain)
 
     $VMtoMove = $SourceVMs[$RandomNumber]
 
-    $Supress = Move-VM -VM $VMtoMove -Destination $HostLeastUsed.Name -Confirm:$false
-    Write-Host ("Migrated $($VMtoMove.Name) from $($HostMostUsed.Name) to $($HostLeastUsed.Name).")
+    Move-VM -VM $VMtoMove -Destination $HostLeastUsed.Name -Confirm:$false | Out-Null
+    DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Migrated $($VMtoMove.Name) from $($HostMostUsed.Name) to $($HostLeastUsed.Name)."
+    #Write-Host ("Migrated $($VMtoMove.Name) from $($HostMostUsed.Name) to $($HostLeastUsed.Name).")
 
     #Retrieve datastores from cluster
     $HostsToBalance = Get-Cluster $Cluster | Get-VMHost | ? {$_.ConnectionState -eq "Connected"} | Sort-Object MemoryUsageGB
@@ -87,6 +96,7 @@ while ($RunAgain)
     if ($Diff -lt 64)
     {
         $RunAgain = $false
-        Write-Host ("Script complete. Cluster is now balanced.")
+        DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Script complete. Cluster is now balanced."
+        #Write-Host ("Script complete. Cluster is now balanced.")
     }
 }
