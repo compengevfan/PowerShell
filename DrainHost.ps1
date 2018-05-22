@@ -51,7 +51,7 @@ if ($Cluster -eq $NULL) { Write-Host "Cluster name does not exist..."; exit }
 if ($($Cluster.DrsEnabled))
 {
 	$Stored_DRS_Level = $Cluster.DrsAutomationLevel
-	Set-Cluster -Cluster $Cluster -DrsAutomationLevel Manual -Confirm:$false
+	Set-Cluster -Cluster $Cluster -DrsAutomationLevel Manual -Confirm:$false | Out-Null
 }
 
 $Hosts_In_Cluster = Get-Cluster $Cluster | Get-VMHost | Sort-Object Name
@@ -104,8 +104,10 @@ foreach ($VM_To_Migrate in $VMs_To_Migrate)
 	$VMc++
 }
 
-Set-Cluster -Cluster $Cluster -DrsAutomationLevel FullyAutomated -Confirm:$false
+Set-Cluster -Cluster $Cluster -DrsAutomationLevel FullyAutomated -Confirm:$false | Out-Null
 
-Set-VMHost -VMHost $Host_To_Drain.HostName -State Maintenance -Evacuate:$true
+$Check = Get-VMHost $Host_To_Drain.HostName | Get-VM | Where-Object {$_.PowerState -eq "PoweredOn"}
+if ($Check -eq $null) { Set-VMHost -VMHost $Host_To_Drain.HostName -State Maintenance -Evacuate:$true }
+else { Write-Host "Host did not completely drain. Please check VMs left on the host for VMotion errors, resolve and run the script again." }
 
-Set-Cluster -Cluster $Cluster -DrsAutomationLevel $Stored_DRS_Level -Confirm:$false
+Set-Cluster -Cluster $Cluster -DrsAutomationLevel $Stored_DRS_Level -Confirm:$false | Out-Null

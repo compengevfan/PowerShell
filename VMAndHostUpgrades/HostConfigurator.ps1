@@ -43,7 +43,7 @@ $ProperInfo = $DataFromFile | ? { $_.Cluster -eq $ParentCluster }
 ##################
 DoLogging -LogType Info -LogString "Checking ESXi build number..."
 $OSInfo = Get-View -ViewType HostSystem -Filter @{"Name"=$($HostToConfig).Name} -Property Name,Config.Product | foreach {$_.Name, $_.Config.Product}
-if ($OSInfo.Build -eq 5572656)
+if ($OSInfo.Build -eq 7388607)
 {
     DoLogging -LogType Info -LogString "ESXi build number is correct..."
 }
@@ -77,7 +77,7 @@ $ntp = Get-VmHostService -VMhost $HostToConfig | Where {$_.Key -eq 'ntpd'}
 
 DoLogging -LogType Info -LogString "Checking the NTP server config..."
 #Check the NTP Servers on the host.
-if ($NTPServers -contains "ntp-cisco.footballfanatics.wh" -and $NTPServers.Count -eq 1)
+if ($NTPServers -contains "ntp-iad-01.fanatics.corp" -and $NTPServers -contains "ntp-iad-02.fanatics.corp" -and $NTPServers -contains "ntp-dfw-01.fanatics.corp" -and $NTPServers -contains "ntp-dfw-02.fanatics.corp" -and $NTPServers.Count -eq 4)
 {
 	DoLogging -LogType Succ -LogString "NTP Server config is correct..."
 }
@@ -92,9 +92,14 @@ else #If the NTP servers are not correct, fix them.
 	{
 		Remove-VMHostNtpServer -NtpServer $NTPServer -VMHost $HostToConfig -Confirm:$false | Out-Null
 	}
-	Add-VmHostNtpServer -NtpServer "ntp-cisco.footballfanatics.wh" -VmHost $HostToConfig | Out-Null
+	Add-VmHostNtpServer -NtpServer "ntp-iad-01.fanatics.corp" -VmHost $HostToConfig | Out-Null
+	Add-VmHostNtpServer -NtpServer "ntp-iad-02.fanatics.corp" -VmHost $HostToConfig | Out-Null
+    Add-VmHostNtpServer -NtpServer "ntp-dfw-01.fanatics.corp" -VmHost $HostToConfig | Out-Null
+    Add-VmHostNtpServer -NtpServer "ntp-dfw-02.fanatics.corp" -VmHost $HostToConfig | Out-Null
 	Start-VMHostService $ntp -Confirm:$false | Out-Null
-    DoLogging -LogType Succ -LogString "NTP Server config fixed."
+    $VerifyNTP = Get-VMHostNtpServer $HostToConfig
+    if ($VerifyNTP[0] -eq "") { DoLogging -LogType Warn -LogString "Due to a bug in PowerCLI, there is an extra, blank NTP server in the time settings that can't be removed via script. Please remove this manually and restart the NTP service." }
+    else { DoLogging -LogType Succ -LogString "NTP Server config fixed." }
 }
 	
 #Check to see if the NTP service is set to start and stop with the host.
