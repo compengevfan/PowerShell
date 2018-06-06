@@ -1,5 +1,7 @@
-﻿[CmdletBinding()]
+[CmdletBinding()]
 Param(
+    [Parameter(Mandatory=$True)] [string] $WhatToMonitor,
+    [Parameter(Mandatory=$True)] $vCenter
 )
  
 $ScriptPath = $PSScriptRoot
@@ -28,29 +30,14 @@ if (!(Get-Module -Name DupreeFunctions)) { Import-Module DupreeFunctions }
 if (!(Test-Path .\~Logs)) { New-Item -Name "~Logs" -ItemType Directory | Out-Null }
  
 Check-PowerCLI
-Connect-vCenter
+Connect-vCenter $vCenter
 
-$Another = $true
+$host.ui.RawUI.WindowTitle = "Monitoring $WhatToMonitor"
 
-while ($Another)
+while ($True)
 {
-    $ObjectName = Read-Host "Please enter the name of the object to monitor"
-
-    $ObjectType = Read-Host "What type of object is it (VM, Host, DataStore)?"
-
-    switch ($ObjectType)
-    {
-        VM
-        {
-            
-        }
-        Host {}
-        DataStore {}
-        default {}
-    }
-
-    $Check = Read-Host "Would you like to monitor another object (y/n)?"
-    if ($Check = "n") { $Another = $false }
+    cls
+    $Data = Get-Stat $WhatToMonitor -Realtime -MaxSamples 1 -Stat cpu.usage.average,cpu.ready.summation,mem.vmmemctl.average,virtualDisk.totalReadLatency.average,virtualDisk.totalWriteLatency.average | Sort-Object MetricID,Instance
+    $Data | FT -Auto
+    sleep 20
 }
-
-#Get-Stat Solitude -Realtime -MaxSamples 1 -Stat cpu.usage.average,cpu.ready.summation,mem.vmmemctl.average,virtualDisk.totalReadLatency.average,virtualDisk.totalWriteLatency.average | Sort-Object MetricID,Instance | FT -Auto
