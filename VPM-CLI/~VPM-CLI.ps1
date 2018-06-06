@@ -47,32 +47,34 @@ while ($Another)
             if ($ObjectToMonitor -eq $null -or $ObjectToMonitor -eq "") { DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Err -LogString "VM with name $ObjectName does not exist." }
             else
             {
-                DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Executing 'MonitorVM' script in a new window..."
+                DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Executing 'MonitorObject' script in a new window..."
                 DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Press '<ctrl> + C' in the new window to halt monitoring."
                 DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "This window can be closed without impacting the monitoring window."
-                Start-Process powershell -Argument "-File .\MonitorVM.ps1 -WhatToMonitor $ObjectName -vCenter $($global:defaultviserver.name)"
+                Start-Process powershell -Argument "-File .\MonitorObject.ps1 -WhatToMonitor $ObjectName -ObjectType $ObjectType -vCenter $($global:defaultviserver.name)"
             }
         }
         Host
         {
-            $ObjectToMonitor = Get-VMHost $ObjectName | Out-Null
+            $ObjectToMonitor = Get-VMHost $ObjectName
             if ($ObjectToMonitor -eq $null) { DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Err -LogString "Host with name $ObjectName does not exist." }
             else
             {
-                DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Executing 'MonitorVM' script in a new window..."
+                DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Executing 'MonitorObject' script in a new window..."
                 DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Press '<ctrl> + C' in the new window to halt monitoring."
                 DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "This window can be closed without impacting the monitoring window."
+                Start-Process powershell -Argument "-File .\MonitorObject.ps1 -WhatToMonitor $ObjectName -ObjectType $ObjectType -vCenter $($global:defaultviserver.name)"
             }
         }
         DataStore
         {
-            $ObjectToMonitor = Get-Datastore $ObjectName | Out-Null
+            $ObjectToMonitor = Get-Datastore $ObjectName
             if ($ObjectToMonitor -eq $null) { DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Err -LogString "Datastore with name $ObjectName does not exist." }
             else
             {
-                DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Executing 'MonitorVM' script in a new window..."
+                DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Executing 'MonitorObject' script in a new window..."
                 DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Press '<ctrl> + C' in the new window to halt monitoring."
                 DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "This window can be closed without impacting the monitoring window."
+                Start-Process powershell -Argument "-File .\MonitorObject.ps1 -WhatToMonitor $ObjectName -ObjectType $ObjectType -vCenter $($global:defaultviserver.name)"
             }
         }
         default {}

@@ -121,10 +121,31 @@ if ($ntp.Policy -ne "on")
 	Set-VMHostService -HostService $ntp -Policy "on"
     DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Warn -LogString "Daemon startup policy updated."
 }
-else
+else { DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Succ -LogString "Daemon startup policy is correct." }
+
+##################
+#SNMP service.
+##################
+#Ensure service is not runnig and not configured to start with host.
+DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Getting the SNMP Daemon settings..."
+$snmp = Get-VMHostService -VMHost $HostToConfig | where {$_.Key -eq 'snmpd'}
+DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Checking to see if the SNMP service is running..."
+if ($snmp.Running -eq "True")
 {
-    DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Succ -LogString "Daemon startup policy is correct."
+    DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Warn -LogString "Stopping SNMP service..."
+    Stop-VMHostService $snmp -Confirm:$false | Out-Null
+    DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Succ -LogString "SNMP service has been stopped."
 }
+else { DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "SNMP service is not running." }
+
+DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Checking to see if the SNMP service is set to start with host..."
+if ($snmp.Policy -eq "On")
+{
+    DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Warn -LogString "Updating Daemon startup policy..."
+    Set-VMHostService -HostService $snmp -Policy "off" | Out-Null
+    DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Warn -LogString "Daemon startup policy updated."
+}
+else { DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Succ -LogString "Daemon startup policy is correct." }
 
 ##################
 #Domain, domain look up, DNS Servers and Gateway is correct

@@ -1,6 +1,7 @@
 [CmdletBinding()]
 Param(
     [Parameter(Mandatory=$True)] [string] $WhatToMonitor,
+    [Parameter(Mandatory=$True)] [string] $ObjectType,
     [Parameter(Mandatory=$True)] $vCenter
 )
  
@@ -37,7 +38,32 @@ $host.ui.RawUI.WindowTitle = "Monitoring $WhatToMonitor"
 while ($True)
 {
     cls
-    $Data = Get-Stat $WhatToMonitor -Realtime -MaxSamples 1 -Stat cpu.usage.average,cpu.ready.summation,mem.vmmemctl.average,virtualDisk.totalReadLatency.average,virtualDisk.totalWriteLatency.average | Sort-Object MetricID,Instance
+
+    switch ($ObjectType)
+    {
+        VM
+        {
+            $Data = Get-Stat $WhatToMonitor -Realtime -MaxSamples 1 -Stat cpu.usage.average `
+            ,cpu.ready.summation `
+            ,mem.vmmemctl.average `
+            ,virtualDisk.totalReadLatency.average `
+            ,virtualDisk.totalWriteLatency.average | where { $_.Instance -eq ""} | Sort-Object MetricID
+        }
+        Host
+        {
+            $Data = Get-Stat $WhatToMonitor -Realtime -MaxSamples 1 -Stat cpu.usage.average `
+            ,cpu.ready.summation `
+            ,mem.vmmemctl.average `
+            ,disk.usage.average `
+            ,disk.maxTotalLatency.latest | where { $_.Instance -eq ""} | Sort-Object MetricID
+        }
+        DataStore
+        {
+            $Data = Get-Stat $WhatToMonitor -Realtime -MaxSamples 1 -Stat datastore.numberReadAveraged.average `
+            ,datastore.numberWriteAveraged.average | Sort-Object MetricID,Instance
+        }
+    }
+    
     $Data | FT -Auto
     sleep 20
 }
