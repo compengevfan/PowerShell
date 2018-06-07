@@ -43,23 +43,31 @@ while ($True)
     {
         VM
         {
-            $Data = Get-Stat $WhatToMonitor -Realtime -MaxSamples 1 -Stat cpu.usage.average `
+            $Data = Get-Stat $WhatToMonitor -Realtime -MaxSamples 1 -Stat `
+             cpu.usage.average `
             ,cpu.ready.summation `
+            ,cpu.costop.summation `
             ,mem.vmmemctl.average `
-            ,virtualDisk.totalReadLatency.average `
-            ,virtualDisk.totalWriteLatency.average | where { $_.Instance -eq ""} | Sort-Object MetricID
+            ,datastore.totalReadLatency.average `
+            ,datastore.totalWriteLatency.average `
+            ,datastore.read.average `
+            ,datastore.write.average | Sort-Object MetricID,Instance
         }
         Host
         {
-            $Data = Get-Stat $WhatToMonitor -Realtime -MaxSamples 1 -Stat cpu.usage.average `
+            $Data = Get-Stat $WhatToMonitor -Realtime -MaxSamples 1 -Stat `
+             cpu.usage.average `
             ,cpu.ready.summation `
             ,mem.vmmemctl.average `
-            ,disk.usage.average `
-            ,disk.maxTotalLatency.latest | where { $_.Instance -eq ""} | Sort-Object MetricID
+            ,datastore.totalReadLatency.average `
+            ,datastore.totalWriteLatency.average `
+            ,datastore.read.average `
+            ,datastore.write.average | Sort-Object MetricID,Instance
         }
         DataStore
         {
-            $Data = Get-Stat $WhatToMonitor -Realtime -MaxSamples 1 -Stat datastore.numberReadAveraged.average `
+            $Data = Get-Stat $WhatToMonitor -Realtime -MaxSamples 1 -Stat `
+             datastore.numberReadAveraged.average `
             ,datastore.numberWriteAveraged.average | Sort-Object MetricID,Instance
         }
     }
