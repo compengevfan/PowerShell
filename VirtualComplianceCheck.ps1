@@ -122,8 +122,16 @@ DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -L
 foreach ($ESXHost in $ESXHosts)
 {
     DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Processing $($ESXHost.Name)..."
+    
+    # Checking Build number
     $OSInfo = Get-View -ViewType HostSystem -Filter @{"Name"=$($ESXHost).Name} -Property Name,Config.Product | foreach {$_.Name, $_.Config.Product}
+    
+    #Correct domain name for FQDN
+    $ParentCluster = $HostToConfig.Parent.Name
+    $ProperInfo = $DataFromFile | ? { $_.Cluster -eq $ParentCluster }
+
     if ($OSInfo.Build -ne $ESXBuildNumber `
+     -or $ESXHost.Name -notlike "*$($ProperInfo.Domain)" `
      -or 
     #ESXi build number
 

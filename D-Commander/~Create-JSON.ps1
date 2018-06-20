@@ -47,3 +47,5 @@ $Purpose = Read-Host "VM Purpose"
 $FolderPath = Read-Host "Folder Path (default is '[DataCenter]/Discovered virtual machine')"
 
 if ($FolderPath -eq "") { $FolderPath = "$TargetDataCenter/Discovered virtual machine" }
+
+Get-Cluster ClusterInQuestion | get-VMHost | get-datastore | get-datastorecluster
