@@ -123,15 +123,28 @@ foreach ($ESXHost in $ESXHosts)
 {
     DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Processing $($ESXHost.Name)..."
     
-    # Checking Build number
+    #Checking Build number
     $OSInfo = Get-View -ViewType HostSystem -Filter @{"Name"=$($ESXHost).Name} -Property Name,Config.Product | foreach {$_.Name, $_.Config.Product}
     
-    #Correct domain name for FQDN
+    #Checking correct domain name for FQDN
     $ParentCluster = $HostToConfig.Parent.Name
     $ProperInfo = $DataFromFile | ? { $_.Cluster -eq $ParentCluster }
 
+    #Checking correct NTP servers and service is setup right
+    $NTPServers = Get-VMHostNtpServer $ESXHost
+    $ntp = Get-VmHostService -VMhost $ESXHost | Where {$_.Key -eq 'ntpd'}
+    if ($NTPServers -contains "ntp-iad-01.fanatics.corp" -and $NTPServers -contains "ntp-iad-02.fanatics.corp" -and $NTPServers -contains "ntp-dfw-01.fanatics.corp" -and $NTPServers -contains "ntp-dfw-02.fanatics.corp" -and $NTPServers.Count -eq 4)
+    { $TimeServers = $true }
+    else { $TimeServers = $false }
+
+    if ($ntp.Policy -eq "on")
+    { $TimePolicy = $true }
+    else { $TimePolicy = $false }
+
     if ($OSInfo.Build -ne $ESXBuildNumber `
      -or $ESXHost.Name -notlike "*$($ProperInfo.Domain)" `
+     -or $TimeServers -eq $false `
+     -or $TimePolicy -eq $false `
      -or 
     #ESXi build number
 
