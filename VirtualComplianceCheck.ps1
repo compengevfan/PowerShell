@@ -46,8 +46,8 @@ $ESXBuildNumber = "7388607"
 #Obtain information
 DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Retrieving clusters (Excluding 'voice')..."
 $ESXClusters = Get-Cluster | ? { $_.Name -notlike "*voice*" } | sort Name
-DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Retrieving hosts..."
-$ESXHosts = Get-VMHost | ? { $_.ConnectionState -eq "Connected" } | sort Name
+DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Retrieving hosts (Excluding 'voice')..."
+$ESXHosts = $ESXClusters | Get-VMHost | ? { $_.ConnectionState -eq "Connected" } | sort Name
 DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Retrieving distributed switches..."
 $ESXvDS = Get-VDSwitch | sort Name
 
@@ -127,7 +127,7 @@ foreach ($ESXHost in $ESXHosts)
     $OSInfo = Get-View -ViewType HostSystem -Filter @{"Name"=$($ESXHost).Name} -Property Name,Config.Product | foreach {$_.Name, $_.Config.Product}
     
     #Checking correct domain name for FQDN
-    $ParentCluster = $HostToConfig.Parent.Name
+    $ParentCluster = $ESXHost.Parent.Name
     $ProperInfo = $DataFromFile | ? { $_.Cluster -eq $ParentCluster }
 
     #Checking correct NTP servers and service is setup right
@@ -141,11 +141,41 @@ foreach ($ESXHost in $ESXHosts)
     { $TimePolicy = $true }
     else { $TimePolicy = $false }
 
+    #Checking SNMP configuration
+    $snmp = Get-VMHostService -VMHost $ESXHost | where {$_.Key -eq 'snmpd'}
+    if ($snmp.Running -eq "True") { $SNMPState = $true }
+    if ($snmp.Policy -eq "On") { $SNMPPolicy = $true }
+
+    #Checking Domain, domain look up, DNS Servers and Gateway is correct
+    $Network = Get-VMHostNetwork -VMHost $ESXHost
+    if ($Network.DomainName -ne $($ProperInfo.Domain)) { $DomainName = $false }
+    if ($Network.SearchDomain -ne $($ProperInfo.Domain)) { $SearchDomain = $false }
+    if ($Network.VMKernelGateway -ne $($ProperInfo.Gateway)) { $VMKernelGateway = $false }
+    if ($Network.DnsAddress -contains $($ProperInfo.DNS1) -and $Network.DnsAddress -contains $($ProperInfo.DNS2) -and $Network.DnsAddress.Count -eq 2) { $DNS = $false }
+
+    #Check power policy
+    $vmhostview = Get-View -ViewType Hostsystem -Filter @{"Name"=$($HostToConfig).Name} -Property ConfigManager.PowerSystem
+    $powerpolicy = Get-View $vmhostview.ConfigManager.PowerSystem
+    if ($($powerpolicy.Info.CurrentPolicy.Key) -eq 1) { $PowerPolicySetting = $false }
+
+    #Check alarm actions
+    $AlarmActionState = Get-AlarmActionState -Entity $HostToConfig -Recurse:$false
+    if ($($AlarmActionState.'Alarm actions enabled') -ne "True") { $AlarmActions = $false }
+
     if ($OSInfo.Build -ne $ESXBuildNumber `
      -or $ESXHost.Name -notlike "*$($ProperInfo.Domain)" `
      -or $TimeServers -eq $false `
      -or $TimePolicy -eq $false `
+     -or $SNMPState -eq $true `
+     -or $SNMPPolicy -eq $true `
+     -or $DomainName -eq $false `
+     -or $SearchDomain -eq $false `
+     -or $VMKernelGateway -eq $false `
+     -or $DNS -eq $false `
+     -or $PowerPolicySetting -eq $false `
+     -or $AlarmActions -eq $false `
      -or 
+
     #ESXi build number
 
     #host name is FQDN.
@@ -164,6 +194,14 @@ foreach ($ESXHost in $ESXHosts)
 
     #VAAI and ALUA Config
 
+}
+
+if ($hostfails.Count -gt 0)
+{
+    DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Processing improperly configured clusters and building the email body..."
+    $EmailBody = "The following hosts are misconfigured and their incorrect configuration settings are listed.`r`n`r`n"
+
+    if ($ProperInfo -eq $null) { DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "$($ESXHost.Name) is in a cluster that does not have info in the data file. This will lead to false positives in the config checks and should be corrected ASAP." }
 }
 
 #Send-MailMessage -smtpserver $emailServer -to $emailTo -from $emailFrom -subject "VirtualComplianceCheck found config problems in $vCenter host checks" -body $EmailBody

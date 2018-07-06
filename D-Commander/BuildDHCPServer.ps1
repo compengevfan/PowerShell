@@ -7,6 +7,9 @@ Param(
 
 $ScriptPath = $PSScriptRoot
 cd $ScriptPath
+
+$ScriptStarted = Get-Date -Format MM-dd-yyyy_hh-mm-ss
+$ScriptName = $MyInvocation.MyCommand.Name
  
 $ErrorActionPreference = "SilentlyContinue"
  
@@ -26,9 +29,6 @@ Function Check-PowerCLI
 if (!(Get-Module -ListAvailable -Name DupreeFunctions)) { Write-Host "'DupreeFunctions' module not available!!! Please check with Dupree!!! Script exiting!!!" -ForegroundColor Red; exit }
 if (!(Get-Module -Name DupreeFunctions)) { Import-Module DupreeFunctions }
  
-Check-PowerCLI
-Connect-vCenter
-
 ##############################################################################################################################
 
 if ($DHCPFile -eq "" -or $DHCPFile -eq $null) { cls; Write-Host "Please select a File Server config JSON file..."; $DHCPFile = Get-FileName }
@@ -39,6 +39,8 @@ if ($DHCPFile -eq "" -or $DHCPFile -eq $null) { cls; Write-Host "Please select a
 $emailFrom = "BuildDHCPServer@fanatics.com"
 $emailTo = "cdupree@fanatics.com"
 $emailServer = "smtp.ff.p10"
+
+Check-PowerCLI
 
 if (!(Test-Path .\~Logs)) { New-Item -Name "~Logs" -ItemType Directory | Out-Null }
 if (!(Test-Path .\~Processed-JSON-Files)) { New-Item -Name "~Processed-JSON-Files" -ItemType Directory | Out-Null }
@@ -55,7 +57,19 @@ $DataFromFile2 = ConvertFrom-JSON (Get-Content $DHCPFile -raw)
 if ($DataFromFile2 -eq $null) { DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Err -LogString "Error importing JSON file. Please verify proper syntax and file name."; exit }
 
 #If not connected to a vCenter, connect.
-Connect-vCenter $($DataFromFile.VMInfo.vCenter)
+$ConnectedvCenter = $global:DefaultVIServers
+if ($ConnectedvCenter.Count -eq 0)
+{
+    do
+    {
+        if ($ConnectedvCenter.Count -eq 0 -or $ConnectedvCenter -eq $null) {  DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Attempting to connect to vCenter server $($DataFromFile.VMInfo.vCenter)" }
+        
+        Connect-VIServer $($DataFromFile.VMInfo.vCenter) | Out-Null
+        $ConnectedvCenter = $global:DefaultVIServers
+
+        if ($ConnectedvCenter.Count -eq 0 -or $ConnectedvCenter -eq $null){ DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Warn -LogString "vCenter Connection Failed. Please try again or press Control-C to exit..."; Start-Sleep -Seconds 2 }
+    } while ($ConnectedvCenter.Count -eq 0)
+}
 
 if ($DomainCredentials -eq $null)
 {

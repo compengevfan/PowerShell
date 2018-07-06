@@ -6,6 +6,9 @@ Param(
 
 $ScriptPath = $PSScriptRoot
 cd $ScriptPath
+
+$ScriptStarted = Get-Date -Format MM-dd-yyyy_hh-mm-ss
+$ScriptName = $MyInvocation.MyCommand.Name
  
 $ErrorActionPreference = "SilentlyContinue"
  
