@@ -1,7 +1,8 @@
 [CmdletBinding()]
 Param(
     [Parameter(Mandatory=$True)] [string] $WhatToMonitor,
-    [Parameter(Mandatory=$True)] [string] $ObjectType,
+    [Parameter(Mandatory=$True)] [int] $ObjectType,
+    [Parameter()] [int] $Metric,
     [Parameter(Mandatory=$True)] $vCenter
 )
  
@@ -33,7 +34,13 @@ if (!(Test-Path .\~Logs)) { New-Item -Name "~Logs" -ItemType Directory | Out-Nul
 Check-PowerCLI
 Connect-vCenter $vCenter
 
-$host.ui.RawUI.WindowTitle = "Monitoring $WhatToMonitor"
+switch ($Metric)
+{
+    1 { $host.ui.RawUI.WindowTitle = "Monitoring $WhatToMonitor CPU" }
+    2 { $host.ui.RawUI.WindowTitle = "Monitoring $WhatToMonitor Memory" }
+    3 { $host.ui.RawUI.WindowTitle = "Monitoring $WhatToMonitor Storage" }
+    default {  }
+}
 
 while ($True)
 {
@@ -41,34 +48,27 @@ while ($True)
 
     switch ($ObjectType)
     {
-        VM
-        {
-            $Data = Get-Stat $WhatToMonitor -Realtime -MaxSamples 1 -Stat `
-             cpu.usage.average `
-            ,cpu.ready.summation `
-            ,cpu.costop.summation `
-            ,mem.vmmemctl.average `
-            ,datastore.totalReadLatency.average `
-            ,datastore.totalWriteLatency.average `
-            ,datastore.read.average `
-            ,datastore.write.average | Sort-Object MetricID,Instance
+        1
+        { #VM
+            switch ($Metric)
+            {
+                1 { $Data = Get-Stat $WhatToMonitor -Realtime -MaxSamples 1 -Stat cpu.usage.average,cpu.ready.summation,cpu.costop.summation | Sort-Object MetricID,Instance }
+                2 { $Data = Get-Stat $WhatToMonitor -Realtime -MaxSamples 1 -Stat mem.vmmemctl.average | Sort-Object MetricID,Instance }
+                3 { $Data = Get-Stat $WhatToMonitor -Realtime -MaxSamples 1 -Stat datastore.totalReadLatency.average,datastore.totalWriteLatency.average,datastore.read.average,datastore.write.average | Sort-Object MetricID,Instance }
+            }
         }
-        Host
-        {
-            $Data = Get-Stat $WhatToMonitor -Realtime -MaxSamples 1 -Stat `
-             cpu.usage.average `
-            ,cpu.ready.summation `
-            ,mem.vmmemctl.average `
-            ,datastore.totalReadLatency.average `
-            ,datastore.totalWriteLatency.average `
-            ,datastore.read.average `
-            ,datastore.write.average | Sort-Object MetricID,Instance
+        2
+        { #Host
+            switch ($Metric)
+            {
+                1 { $Data = Get-Stat $WhatToMonitor -Realtime -MaxSamples 1 -Stat cpu.usage.average,cpu.ready.summation | Sort-Object MetricID,Instance }
+                2 { $Data = Get-Stat $WhatToMonitor -Realtime -MaxSamples 1 -Stat mem.vmmemctl.average | Sort-Object MetricID,Instance }
+                3 { $Data = Get-Stat $WhatToMonitor -Realtime -MaxSamples 1 -Stat datastore.totalReadLatency.average,datastore.totalWriteLatency.average,datastore.read.average,datastore.write.average | Sort-Object MetricID,Instance }
+            }
         }
-        DataStore
-        {
-            $Data = Get-Stat $WhatToMonitor -Realtime -MaxSamples 1 -Stat `
-             datastore.numberReadAveraged.average `
-            ,datastore.numberWriteAveraged.average | Sort-Object MetricID,Instance
+        3
+        { #DataStore
+            $Data = Get-Stat $WhatToMonitor -Realtime -MaxSamples 1 -Stat datastore.numberReadAveraged.average,datastore.numberWriteAveraged.average | Sort-Object MetricID,Instance
         }
     }
     

@@ -11,6 +11,8 @@
         do
         {
             if ($ConnectedvCenter.Count -eq 0 -or $ConnectedvCenter -eq $null) { Write-Host "Attempting to connect to vCenter server $vCenter" }
+
+            Set-PowerCLIConfiguration -invalidcertificateaction ignore
         
             Connect-VIServer $vCenter | Out-Null
             $ConnectedvCenter = $global:DefaultVIServers
