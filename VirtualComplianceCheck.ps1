@@ -9,7 +9,7 @@ cd $ScriptPath
 $ScriptStarted = Get-Date -Format MM-dd-yyyy_hh-mm-ss
 $ScriptName = $MyInvocation.MyCommand.Name
  
-#$ErrorActionPreference = "SilentlyContinue"
+$ErrorActionPreference = "SilentlyContinue"
  
 Function Check-PowerCLI
 {
@@ -53,7 +53,7 @@ $ESXvDS = Get-VDSwitch | sort Name
 
 DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Importing data file..."
 $DataFromFile = Import-Csv .\VirtualComplianceCheck-Data.csv
-
+<#
 ###############
 # Cluster Level Checks excluding "voice" clusters
 ###############
@@ -112,8 +112,8 @@ if ($clusterfails.Count -gt 0)
     }
 }
 
-#Send-MailMessage -smtpserver $emailServer -to $emailTo -from $emailFrom -subject "VirtualComplianceCheck found config problems in $vCenter cluster checks" -body $EmailBody
-
+Send-MailMessage -smtpserver $emailServer -to $emailTo -from $emailFrom -subject "VirtualComplianceCheck found config problems in $vCenter cluster checks" -body $EmailBody
+#>
 ###############
 # Host Level Checks
 ###############
@@ -134,66 +134,77 @@ foreach ($ESXHost in $ESXHosts)
     $NTPServers = Get-VMHostNtpServer $ESXHost
     $ntp = Get-VmHostService -VMhost $ESXHost | Where {$_.Key -eq 'ntpd'}
     if ($NTPServers -contains "ntp-iad-01.fanatics.corp" -and $NTPServers -contains "ntp-iad-02.fanatics.corp" -and $NTPServers -contains "ntp-dfw-01.fanatics.corp" -and $NTPServers -contains "ntp-dfw-02.fanatics.corp" -and $NTPServers.Count -eq 4)
-    { $TimeServers = $true }
-    else { $TimeServers = $false }
+    { $TimeServers = "Right" }
+    else { $TimeServers = "Wrong" }
 
     if ($ntp.Policy -eq "on")
-    { $TimePolicy = $true }
-    else { $TimePolicy = $false }
+    { $TimePolicy = "Right" }
+    else { $TimePolicy = "Wrong" }
 
     #Checking SNMP configuration
     $snmp = Get-VMHostService -VMHost $ESXHost | where {$_.Key -eq 'snmpd'}
-    if ($snmp.Running -eq "True") { $SNMPState = $true }
-    if ($snmp.Policy -eq "On") { $SNMPPolicy = $true }
+    if ($snmp.Running -eq "True") { $SNMPState = "Wrong" }
+    if ($snmp.Policy -eq "On") { $SNMPPolicy = "Wrong" }
 
     #Checking Domain, domain look up, DNS Servers and Gateway is correct
     $Network = Get-VMHostNetwork -VMHost $ESXHost
-    if ($Network.DomainName -ne $($ProperInfo.Domain)) { $DomainName = $false }
-    if ($Network.SearchDomain -ne $($ProperInfo.Domain)) { $SearchDomain = $false }
-    if ($Network.VMKernelGateway -ne $($ProperInfo.Gateway)) { $VMKernelGateway = $false }
-    if ($Network.DnsAddress -contains $($ProperInfo.DNS1) -and $Network.DnsAddress -contains $($ProperInfo.DNS2) -and $Network.DnsAddress.Count -eq 2) { $DNS = $false }
+    if ($Network.DomainName -ne $($ProperInfo.Domain)) { $DomainName = "Wrong" }
+    if ($Network.SearchDomain -ne $($ProperInfo.Domain)) { $SearchDomain = "Wrong" }
+    if ($Network.VMKernelGateway -ne $($ProperInfo.Gateway)) { $VMKernelGateway = "Wrong" }
+    if ($Network.DnsAddress -contains $($ProperInfo.DNS1) -and $Network.DnsAddress -contains $($ProperInfo.DNS2) -and $Network.DnsAddress.Count -eq 2) { $DNS = "Right" }
+    else { $DNS = "Wrong" }
 
     #Check power policy
-    $vmhostview = Get-View -ViewType Hostsystem -Filter @{"Name"=$($HostToConfig).Name} -Property ConfigManager.PowerSystem
+    $vmhostview = Get-View -ViewType Hostsystem -Filter @{"Name"=$($ESXHost).Name} -Property ConfigManager.PowerSystem
     $powerpolicy = Get-View $vmhostview.ConfigManager.PowerSystem
-    if ($($powerpolicy.Info.CurrentPolicy.Key) -eq 1) { $PowerPolicySetting = $false }
+    if ($($powerpolicy.Info.CurrentPolicy.Key) -ne 1) { $PowerPolicySetting = "Wrong" }
 
     #Check alarm actions
-    $AlarmActionState = Get-AlarmActionState -Entity $HostToConfig -Recurse:$false
-    if ($($AlarmActionState.'Alarm actions enabled') -ne "True") { $AlarmActions = $false }
+    $AlarmActionState = Get-AlarmActionState -Entity $ESXHost -Recurse:$false
+    if ($($AlarmActionState.'Alarm actions enabled') -ne "True") { $AlarmActions = "Wrong" }
+
+    #Check virtual switch config
+    $StandardSwitches = Get-VirtualSwitch -VMHost $ESXHost -Standard
+    if ($StandardSwitches.Nic.Count -gt 0) { $StandardSwitchCheck = "Wrong" }
+
+    $DistributedSwitches = Get-VDSwitch -VMHost $ESXHost
+    if ($DistributedSwitches -eq $null -or $DistributedSwitches -eq "") { $DistributedSwitchCheck1 = "Wrong" }
+    else 
+    {
+        foreach ($DistributedSwitch in $DistributedSwitches)
+        {
+            $Nics = Get-VMHostNetworkAdapter -VMHost $ESXHost -DistributedSwitch $DistributedSwitch -Physical | sort name
+            if ($Nics.Count -lt 2) { $DistributedSwitchCheck2 = "Wrong" }
+        }
+    }
+
+    #VAAI and ALUA Config Check
+    $VAAIConfig1 = Get-AdvancedSetting -Entity $ESXHost -Name DataMover.HardwareAcceleratedMove
+    $VAAIConfig2 = Get-AdvancedSetting -Entity $ESXHost -Name DataMover.HardwareAcceleratedInit
+    $VAAIConfig3 = Get-AdvancedSetting -Entity $ESXHost -Name VMFS3.HardwareAcceleratedLocking
 
     if ($OSInfo.Build -ne $ESXBuildNumber `
      -or $ESXHost.Name -notlike "*$($ProperInfo.Domain)" `
-     -or $TimeServers -eq $false `
-     -or $TimePolicy -eq $false `
-     -or $SNMPState -eq $true `
-     -or $SNMPPolicy -eq $true `
-     -or $DomainName -eq $false `
-     -or $SearchDomain -eq $false `
-     -or $VMKernelGateway -eq $false `
-     -or $DNS -eq $false `
-     -or $PowerPolicySetting -eq $false `
-     -or $AlarmActions -eq $false `
-     -or 
+     -or $TimeServers -eq "Wrong" `
+     -or $TimePolicy -eq "Wrong" `
+     -or $SNMPState -eq "Wrong" `
+     -or $SNMPPolicy -eq "Wrong" `
+     -or $DomainName -eq "Wrong" `
+     -or $SearchDomain -eq "Wrong" `
+     -or $VMKernelGateway -eq "Wrong" `
+     -or $DNS -eq "Wrong" `
+     -or $PowerPolicySetting -eq "Wrong" `
+     -or $AlarmActions -eq "Wrong" `
+     -or $StandardSwitchCheck -eq "Wrong" `
+     -or ($DistributedSwitchCheck1 -eq "Wrong" -or $DistributedSwitchCheck2 -eq "Wrong") `
+     -or $VAAIConfig1 -ne 1 `
+     -or $VAAIConfig2 -ne 1 `
+     -or $VAAIConfig3 -ne 1)
+     {
 
-    #ESXi build number
+     }
 
-    #host name is FQDN.
-
-    #NTP Servers
-
-    #SNMP service
-
-    #Domain, domain look up, DNS Servers and Gateway
-
-    #power management policy
-
-    #alarm actions
-
-    #virtual switch config excluding "voice" clusters
-
-    #VAAI and ALUA Config
-
+    Clear-Variable TimeServers,TimePolicy,SNMPState,SNMPPolicy,DomainName,SearchDomain,VMKernelGateway,DNS,PowerPolicySetting,AlarmActions,StandardSwitchCheck,DistributedSwitchCheck1,DistributedSwitchCheck2 -ErrorAction Ignore
 }
 
 if ($hostfails.Count -gt 0)

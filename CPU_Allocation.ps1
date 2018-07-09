@@ -41,7 +41,13 @@ if (!(Get-Module -ListAvailable -Name DupreeFunctions)) { Write-Host "'DupreeFun
 if (!(Get-Module -Name DupreeFunctions)) { Import-Module DupreeFunctions }
 
 Check-PowerCLI
-Connect-vCenter
+ 
+$a = Read-Host "Do you have a credential file? (y/n)"
+Remove-Variable Credential_To_Use -ErrorAction Ignore
+if ($a -eq "y") { Write-Host "Please select a credential file..."; $CredFile = Get-FileName -Filter "xml" }
+New-Variable -Name Credential_To_Use -Value $(Import-Clixml $($CredFile))
+ 
+Connect-vCenter -vCenter $vCenter -vCenterCredential $Credential_To_Use
 
 if (!(Test-Path "C:\ScriptOutput"))
 {
