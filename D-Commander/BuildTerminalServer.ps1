@@ -33,7 +33,7 @@ Connect-vCenter
 
 ##############################################################################################################################
 
-if ($VMFile -eq "" -or $VMFile -eq $null) { cls; Write-Host "Please select a VM config JSON file..."; $VMFile = Get-FileName }
+if ($VMFile -eq "" -or $VMFile -eq $null) { cls; Write-Host "Please select a VM config JSON file..."; $VMFile = Get-FileName -Filter "json" }
 
 ##################
 #Email Variables

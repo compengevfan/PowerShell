@@ -1,7 +1,8 @@
 ﻿function Connect-vCenter
 {
     Param(
-        [Parameter()] [string] $vCenter
+        [Parameter()] [string] $vCenter,
+        [Parameter()] $vCenterCredential
     )
 
     $ConnectedvCenter = $global:DefaultVIServers
@@ -12,9 +13,9 @@
         {
             if ($ConnectedvCenter.Count -eq 0 -or $ConnectedvCenter -eq $null) { Write-Host "Attempting to connect to vCenter server $vCenter" }
 
-            Set-PowerCLIConfiguration -invalidcertificateaction ignore
+            Set-PowerCLIConfiguration -invalidcertificateaction ignore -Confirm:$false | Out-Null
         
-            Connect-VIServer $vCenter | Out-Null
+            Connect-VIServer -Server $vCenter -Credential $vCenterCredential | Out-Null
             $ConnectedvCenter = $global:DefaultVIServers
 
             if ($ConnectedvCenter.Count -eq 0 -or $ConnectedvCenter -eq $null) { Write-Host "vCenter Connection Failed. Please try again or press Control-C to exit..."; Start-Sleep -Seconds 2 }
@@ -226,13 +227,16 @@ Function Convert-PhoneticAlphabet {
 
 Function Get-FileName
 {
+    Param(
+        [Parameter(Mandatory=$true)] [string] $Filter
+    )
     [System.Reflection.Assembly]::LoadWithPartialName("System.windows.forms") | Out-Null
 
     $initialDirectory = Get-Location
     
     $OpenFileDialog = New-Object System.Windows.Forms.OpenFileDialog
     $OpenFileDialog.initialDirectory = $initialDirectory
-    $OpenFileDialog.filter = "JSON (*.json)| *.json"
+    $OpenFileDialog.filter = "$Filter (*.$Filter)| *.$Filter"
     $OpenFileDialog.ShowDialog() | Out-Null
     $OpenFileDialog.filename
 }

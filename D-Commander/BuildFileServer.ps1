@@ -34,9 +34,9 @@ Connect-vCenter
 
 ##############################################################################################################################
 
-if ($VMFile -eq "" -or $VMFile -eq $null) { cls; Write-Host "Please select a VM config JSON file..."; $VMFile = Get-FileName }
+if ($VMFile -eq "" -or $VMFile -eq $null) { cls; Write-Host "Please select a VM config JSON file..."; $VMFile = Get-FileName -Filter "json" }
 
-if ($FSFile -eq "" -or $FSFile -eq $null) { cls; Write-Host "Please select a File Server config JSON file..."; $FSFile = Get-FileName }
+if ($FSFile -eq "" -or $FSFile -eq $null) { cls; Write-Host "Please select a File Server config JSON file..."; $FSFile = Get-FileName -Filter "json" }
 
 ##################
 #Email Variables

@@ -3,7 +3,8 @@ Param(
     [Parameter(Mandatory=$True)] [string] $WhatToMonitor,
     [Parameter(Mandatory=$True)] [int] $ObjectType,
     [Parameter()] [int] $Metric,
-    [Parameter(Mandatory=$True)] $vCenter
+    [Parameter(Mandatory=$True)] $vCenter,
+    [Parameter()] $CredFile
 )
  
 $ScriptPath = $PSScriptRoot
@@ -32,7 +33,10 @@ if (!(Get-Module -Name DupreeFunctions)) { Import-Module DupreeFunctions }
 if (!(Test-Path .\~Logs)) { New-Item -Name "~Logs" -ItemType Directory | Out-Null }
  
 Check-PowerCLI
-Connect-vCenter $vCenter
+
+New-Variable -Name Credential_To_Use -Value $(Import-Clixml $($CredFile))
+
+Connect-vCenter -vCenter $vCenter -vCenterCredential $Credential_To_Use
 
 switch ($Metric)
 {

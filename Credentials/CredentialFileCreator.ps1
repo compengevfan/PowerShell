@@ -37,11 +37,14 @@ if ($Selection -ne 'a' -and $Selection -le $i)
 
         if ($Cred_To_Update -eq $null) { Write-Host "Invalid selection. Please try again." -ForegroundColor Red; exit }
 
-        #Delete a single cred file and replace if exists. If not, create new file.
-        if (Test-Path .\"Credential-$ComputerName-$Cred_To_Update.xml") { Remove-Item .\"Credential-$ComputerName-$Cred_To_Update.xml" }
-
+        #Obtain credentials. If credential file exists remove it and recreate. If not, create new.
         $Creds = Get-Credential -Message "Please Enter your $Cred_To_Update creds."
-        $Creds | Export-Clixml -Path ".\Credential-$ComputerName-$Cred_To_Update.xml"
+
+        $UserName = $Creds.Username; $UserName = $UserName.Replace("$Cred_To_Update\","")
+
+        if (Test-Path .\"Credential-$UserName-$ComputerName-$Cred_To_Update.xml") { Remove-Item .\"Credential-$UserName-$ComputerName-$Cred_To_Update.xml" }
+
+        $Creds | Export-Clixml -Path ".\Credential-$UserName-$ComputerName-$Cred_To_Update.xml"
 
         Write-Host "$Cred_To_Update credential created/overwritten." -ForegroundColor Green
 

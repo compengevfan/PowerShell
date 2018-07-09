@@ -27,10 +27,17 @@ Function Check-PowerCLI
 if (!(Get-Module -ListAvailable -Name DupreeFunctions)) { Write-Host "'DupreeFunctions' module not available!!! Please check with Dupree!!! Script exiting!!!" -ForegroundColor Red; exit }
 if (!(Get-Module -Name DupreeFunctions)) { Import-Module DupreeFunctions }
 if (!(Test-Path .\~Logs)) { New-Item -Name "~Logs" -ItemType Directory | Out-Null }
-if (!(Test-Path .\~Output)) { New-Item -Name "~Output" -ItemType Directory | Out-Null }
- 
+
 Check-PowerCLI
-Connect-vCenter $vCenter
+
+$a = Read-Host "Do you have a credential file? (y/n)"
+Remove-Variable Credential_To_Use -ErrorAction Ignore
+if ($a -eq "y") { Write-Host "Please select a credential file..."; $CredFile = Get-FileName -Filter "xml" }
+New-Variable -Name Credential_To_Use -Value $(Import-Clixml $($CredFile))
+
+Connect-vCenter -vCenter $vCenter -vCenterCredential $Credential_To_Use
+
+if (!(Test-Path .\~Output)) { New-Item -Name "~Output" -ItemType Directory | Out-Null }
 
 $Another = $true
 
@@ -56,7 +63,7 @@ while ($Another)
                 DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Executing 'MonitorObject' script in a new window..."
                 DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Press '<ctrl> + C' in the new window to halt monitoring."
                 DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "This window can be closed without impacting the monitoring window."
-                Start-Process powershell -Argument "-File .\MonitorObject.ps1 -WhatToMonitor $ObjectName -ObjectType $ObjectType -Metric $Metric -vCenter $($global:defaultviserver.name)"
+                Start-Process powershell -Argument "-File .\MonitorObject.ps1 -WhatToMonitor $ObjectName -ObjectType $ObjectType -Metric $Metric -vCenter $($global:defaultviserver.name) -CredFile $CredFile"
             }
         }
         2
@@ -68,7 +75,7 @@ while ($Another)
                 DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Executing 'MonitorObject' script in a new window..."
                 DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Press '<ctrl> + C' in the new window to halt monitoring."
                 DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "This window can be closed without impacting the monitoring window."
-                Start-Process powershell -Argument "-File .\MonitorObject.ps1 -WhatToMonitor $ObjectName -ObjectType $ObjectType -vCenter $($global:defaultviserver.name)"
+                Start-Process powershell -Argument "-File .\MonitorObject.ps1 -WhatToMonitor $ObjectName -ObjectType $ObjectType -Metric $Metric -vCenter $($global:defaultviserver.name)"
             }
         }
         3
