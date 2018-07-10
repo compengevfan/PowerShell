@@ -1,6 +1,6 @@
 ﻿[CmdletBinding()]
 Param(
-    [Parameter()] [string] $vCenter
+    [Parameter()] [string] $vCenter = "iad-vc001.fanatics.corp"
 )
  
 $ScriptPath = $PSScriptRoot
@@ -112,6 +112,8 @@ if ($clusterfails.Count -gt 0)
     }
 }
 
+$EmailBody += "Script executed on $($env:computername)."
+
 Send-MailMessage -smtpserver $emailServer -to $emailTo -from $emailFrom -subject "VirtualComplianceCheck found config problems in $vCenter cluster checks" -body $EmailBody
 #>
 ###############
@@ -125,10 +127,13 @@ foreach ($ESXHost in $ESXHosts)
     
     #Checking Build number
     $OSInfo = Get-View -ViewType HostSystem -Filter @{"Name"=$($ESXHost).Name} -Property Name,Config.Product | foreach {$_.Name, $_.Config.Product}
+    if ($OSInfo.Build -ne $ESXBuildNumber) { $BuildCheck = "Wrong" }
     
     #Checking correct domain name for FQDN
     $ParentCluster = $ESXHost.Parent.Name
     $ProperInfo = $DataFromFile | ? { $_.Cluster -eq $ParentCluster }
+    if ($ProperInfo -eq $null -or $ProperInfo -eq "") { $ProperInfoCheck = "Wrong" }
+    if ($ESXHost.Name -notlike "*$($ProperInfo.Domain)") { $FQDN = "Wrong" }
 
     #Checking correct NTP servers and service is setup right
     $NTPServers = Get-VMHostNtpServer $ESXHost
@@ -180,11 +185,15 @@ foreach ($ESXHost in $ESXHosts)
 
     #VAAI and ALUA Config Check
     $VAAIConfig1 = Get-AdvancedSetting -Entity $ESXHost -Name DataMover.HardwareAcceleratedMove
+    if ($VAAIConfig1.Value -ne 1) { $VAAIConfig1Check = "Wrong" }
     $VAAIConfig2 = Get-AdvancedSetting -Entity $ESXHost -Name DataMover.HardwareAcceleratedInit
+    if ($VAAIConfig2.Value -ne 1) { $VAAIConfig2Check = "Wrong" }
     $VAAIConfig3 = Get-AdvancedSetting -Entity $ESXHost -Name VMFS3.HardwareAcceleratedLocking
+    if ($VAAIConfig3.Value -ne 1) { $VAAIConfig3Check = "Wrong" }
 
-    if ($OSInfo.Build -ne $ESXBuildNumber `
-     -or $ESXHost.Name -notlike "*$($ProperInfo.Domain)" `
+    if ($BuildCheck -eq "Wrong" `
+     -or $ProperInfoCheck -eq "Wrong" `
+     -or $FQDN -eq "Wrong" `
      -or $TimeServers -eq "Wrong" `
      -or $TimePolicy -eq "Wrong" `
      -or $SNMPState -eq "Wrong" `
@@ -197,14 +206,36 @@ foreach ($ESXHost in $ESXHosts)
      -or $AlarmActions -eq "Wrong" `
      -or $StandardSwitchCheck -eq "Wrong" `
      -or ($DistributedSwitchCheck1 -eq "Wrong" -or $DistributedSwitchCheck2 -eq "Wrong") `
-     -or $VAAIConfig1 -ne 1 `
-     -or $VAAIConfig2 -ne 1 `
-     -or $VAAIConfig3 -ne 1)
+     -or $VAAIConfig1Check -eq "Wrong" `
+     -or $VAAIConfig1Check -eq "Wrong" `
+     -or $VAAIConfig1Check -eq "Wrong")
      {
-
+        DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Warn -LogString "$($ESXHost.Name) has a config problem."
+        $hostfails += New-Object PSObject -Property @{
+            HostName = $ESXHost.Name
+            BuildCheck = $BuildCheck
+            ProperInfoCheck = $ProperInfoCheck
+            FQDN = $FQDN
+            TimeServers = $TimeServers
+            TimePolicy = $TimePolicy
+            SNMPState = $SNMPState
+            SNMPPolicy = $SNMPPolicy
+            DomainName = $DomainName
+            SearchDomain = $SearchDomain
+            VMKernelGateway = $VMKernelGateway
+            DNS = $DNS
+            PowerPolicySetting = $PowerPolicySetting
+            AlarmActions = $AlarmActions
+            StandardSwitchCheck = $StandardSwitchCheck
+            DistributedSwitchCheck1 = $DistributedSwitchCheck1
+            DistributedSwitchCheck2 = $DistributedSwitchCheck2
+            VAAIConfig1Check = $VAAIConfig1Check
+            VAAIConfig2Check = $VAAIConfig2Check
+            VAAIConfig3Check = $VAAIConfig3Check
+        }
      }
 
-    Clear-Variable TimeServers,TimePolicy,SNMPState,SNMPPolicy,DomainName,SearchDomain,VMKernelGateway,DNS,PowerPolicySetting,AlarmActions,StandardSwitchCheck,DistributedSwitchCheck1,DistributedSwitchCheck2 -ErrorAction Ignore
+    Clear-Variable BuildCheck,ProperInfoCheck,FQDN,TimeServers,TimePolicy,SNMPState,SNMPPolicy,DomainName,SearchDomain,VMKernelGateway,DNS,PowerPolicySetting,AlarmActions,StandardSwitchCheck,DistributedSwitchCheck1,DistributedSwitchCheck2,VAAIConfig1Check,VAAIConfig2Check,VAAIConfig3Check -ErrorAction Ignore
 }
 
 if ($hostfails.Count -gt 0)
@@ -212,15 +243,45 @@ if ($hostfails.Count -gt 0)
     DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Processing improperly configured clusters and building the email body..."
     $EmailBody = "The following hosts are misconfigured and their incorrect configuration settings are listed.`r`n`r`n"
 
-    if ($ProperInfo -eq $null) { DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "$($ESXHost.Name) is in a cluster that does not have info in the data file. This will lead to false positives in the config checks and should be corrected ASAP." }
+    foreach ($hostfail in $hostfails)
+    {
+        DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Adding $($hostfail.HostName) to the email..."
+        $EmailBody += "Host: $($hostfail.HostName)`r`n"
+
+        if ($hostfail.BuildCheck -eq "Wrong") { $EmailBody += "Incorrect build number.`r`n" }
+        if ($hostfail.ProperInfoCheck -eq "Wrong") { $EmailBody += "Host is in a cluster that does not have info in the data file. This will lead to false positives in the config checks and should be corrected ASAP.`r`n" }
+        if ($hostfail.FQDN -eq "Wrong") { $EmailBody += "Incorrect FQDN.`r`n" }
+        if ($hostfail.TimeServers -eq "Wrong") { $EmailBody += "Incorrect time servers.`r`n" }
+        if ($hostfail.TimePolicy -eq "Wrong") { $EmailBody += "NTP Service not set to start with host.`r`n" }
+        if ($hostfail.SNMPState -eq "Wrong") { $EmailBody += "SNMP is running.`r`n" }
+        if ($hostfail.SNMPPolicy -eq "Wrong") { $EmailBody += "SNMP is set to start with the host.`r`n" }
+        if ($hostfail.DomainName -eq "Wrong") { $EmailBody += "Incorrect domain name.`r`n" }
+        if ($hostfail.SearchDomain -eq "Wrong") { $EmailBody += "Incorrect seatch domain.`r`n" }
+        if ($hostfail.VMKernelGateway -eq "Wrong") { $EmailBody += "MGMT kernel adapter gateway incorrect.`r`n" }
+        if ($hostfail.DNS -eq "Wrong") { $EmailBody += "Incorrect DNS servers.`r`n" }
+        if ($hostfail.PowerPolicySetting -eq "Wrong") { $EmailBody += "Incorrect power policy setting.`r`n" }
+        if ($hostfail.AlarmActions -eq "Wrong") { $EmailBody += "Alarm actions are disabled.`r`n" }
+        if ($hostfail.StandardSwitchCheck -eq "Wrong") { $EmailBody += "There is a standard switch on this host with physical NICs attached to it.`r`n" }
+        if ($hostfail.DistributedSwitchCheck1 -eq "Wrong") { $EmailBody += "Host is not joined to a distributed switch.`r`n" }
+        if ($hostfail.DistributedSwitchCheck2 -eq "Wrong") { $EmailBody += "There is a vDS that does not have at least 2 physical NICs.`r`n" }
+        if ($hostfail.VAAIConfig1Check -eq "Wrong") { $EmailBody += "HardwareAcceleratedMove setting is not correct.`r`n" }
+        if ($hostfail.VAAIConfig2Check -eq "Wrong") { $EmailBody += "HardwareAcceleratedInit setting is not correct.`r`n" }
+        if ($hostfail.VAAIConfig3Check -eq "Wrong") { $EmailBody += "HardwareAcceleratedLocking setting is not correct.`r`n" }
+
+        $EmailBody += "`r`n"
+    }
 }
 
-#Send-MailMessage -smtpserver $emailServer -to $emailTo -from $emailFrom -subject "VirtualComplianceCheck found config problems in $vCenter host checks" -body $EmailBody
+$EmailBody += "Script executed on $($env:computername)."
+
+Send-MailMessage -smtpserver $emailServer -to $emailTo -from $emailFrom -subject "VirtualComplianceCheck found config problems in $vCenter host checks" -body $EmailBody
 
 ###############
 # vDS Level Checks
 ###############
 
 #mtu set to 1500
+
+#$EmailBody += "Script executed on $($env:computername)."
 
 #Send-MailMessage -smtpserver $emailServer -to $emailTo -from $emailFrom -subject "VirtualComplianceCheck found config problems in $vCenter vDS checks" -body $EmailBody
