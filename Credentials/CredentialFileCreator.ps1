@@ -26,9 +26,9 @@ foreach ($Domain_In_Array in $Domains_In_Array)
 	Write-Host $("`t"+$Domain_In_Array.Identifyer+". "+$Domain_In_Array.CredName)
 }
 
-$Selection = Read-Host "Please select the domain to create/override a credential. To create/override all, enter 'a'. To exit, enter 'e'"
+$Selection = Read-Host "Please select the domain to create/override a credential. To exit, enter 'e'"
 
-if ($Selection -ne 'a' -and $Selection -le $i)
+if ($Selection -le $i)
 {
     do
     {
@@ -42,9 +42,9 @@ if ($Selection -ne 'a' -and $Selection -le $i)
 
         $UserName = $Creds.Username; $UserName = $UserName.Replace("$Cred_To_Update\","")
 
-        if (Test-Path .\"Credential-$UserName-$ComputerName-$Cred_To_Update.xml") { Remove-Item .\"Credential-$UserName-$ComputerName-$Cred_To_Update.xml" }
+        if (Test-Path .\"Credential-$UserName-$Cred_To_Update-$ComputerName.xml") { Remove-Item .\"Credential-$UserName-$Cred_To_Update-$ComputerName.xml" }
 
-        $Creds | Export-Clixml -Path ".\Credential-$UserName-$ComputerName-$Cred_To_Update.xml"
+        $Creds | Export-Clixml -Path ".\Credential-$UserName-$Cred_To_Update-$ComputerName.xml"
 
         Write-Host "$Cred_To_Update credential created/overwritten." -ForegroundColor Green
 
@@ -53,13 +53,16 @@ if ($Selection -ne 'a' -and $Selection -le $i)
     while ($Selection -ne 'e')
 }
 
-if ($Selection -eq 'a')
+<#if ($Selection -eq 'a')
 {
-    Remove-Item .\*.xml
+    Remove-Item .\Credential-$UserName-*.xml
 
     foreach ($Domain in $Domains)
     {
         $Creds = Get-Credential -Message "Please Enter your $Domain creds."
-        $Creds | Export-Clixml -Path ".\Credential-$ComputerName-$Domain.xml"
+
+        $UserName = $Creds.Username; $UserName = $UserName.Replace("$Domain\","")
+
+        $Creds | Export-Clixml -Path ".\Credential-$UserName-$Domain-$ComputerName.xml"
     }
-}
+}#>

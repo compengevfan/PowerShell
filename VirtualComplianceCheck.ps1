@@ -53,7 +53,7 @@ $ESXvDS = Get-VDSwitch | sort Name
 
 DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Importing data file..."
 $DataFromFile = Import-Csv .\VirtualComplianceCheck-Data.csv
-<#
+
 ###############
 # Cluster Level Checks excluding "voice" clusters
 ###############
@@ -115,7 +115,7 @@ if ($clusterfails.Count -gt 0)
 $EmailBody += "Script executed on $($env:computername)."
 
 Send-MailMessage -smtpserver $emailServer -to $emailTo -from $emailFrom -subject "VirtualComplianceCheck found config problems in $vCenter cluster checks" -body $EmailBody
-#>
+
 ###############
 # Host Level Checks
 ###############
