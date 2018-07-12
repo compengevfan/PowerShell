@@ -183,13 +183,26 @@ foreach ($ESXHost in $ESXHosts)
         }
     }
 
-    #VAAI and ALUA Config Check
-    $VAAIConfig1 = Get-AdvancedSetting -Entity $ESXHost -Name DataMover.HardwareAcceleratedMove
-    if ($VAAIConfig1.Value -ne 1) { $VAAIConfig1Check = "Wrong" }
-    $VAAIConfig2 = Get-AdvancedSetting -Entity $ESXHost -Name DataMover.HardwareAcceleratedInit
-    if ($VAAIConfig2.Value -ne 1) { $VAAIConfig2Check = "Wrong" }
-    $VAAIConfig3 = Get-AdvancedSetting -Entity $ESXHost -Name VMFS3.HardwareAcceleratedLocking
-    if ($VAAIConfig3.Value -ne 1) { $VAAIConfig3Check = "Wrong" }
+<#    #VAAI and ALUA Config Check
+    $StorageDevices = @($ESXHost | Get-Datastore | where {$_.type -eq "VMFS"} |   
+    Select Name,  
+        @{N="DisplayName";E={(Get-ScsiLun -CanonicalName ($_.ExtensionData.Info.Vmfs.Extent[0]).DiskName -VMHost (Get-VIObjectByVIView $_.ExtensionData.Host[0].Key)).ExtensionData.DisplayName}})
+
+    if ($($StorageDevices | ? { $_.DisplayName -like "COMPELNT*" }).Count -gt 0)
+    {
+        $VAAIConfig1 = Get-AdvancedSetting -Entity $ESXHost -Name DataMover.HardwareAcceleratedMove
+        if ($VAAIConfig1.Value -ne 1) { $VAAIConfig1Check = "Wrong" }
+        $VAAIConfig2 = Get-AdvancedSetting -Entity $ESXHost -Name DataMover.HardwareAcceleratedInit
+        if ($VAAIConfig2.Value -ne 1) { $VAAIConfig2Check = "Wrong" }
+        $VAAIConfig3 = Get-AdvancedSetting -Entity $ESXHost -Name VMFS3.HardwareAcceleratedLocking
+        if ($VAAIConfig3.Value -ne 1) { $VAAIConfig3Check = "Wrong" }
+
+        $esxcli = Get-EsxCli -V2 -VMHost $ESXHost
+        if ($($esxcli.storage.nmp.satp.list.Invoke() | where {$_.Name -eq "VMW_SATP_ALUA"}).DefaultPSP -ne "VMW_PSP_RR") { $DefaultPSP = "Wrong" }
+
+        $CompellentVolumeCheck = $esxcli.storage.nmp.device.list.Invoke() | ? { $_.DeviceDisplayName -like "COMPELNT*" -and $_.StorageArrayType -ne "VMW_SATP_ALUA" }
+        if ($CompellentVolumeCheck -ne $null) { $ = "Wrong" }
+    }#>
 
     if ($BuildCheck -eq "Wrong" `
      -or $ProperInfoCheck -eq "Wrong" `
@@ -208,7 +221,9 @@ foreach ($ESXHost in $ESXHosts)
      -or ($DistributedSwitchCheck1 -eq "Wrong" -or $DistributedSwitchCheck2 -eq "Wrong") `
      -or $VAAIConfig1Check -eq "Wrong" `
      -or $VAAIConfig1Check -eq "Wrong" `
-     -or $VAAIConfig1Check -eq "Wrong")
+     -or $VAAIConfig1Check -eq "Wrong" `
+     -or $DefaultPSP -eq "Wrong" `
+     -or $StorageArrayTypeCheck -eq "Wrong")
      {
         DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Warn -LogString "$($ESXHost.Name) has a config problem."
         $hostfails += New-Object PSObject -Property @{
@@ -232,10 +247,12 @@ foreach ($ESXHost in $ESXHosts)
             VAAIConfig1Check = $VAAIConfig1Check
             VAAIConfig2Check = $VAAIConfig2Check
             VAAIConfig3Check = $VAAIConfig3Check
+            DefaultPSP = $DefaultPSP
+            StorageArrayTypeCheck = $StorageArrayTypeCheck
         }
      }
 
-    Clear-Variable BuildCheck,ProperInfoCheck,FQDN,TimeServers,TimePolicy,SNMPState,SNMPPolicy,DomainName,SearchDomain,VMKernelGateway,DNS,PowerPolicySetting,AlarmActions,StandardSwitchCheck,DistributedSwitchCheck1,DistributedSwitchCheck2,VAAIConfig1Check,VAAIConfig2Check,VAAIConfig3Check -ErrorAction Ignore
+    Clear-Variable BuildCheck,ProperInfoCheck,FQDN,TimeServers,TimePolicy,SNMPState,SNMPPolicy,DomainName,SearchDomain,VMKernelGateway,DNS,PowerPolicySetting,AlarmActions,StandardSwitchCheck,DistributedSwitchCheck1,DistributedSwitchCheck2,VAAIConfig1Check,VAAIConfig2Check,VAAIConfig3Check,DefaultPSP,StorageArrayTypeCheck -ErrorAction Ignore
 }
 
 if ($hostfails.Count -gt 0)
@@ -267,6 +284,8 @@ if ($hostfails.Count -gt 0)
         if ($hostfail.VAAIConfig1Check -eq "Wrong") { $EmailBody += "HardwareAcceleratedMove setting is not correct.`r`n" }
         if ($hostfail.VAAIConfig2Check -eq "Wrong") { $EmailBody += "HardwareAcceleratedInit setting is not correct.`r`n" }
         if ($hostfail.VAAIConfig3Check -eq "Wrong") { $EmailBody += "HardwareAcceleratedLocking setting is not correct.`r`n" }
+        if ($hostfail.DefaultPSP -eq "Wrong") { $EmailBody += "Default Path Selection Policy is incorrect.`r`n" }
+        if ($hostfail.StorageArrayTypeCheck -eq "Wrong") { $EmailBody += "Host has Compellent volumes not set to use the correct Storage Array Type.`r`n" }
 
         $EmailBody += "`r`n"
     }
