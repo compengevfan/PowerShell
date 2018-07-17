@@ -72,7 +72,7 @@ else
 while ($RunAgain)
 {
     #Get list of VM on DS with least space and pick a random VM
-    $SourceVMs = Get-VMHost $HostMostUsed | Get-VM | Where-Object {$_.ExtensionData.Guest.GuestFullName -notlike "*Red Hat*"} | Sort-Object Name
+    $SourceVMs = Get-VMHost $HostMostUsed | Get-VM | Sort-Object Name
     $SourceVMCount = $SourceVMs.Count
     $RandomNumber = Get-Random -Maximum $SourceVMCount
 

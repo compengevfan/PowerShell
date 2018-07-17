@@ -183,7 +183,7 @@ foreach ($ESXHost in $ESXHosts)
         }
     }
 
-<#    #VAAI and ALUA Config Check
+    #VAAI and ALUA Config Check
     $StorageDevices = @($ESXHost | Get-Datastore | where {$_.type -eq "VMFS"} |   
     Select Name,  
         @{N="DisplayName";E={(Get-ScsiLun -CanonicalName ($_.ExtensionData.Info.Vmfs.Extent[0]).DiskName -VMHost (Get-VIObjectByVIView $_.ExtensionData.Host[0].Key)).ExtensionData.DisplayName}})
@@ -202,7 +202,7 @@ foreach ($ESXHost in $ESXHosts)
 
         $CompellentVolumeCheck = $esxcli.storage.nmp.device.list.Invoke() | ? { $_.DeviceDisplayName -like "COMPELNT*" -and $_.StorageArrayType -ne "VMW_SATP_ALUA" }
         if ($CompellentVolumeCheck -ne $null) { $ = "Wrong" }
-    }#>
+    }
 
     if ($BuildCheck -eq "Wrong" `
      -or $ProperInfoCheck -eq "Wrong" `
