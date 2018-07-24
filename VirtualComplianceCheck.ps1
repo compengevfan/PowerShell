@@ -1,6 +1,7 @@
 ﻿[CmdletBinding()]
 Param(
-    [Parameter()] [string] $vCenter = "iad-vc001.fanatics.corp"
+    [Parameter()] [string] $vCenter = "iad-vc001.fanatics.corp",
+    [Parameter()] $CredFile = $null
 )
  
 $ScriptPath = $PSScriptRoot
@@ -29,7 +30,17 @@ if (!(Get-Module -Name DupreeFunctions)) { Import-Module DupreeFunctions }
 if (!(Test-Path .\~Logs)) { New-Item -Name "~Logs" -ItemType Directory | Out-Null }
  
 Check-PowerCLI
-Connect-vCenter $vCenter
+
+if ($CredFile -eq $null)
+{
+    $a = Read-Host "Do you have a credential file? (y/n)"
+    Remove-Variable Credential_To_Use -ErrorAction Ignore
+    if ($a -eq "y") { Write-Host "Please select a credential file..."; $CredFile = Get-FileName -Filter "xml" }
+}
+
+if ($CredFile -ne $null) { New-Variable -Name Credential_To_Use -Value $(Import-Clixml $($CredFile)) }
+
+Connect-vCenter -vCenter $vCenter -vCenterCredential $Credential_To_Use
 
 ##################
 #Email Variables
@@ -55,7 +66,7 @@ DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -L
 $DataFromFile = Import-Csv .\VirtualComplianceCheck-Data.csv
 
 ###############
-# Cluster Level Checks excluding "voice" clusters
+# Cluster Checks excluding "voice" clusters
 ###############
 $clusterfails = @()
 DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Checking cluster configurations..."
@@ -117,7 +128,7 @@ $EmailBody += "Script executed on $($env:computername)."
 Send-MailMessage -smtpserver $emailServer -to $emailTo -from $emailFrom -subject "VirtualComplianceCheck found config problems in $vCenter cluster checks" -body $EmailBody
 
 ###############
-# Host Level Checks
+# Host Checks
 ###############
 $hostfails = @()
 DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Checking cluster configurations..."
@@ -296,11 +307,36 @@ $EmailBody += "Script executed on $($env:computername)."
 Send-MailMessage -smtpserver $emailServer -to $emailTo -from $emailFrom -subject "VirtualComplianceCheck found config problems in $vCenter host checks" -body $EmailBody
 
 ###############
-# vDS Level Checks
+# vDS Checks
 ###############
+$vdsfails = @()
+DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Checking cluster configurations..."
+foreach ($DS in $ESXvDS)
+{
+    DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Processing $($DS.Name)..."
 
-#mtu set to 1500
+    if ($DS.Mtu -ne 1500)
+    {
+        $vdsfails += New-Object PSObject -Property @{
+            SwitchName = $DS.Name
+            MTU = "Wrong"
+        }
+    }
+}
 
-#$EmailBody += "Script executed on $($env:computername)."
+if ($vdsfails.Count -gt 0)
+{
+    DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Processing improperly configured distributed switches and building the email body..."
+    $EmailBody = "The following distributed switches are misconfigured and their incorrect configuration settings are listed.`r`n`r`n"
 
-#Send-MailMessage -smtpserver $emailServer -to $emailTo -from $emailFrom -subject "VirtualComplianceCheck found config problems in $vCenter vDS checks" -body $EmailBody
+    foreach ($vdsfail in $vdsfails)
+    {
+        DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Adding $($vdsfail.Name) to the email..."
+        $EmailBody += "Switch: $($vdsfail.Name)`r`n"
+
+        if ($vdsfail.MTU -eq "Wrong") { $EmailBody += "MTU is not 1500." }
+    }
+    $EmailBody += "Script executed on $($env:computername)."
+
+    Send-MailMessage -smtpserver $emailServer -to $emailTo -from $emailFrom -subject "VirtualComplianceCheck found config problems in $vCenter vDS checks" -body $EmailBody
+}
