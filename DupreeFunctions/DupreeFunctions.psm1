@@ -19,6 +19,15 @@ function Connect-vCenter
     )
 
     $ConnectedvCenter = $global:DefaultVIServers
+    if ($ConnectedvCenter.Count -eq 1)
+    {
+        Write-Host "You are currently connected to $($ConnectedvCenter.Name)."
+        $Response = Read-Host "Do you want to disconnect? (y/n; default 'n')"
+        
+        if ($Response -eq 'y')
+        { Disconnect-VIServer -Confirm:$false -Force; $ConnectedvCenter = $global:DefaultVIServers }
+    }
+    
     if ($ConnectedvCenter.Count -eq 0)
     {
         if ($vCenter -eq $null -or $vCenter -eq "") { $vCenter = Read-Host "Please provide the name of a vCenter server..." }

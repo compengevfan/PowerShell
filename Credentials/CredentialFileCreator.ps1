@@ -40,7 +40,7 @@ if ($Selection -le $i)
         #Obtain credentials. If credential file exists remove it and recreate. If not, create new.
         $Creds = Get-Credential -Message "Please Enter your $Cred_To_Update creds."
 
-        $UserName = $Creds.Username; $UserName = $UserName.Replace("$Cred_To_Update\","")
+        $UserName = $Creds.Username; $UserName = $UserName.Replace("\","_")
 
         if (Test-Path .\"Credential-$UserName-$Cred_To_Update-$ComputerName.xml") { Remove-Item .\"Credential-$UserName-$Cred_To_Update-$ComputerName.xml" }
 
@@ -48,7 +48,7 @@ if ($Selection -le $i)
 
         Write-Host "$Cred_To_Update credential created/overwritten." -ForegroundColor Green
 
-        $Selection = Read-Host "Please select the domain to create/override a credential. To create/override all, enter 'a'. To exit, enter 'e'"
+        $Selection = Read-Host "Please select the domain to create/override a credential. To exit, enter 'e'"
     }
     while ($Selection -ne 'e')
 }

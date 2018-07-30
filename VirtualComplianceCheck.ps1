@@ -1,22 +1,22 @@
 ﻿[CmdletBinding()]
 Param(
-    [Parameter()] [string] $vCenter = "iad-vc001.fanatics.corp",
+    [Parameter()] [string] $vCenter,
     [Parameter()] $CredFile = $null
 )
  
 $ScriptPath = $PSScriptRoot
 cd $ScriptPath
- 
+  
 $ScriptStarted = Get-Date -Format MM-dd-yyyy_hh-mm-ss
 $ScriptName = $MyInvocation.MyCommand.Name
- 
+  
 $ErrorActionPreference = "SilentlyContinue"
- 
+  
 Function Check-PowerCLI
 {
     Param(
     )
- 
+  
     if (!(Get-Module -Name VMware.VimAutomation.Core))
     {
         write-host ("Adding PowerCLI...")
@@ -24,29 +24,26 @@ Function Check-PowerCLI
         write-host ("Loaded PowerCLI.")
     }
 }
- 
+  
 if (!(Get-Module -ListAvailable -Name DupreeFunctions)) { Write-Host "'DupreeFunctions' module not available!!! Please check with Dupree!!! Script exiting!!!" -ForegroundColor Red; exit }
 if (!(Get-Module -Name DupreeFunctions)) { Import-Module DupreeFunctions }
 if (!(Test-Path .\~Logs)) { New-Item -Name "~Logs" -ItemType Directory | Out-Null }
- 
+  
 Check-PowerCLI
-
-if ($CredFile -eq $null)
+ 
+if ($CredFile -ne $null)
 {
-    $a = Read-Host "Do you have a credential file? (y/n)"
     Remove-Variable Credential_To_Use -ErrorAction Ignore
-    if ($a -eq "y") { Write-Host "Please select a credential file..."; $CredFile = Get-FileName -Filter "xml" }
+    New-Variable -Name Credential_To_Use -Value $(Import-Clixml $($CredFile))
 }
-
-if ($CredFile -ne $null) { New-Variable -Name Credential_To_Use -Value $(Import-Clixml $($CredFile)) }
-
+ 
 Connect-vCenter -vCenter $vCenter -vCenterCredential $Credential_To_Use
 
 ##################
 #Email Variables
 ###################emailTo is a comma separated list of strings eg. "email1","email2"
 $emailFrom = "VirtualComplianceCheck@fanatics.com"
-$emailTo = "cdupree@fanatics.com"
+$emailTo = "fanatics+IEC@service-now.com"
 $emailServer = "smtp.ff.p10"
 
 ##################
@@ -121,11 +118,11 @@ if ($clusterfails.Count -gt 0)
 
         $EmailBody += "`r`n"
     }
+
+    $EmailBody += "Script executed on $($env:computername)."
+
+    Send-MailMessage -smtpserver $emailServer -to $emailTo -from $emailFrom -subject "VirtualComplianceCheck found config problems in $vCenter cluster checks" -body $EmailBody
 }
-
-$EmailBody += "Script executed on $($env:computername)."
-
-Send-MailMessage -smtpserver $emailServer -to $emailTo -from $emailFrom -subject "VirtualComplianceCheck found config problems in $vCenter cluster checks" -body $EmailBody
 
 ###############
 # Host Checks
@@ -300,11 +297,13 @@ if ($hostfails.Count -gt 0)
 
         $EmailBody += "`r`n"
     }
+
+    $EmailBody += "Script executed on $($env:computername)."
+
+    Send-MailMessage -smtpserver $emailServer -to $emailTo -from $emailFrom -subject "VirtualComplianceCheck found config problems in $vCenter host checks" -body $EmailBody
 }
 
-$EmailBody += "Script executed on $($env:computername)."
 
-Send-MailMessage -smtpserver $emailServer -to $emailTo -from $emailFrom -subject "VirtualComplianceCheck found config problems in $vCenter host checks" -body $EmailBody
 
 ###############
 # vDS Checks
