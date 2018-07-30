@@ -1,0 +1,32 @@
+Key,Value,OS,CorrectData,Fabric
+System\CurrentControlSet\Services\mpio\Parameters,PDORemovePeriod,All,120,All
+System\CurrentControlSet\Services\mpio\Parameters,PathRecoveryInterval,All,25,All
+System\CurrentControlSet\Services\mpio\Parameters,UseCustomPathRecoveryInterval,All,1,All
+System\CurrentControlSet\Services\mpio\Parameters,PathVerifyEnabled,All,1,All
+System\CurrentControlSet\Services\mpio\Parameters,PathVerificationPeriod,All,30,All
+System\CurrentControlSet\Services\mpio\Parameters,RetryCount,All,3,All
+System\CurrentControlSet\Services\mpio\Parameters,RetryInterval,All,1,All
+SYSTEM\CurrentControlSet\Services\Disk,TimeoutValue,All,60,All
+System\CurrentControlSet\Services\mpio\Parameters,DiskPathCheckEnabled,2008,1,All
+System\CurrentControlSet\Services\mpio\Parameters,DiskPathCheckInterval,2008,25,All
+System\CurrentControlSet\Services\mpio\Parameters,DiskPathCheckDisabled,2012,0,All
+System\CurrentControlSet\Services\mpio\Parameters,DiskPathCheckInterval,2012,25,All
+SYSTEM\CurrentControlSet\Control\Class\{4D36E97B-E325-11CE-BFC1-08002BE10318}\<Instance Number>\Parameters,MaxRequestHoldTime,All,90,iSCSI
+SYSTEM\CurrentControlSet\Control\Class\{4D36E97B-E325-11CE-BFC1-08002BE10318}\<Instance Number>\Parameters,LinkDownTime,All,35,iSCSI
+SYSTEM\CurrentControlSet\Control\Class\{4D36E97B-E325-11CE-BFC1-08002BE10318}\<Instance Number>\Parameters,TCPConnectTime,All,15,iSCSI
+SYSTEM\CurrentControlSet\Control\Class\{4D36E97B-E325-11CE-BFC1-08002BE10318}\<Instance Number>\Parameters,TCPDisconnectTime,All,15,iSCSI
+SYSTEM\CurrentControlSet\Control\Class\{4D36E97B-E325-11CE-BFC1-08002BE10318}\<Instance Number>\Parameters,WMIRequestTimeout,All,30,iSCSI
+SYSTEM\CurrentControlSet\Control\Class\{4D36E97B-E325-11CE-BFC1-08002BE10318}\<Instance Number>\Parameters,DelayBetweenReconnect,All,5,iSCSI
+SYSTEM\CurrentControlSet\Control\Class\{4D36E97B-E325-11CE-BFC1-08002BE10318}\<Instance Number>\Parameters,MaxConnectionRetries,All,4294967295,iSCSI
+SYSTEM\CurrentControlSet\Control\Class\{4D36E97B-E325-11CE-BFC1-08002BE10318}\<Instance Number>\Parameters,MaxPendingRequests,All,255,iSCSI
+SYSTEM\CurrentControlSet\Control\Class\{4D36E97B-E325-11CE-BFC1-08002BE10318}\<Instance Number>\Parameters,EnableNOPOut,All,1,iSCSI
+SYSTEM\CurrentControlSet\Control\Class\{4D36E97B-E325-11CE-BFC1-08002BE10318}\<Instance Number>\Parameters,MaxTransferLength,All,262144,iSCSI
+SYSTEM\CurrentControlSet\Control\Class\{4D36E97B-E325-11CE-BFC1-08002BE10318}\<Instance Number>\Parameters,MaxBurstLength,All,262144,iSCSI
+SYSTEM\CurrentControlSet\Control\Class\{4D36E97B-E325-11CE-BFC1-08002BE10318}\<Instance Number>\Parameters,FirstBurstLength,All,65536,iSCSI
+SYSTEM\CurrentControlSet\Control\Class\{4D36E97B-E325-11CE-BFC1-08002BE10318}\<Instance Number>\Parameters,MaxRecvDataSegmentLength,All,65536,iSCSI
+SYSTEM\CurrentControlSet\Control\Class\{4D36E97B-E325-11CE-BFC1-08002BE10318}\<Instance Number>\Parameters,IPSecConfigTimeout,All,60,iSCSI
+SYSTEM\CurrentControlSet\Control\Class\{4D36E97B-E325-11CE-BFC1-08002BE10318}\<Instance Number>\Parameters,InitialR2T,All,0,iSCSI
+SYSTEM\CurrentControlSet\Control\Class\{4D36E97B-E325-11CE-BFC1-08002BE10318}\<Instance Number>\Parameters,ImmediateData,All,1,iSCSI
+SYSTEM\CurrentControlSet\Control\Class\{4D36E97B-E325-11CE-BFC1-08002BE10318}\<Instance Number>\Parameters,PortalRetryCount,All,5,iSCSI
+SYSTEM\CurrentControlSet\Control\Class\{4D36E97B-E325-11CE-BFC1-08002BE10318}\<Instance Number>\Parameters,NetworkReadyRetryCount,All,10,iSCSI
+SYSTEM\CurrentControlSet\Control\Class\{4D36E97B-E325-11CE-BFC1-08002BE10318}\<Instance Number>\Parameters,ErrorRecoveryLevel,All,2,iSCSI
