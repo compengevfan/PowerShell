@@ -5,8 +5,11 @@ Param(
 
 $ScriptPath = $PSScriptRoot
 cd $ScriptPath
+  
+$ScriptStarted = Get-Date -Format MM-dd-yyyy_hh-mm-ss
+$ScriptName = $MyInvocation.MyCommand.Name
 
-$ErrorActionPreference = "SilentlyContinue"
+#$ErrorActionPreference = "SilentlyContinue"
  
 Function Check-PowerCLI
 {
@@ -23,12 +26,17 @@ Function Check-PowerCLI
  
 if (!(Get-Module -ListAvailable -Name DupreeFunctions)) { Write-Host "'DupreeFunctions' module not available!!! Please check with Dupree!!! Script exiting!!!" -ForegroundColor Red; exit }
 if (!(Get-Module -Name DupreeFunctions)) { Import-Module DupreeFunctions }
+if (!(Test-Path .\~Logs)) { New-Item -Name "~Logs" -ItemType Directory | Out-Null }
  
 Check-PowerCLI
-Connect-vCenter iad-vc001.fanatics.corp
-
-$ScriptStarted = Get-Date -Format MM-dd-yyyy_hh-mm-ss
-$ScriptName = $MyInvocation.MyCommand.Name
+ 
+if ($CredFile -ne $null)
+{
+    Remove-Variable Credential_To_Use -ErrorAction Ignore
+    New-Variable -Name Credential_To_Use -Value $(Import-Clixml $($CredFile))
+}
+ 
+Connect-vCenter -vCenter $vCenter -vCenterCredential $Credential_To_Use
 
 #List of OS Codes.
 $OSes = "2K12R2", "2K16"

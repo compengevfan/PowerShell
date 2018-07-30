@@ -7,9 +7,12 @@ Param(
 
 $ScriptPath = $PSScriptRoot
 cd $ScriptPath
+
+$ScriptStarted = Get-Date -Format MM-dd-yyyy_hh-mm-ss
+$ScriptName = $MyInvocation.MyCommand.Name
  
-$ErrorActionPreference = "SilentlyContinue"
-$WarningPreference = "SilentlyContinue"
+#$ErrorActionPreference = "SilentlyContinue"
+#$WarningPreference = "SilentlyContinue"
  
 Function Check-PowerCLI
 {
@@ -24,10 +27,9 @@ Function Check-PowerCLI
     }
 }
  
-try { Get-Module -ListAvailable -Name DupreeFunctions}
-catch { Write-Host "'DupreeFunctions' module not available!!! Please check with Dupree!!! Script exiting!!!" -ForegroundColor Red; exit }
 if (!(Get-Module -ListAvailable -Name DupreeFunctions)) { Write-Host "'DupreeFunctions' module not available!!! Please check with Dupree!!! Script exiting!!!" -ForegroundColor Red; exit }
 if (!(Get-Module -Name DupreeFunctions)) { Import-Module DupreeFunctions }
+if (!(Test-Path .\~Logs)) { New-Item -Name "~Logs" -ItemType Directory | Out-Null }
  
 Check-PowerCLI
 
@@ -35,9 +37,6 @@ Check-PowerCLI
 
 #if there is no input file, present an explorer window for the user to select one.
 if ($InputFile -eq "" -or $InputFile -eq $null) { cls; Write-Host "Please select a JSON file..."; $InputFile = Get-FileName -Filter "json" }
-
-$ScriptStarted = Get-Date -Format MM-dd-yyyy_hh-mm-ss
-$ScriptName = $MyInvocation.MyCommand.Name
 
 ##################
 #Email Variables
@@ -94,38 +93,38 @@ if ($DomainCredentials -eq $null)
 #Find the template to be used based on site and OS version from JSON. If template not found, exit.
 $TemplateToFind = "TPL_" + $($DataFromFile.VMInfo.Cluster) + "_" + $($DataFromFile.GuestInfo.OS)
 DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Locating Template $TemplateToFind"
-$TemplateToUse = Get-Template $TemplateToFind
+$TemplateToUse = Get-Template $TemplateToFind -ErrorAction Ignore
 if ($TemplateToUse -ne $null) { DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Succ -LogString "Template found..." }
 else { DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Err -LogString "Template NOT found!!! Script Exiting!!!"; return 66 }
 
 #Find the Folder. If it is not found, exit.
 DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Parsing folder path to find proper location..."
 $Folder = $null
-$Folder = Get-FolderByPath -Path $($DataFromFile.VMInfo.FolderPath)
+$Folder = Get-FolderByPath -Path $($DataFromFile.VMInfo.FolderPath) -ErrorAction Ignore
 if ($Folder -ne $null) { DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Succ -LogString "Location found..." }
 else { DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Err -LogString "Location NOT found!!! Script Exiting!!!"; return 66 }
 
 #Find the customization spec. If it is not found, exit.
 DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Locating Customization Spec $($DataFromFile.GuestInfo.CustomizationSpec)..."
-$OSCustSpec = Get-OSCustomizationSpec $($DataFromFile.GuestInfo.CustomizationSpec)
+$OSCustSpec = Get-OSCustomizationSpec $($DataFromFile.GuestInfo.CustomizationSpec) -ErrorAction Ignore
 if ($OSCustSpec -ne $null) { DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Succ -LogString "Customization Spec found..." }
 else { DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Err -LogString "Customization Spec NOT found!!! Script Exiting!!!"; return 66 }
 
 #Find the Portgroup. Check for vDS first; if not found, check for standard. If it is not found, exit.
 DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Locating PortGroup $($DataFromFile.VMInfo.PortGroup)..."
-$PortGroup = Get-Datacenter $($DataFromFile.VMInfo.DataCenter) | Get-VDSwitch | Get-VDPortgroup $($DataFromFile.VMInfo.PortGroup)
+$PortGroup = Get-Datacenter $($DataFromFile.VMInfo.DataCenter) | Get-VDSwitch | Get-VDPortgroup $($DataFromFile.VMInfo.PortGroup) -ErrorAction Ignore
 if ($PortGroup -ne $null) { DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Succ -LogString "PortGroup found..."; $PortType = "vds" }
 if ($PortGroup -eq $null)
 {
-    $PortGroup = Get-Datacenter $($DataFromFile.VMInfo.DataCenter) | Get-VirtualPortGroup | where Name -eq $($DataFromFile.VMInfo.PortGroup)
+    $PortGroup = Get-Datacenter $($DataFromFile.VMInfo.DataCenter) | Get-VirtualPortGroup | where Name -eq $($DataFromFile.VMInfo.PortGroup) -ErrorAction Ignore
     if ($PortGroup -ne $null) { DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Succ -LogString "PortGroup found..."; $PortType = "std" }
     else { DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Err -LogString "PortGroup NOT found!!! Script Exiting!!!"; return 66 }
 }
 
 #Find the Datastore. First, look for a DS Cluster. If not found, look for DS. If it is not found, exit.
 DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Locating Datastore Cluster $($DataFromFile.VMInfo.Datastore)..."
-$DataStore = Get-DatastoreCluster $($DataFromFile.VMInfo.Datastore)
-if ($DataStore -eq $null) { $DataStore = Get-Datastore $($DataFromFile.VMInfo.Datastore) }
+$DataStore = Get-DatastoreCluster $($DataFromFile.VMInfo.Datastore) -ErrorAction Ignore
+if ($DataStore -eq $null) { $DataStore = Get-Datastore $($DataFromFile.VMInfo.Datastore) -ErrorAction Ignore }
 if ($DataStore -ne $null) { DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Succ -LogString "Storage found..." }
 else { DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Err -LogString "Storage NOT found!!! Script Exiting!!!"; return 66 }
 
@@ -134,7 +133,7 @@ else { DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType 
 ##################
 
 #Verify that VM name does not exist
-$CheckName = Get-VM $($DataFromFile.VMInfo.VMName)
+$CheckName = Get-VM $($DataFromFile.VMInfo.VMName) -ErrorAction Ignore
 if ($CheckName -eq $null) { DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Succ -LogString "New VM name not found..." }
 else { DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Err -LogString "New VM name found!!! Script Exiting!!!"; return 66 }
 
@@ -146,7 +145,7 @@ if ($CheckIPAddress -eq $null) { DoLogging -ScriptStarted $ScriptStarted -Script
 else { DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Err -LogString "New VM IP found!!! Script Exiting!!!"; return 66 }
 
 #Verify that the IP address does not respond to ping.
-$CheckIPAddress = Test-Connection $($DataFromFile.GuestInfo.IPaddress) -Count 1
+$CheckIPAddress = Test-Connection $($DataFromFile.GuestInfo.IPaddress) -Count 1 -ErrorAction Ignore
 if ($CheckIPAddress -eq $null) { DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Succ -LogString "New VM IP does not respond to ping..." }
 else { DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Err -LogString "New VM IP does respond to ping!!! Script Exiting!!!"; return 66 }
 
@@ -160,7 +159,7 @@ else { DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType 
 
 #Create a temporary Customization Spec with appropriate network settings and domain information
 DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Creating temporary customization spec..."
-if ((Get-OSCustomizationSpec -Name $($DataFromFile.VMInfo.VMName)) -ne $null) { Remove-OSCustomizationSpec -OSCustomizationSpec $($DataFromFile.VMInfo.VMName) -Confirm:$false }
+if ((Get-OSCustomizationSpec -Name $($DataFromFile.VMInfo.VMName) -ErrorAction Ignore) -ne $null) { Remove-OSCustomizationSpec -OSCustomizationSpec $($DataFromFile.VMInfo.VMName) -Confirm:$false }
 $TempCustomizationSpec = New-OSCustomizationSpec -Name $($DataFromFile.VMInfo.VMName) -Spec ( Get-OSCustomizationSpec -Name $OSCustSpec )
 DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Configuring domain settings in temporary customization spec..."
 $TempCustomizationSpec | Set-OSCustomizationSpec -Domain $($DataFromFile.GuestInfo.Domain) -DomainCredentials $DomainCredentials -AutoLogonCount 0 | Out-Null
@@ -243,7 +242,7 @@ Start-Sleep 60
 #Move server to appropriate OU, if OU in the JSON does not exist, the server gets moved to the "Servers" OU.
 DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Verifying OU '$($DataFromFile.GuestInfo.OU)' exists..."
 $DN = ConvertToDN -OUPath $($DataFromFile.GuestInfo.OU) -Domain $($DataFromFile.GuestInfo.Domain)
-$OUCheck = Get-ADOrganizationalUnit -Identity $DN -Server $($DataFromFile.GuestInfo.DNS1) -Credential $DomainCredentials
+$OUCheck = Get-ADOrganizationalUnit -Identity $DN -Server $($DataFromFile.GuestInfo.DNS1) -Credential $DomainCredentials -ErrorAction Ignore
 if ($OUCheck)
 {
     DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Moving server to OU '$($DataFromFile.GuestInfo.OU)'..."

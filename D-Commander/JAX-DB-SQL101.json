@@ -3,7 +3,7 @@
 		{
 			"vCenter": "discography.evorigin.com",
 			"Datacenter": "DC1",
-			"Cluster": "DC1",
+			"Cluster": "C1",
 			"FolderPath": "DC1/Discovered virtual machine",
 			"VMName": "JAX-OSQL101",
 			"Datastore": "Storage",
