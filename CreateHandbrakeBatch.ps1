@@ -5,7 +5,7 @@ Param(
     [Parameter(Mandatory=$true)] [string] $SeasonPath
 )
 
-$BeginCommand = '"c:\Program Files\Handbrake\HandBrakeCLI" -Z "Normal" --no-dvdnav -i'
+$BeginCommand = '"c:\Program Files\Handbrake\HandBrakeCLI" -Z "Roku 720p30 Surround" --no-dvdnav -i'
 $EndCommand = '.mp4" -m -a "1" -s "scan"'
 
 $BatchFileOutput = ""

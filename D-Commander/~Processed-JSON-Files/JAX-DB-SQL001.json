@@ -1,0 +1,31 @@
+{
+	"VMInfo": [
+		{
+			"vCenter": "discography.evorigin.com",
+			"Datacenter": "DC1",
+			"Cluster": "C1",
+			"FolderPath": "DC1/Discovered virtual machine",
+			"VMName": "JAX-OSQL001",
+			"Datastore": "Storage",
+		  	"PortGroup": "JAX-Origin",
+			"Owner": "Dupree",
+			"Purpose" : "Test"
+		}
+	],
+  
+  	"GuestInfo": [
+		{
+			"OS": "2K12R2",
+			"CustomizationSpec": "Windows-2012-R2",
+			"vCPUs": "2",
+			"RAM": "8",
+			"IPAddress": "172.16.10.62",
+			"SubnetMask": "255.255.255.0",
+			"Gateway": "10.142.98.1",
+			"Domain": "origin.local",
+			"DNS1": "172.16.10.101",
+			"DNS2": "172.16.10.100",
+			"OU": "Terminal Server Users/FROW/Consolidation"
+		}
+	]
+}
