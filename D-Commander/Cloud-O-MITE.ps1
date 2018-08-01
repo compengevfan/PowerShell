@@ -140,7 +140,7 @@ else { DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType 
 #Verify that the IP address is not one of the first 20 IPs in the subnet.
 
 #Verify that IP address is not assigned to another VM.
-$CheckIPAddress = Find-VmByAddress -IP $($DataFromFile.GuestInfo.IPaddress)
+$CheckIPAddress = Find-VmByAddress -IP $($DataFromFile.GuestInfo.IPaddress) -ErrorAction Ignore
 if ($CheckIPAddress -eq $null) { DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Succ -LogString "New VM IP not found..." }
 else { DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Err -LogString "New VM IP found!!! Script Exiting!!!"; return 66 }
 
@@ -168,12 +168,12 @@ $TempCustomizationSpec | Get-OSCustomizationNicMapping | Set-OSCustomizationNicM
 
 #Create the VM
 DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Deploying VM..."
-New-VM -Name $($DataFromFile.VMInfo.VMName) -Template $TemplateToUse -ResourcePool $($DataFromFile.VMInfo.Cluster) -Datastore $DataStore -Location $Folder -OSCustomizationSpec $TempCustomizationSpec | Out-Null
+New-VM -Name $($DataFromFile.VMInfo.VMName) -Template $TemplateToUse -ResourcePool $($DataFromFile.VMInfo.Cluster) -Datastore $DataStore -Location $Folder -OSCustomizationSpec $TempCustomizationSpec -ErrorAction SilentlyContinue -ErrorVariable NewVMFail | Out-Null
 
 Start-Sleep 5
 
 #Verify VM Deployed, update specs, power on and wait for customization to complete.
-if ((Get-VM $($DataFromFile.VMInfo.VMName)) -eq $null) { DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Err -LogString "VM Deploy failed!!! Script exiting!!!"; return 66 }
+if ((Get-VM $($DataFromFile.VMInfo.VMName)) -eq $null) { DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Err -LogString "VM Deploy failed!!! Script exiting!!!"; DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Err -LogString $NewVMFail; return 66 }
 else
 {
     DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Updating VM Specs..."
