@@ -2,6 +2,7 @@
 	"VMInfo": [
 		{
 			"vCenter": "iad-vc001.fanatics.corp",
+			"Template": "TPL_C1_2K16D1607",
 			"Datacenter": "TAFQ",
 			"Cluster": "TAFQ",
 			"FolderPath": "TAFQ/Discovered virtual machine",
@@ -15,7 +16,6 @@
   
   	"GuestInfo": [
 		{
-			"OS": "2K12R2",
 			"CustomizationSpec": "Windows-Corp-KMS",
 			"vCPUs": "4",
 			"RAM": "12",

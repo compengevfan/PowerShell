@@ -59,7 +59,6 @@ DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -L
 $DataFromFile = ConvertFrom-JSON (Get-Content $InputFile -raw)
 if ($DataFromFile -eq $null) { DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Err -LogString "Error importing JSON file. Please verify proper syntax and file name."; exit }
 
-#If not connected to a vCenter, connect.
 Connect-vCenter $($DataFromFile.VMInfo.vCenter)
 
 ##################
@@ -91,7 +90,7 @@ if ($DomainCredentials -eq $null)
 ##################
 
 #Find the template to be used based on site and OS version from JSON. If template not found, exit.
-$TemplateToFind = "TPL_" + $($DataFromFile.VMInfo.Cluster) + "_" + $($DataFromFile.GuestInfo.OS)
+$TemplateToFind = $($DataFromFile.VMInfo.Template)
 DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Locating Template $TemplateToFind"
 $TemplateToUse = Get-Template $TemplateToFind -ErrorAction Ignore
 if ($TemplateToUse -ne $null) { DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Succ -LogString "Template found..." }
@@ -173,7 +172,7 @@ New-VM -Name $($DataFromFile.VMInfo.VMName) -Template $TemplateToUse -ResourcePo
 Start-Sleep 5
 
 #Verify VM Deployed, update specs, power on and wait for customization to complete.
-if ((Get-VM $($DataFromFile.VMInfo.VMName)) -eq $null) { DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Err -LogString "VM Deploy failed!!! Script exiting!!!"; DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Err -LogString $NewVMFail; return 66 }
+if ((Get-VM $($DataFromFile.VMInfo.VMName) -ErrorAction SilentlyContinue) -eq $null) { DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Err -LogString "VM Deploy failed!!! Script exiting!!!"; DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Err -LogString $NewVMFail; return 66 }
 else
 {
     DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Updating VM Specs..."
@@ -242,13 +241,13 @@ Start-Sleep 60
 #Move server to appropriate OU, if OU in the JSON does not exist, the server gets moved to the "Servers" OU.
 DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Verifying OU '$($DataFromFile.GuestInfo.OU)' exists..."
 $DN = ConvertToDN -OUPath $($DataFromFile.GuestInfo.OU) -Domain $($DataFromFile.GuestInfo.Domain)
-$OUCheck = Get-ADOrganizationalUnit -Identity $DN -Server $($DataFromFile.GuestInfo.DNS1) -Credential $DomainCredentials -ErrorAction Ignore
-if ($OUCheck)
+try
 {
+    $OUCheck = Get-ADOrganizationalUnit -Identity $DN -Server $($DataFromFile.GuestInfo.DNS1) -Credential $DomainCredentials
     DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Moving server to OU '$($DataFromFile.GuestInfo.OU)'..."
     Get-ADComputer -Identity $($DataFromFile.VMInfo.VMName) -Server $($DataFromFile.GuestInfo.DNS1) -Credential $DomainCredentials | Move-ADObject -TargetPath $DN -Server $($DataFromFile.GuestInfo.DNS1) -Credential $DomainCredentials
 }
-else
+catch
 {
     DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Warn -LogString "OU '$($DataFromFile.GuestInfo.OU)' does not exist!!! Moving server to 'servers' OU..."
     $DN = ConvertToDN -OUPath "Servers" -Domain $($DataFromFile.GuestInfo.Domain)

@@ -2,10 +2,11 @@
 	"VMInfo": [
 		{
 			"vCenter": "discography.evorigin.com",
+			"Template": "TPL_C1_2K16D1607",
 			"Datacenter": "DC1",
 			"Cluster": "C1",
 			"FolderPath": "DC1/Discovered virtual machine",
-			"VMName": "JAX-OSQL102",
+			"VMName": "JAX-OTST101",
 			"Datastore": "Storage",
 		  	"PortGroup": "JAX-Origin",
 			"Owner": "Dupree",
@@ -15,11 +16,10 @@
   
   	"GuestInfo": [
 		{
-			"OS": "2K12R2",
-			"CustomizationSpec": "Windows-2012-R2",
+			"CustomizationSpec": "Windows-2K16D1607",
 			"vCPUs": "2",
 			"RAM": "8",
-			"IPAddress": "172.16.10.68",
+			"IPAddress": "172.16.10.69",
 			"SubnetMask": "255.255.255.0",
 			"Gateway": "10.142.98.1",
 			"Domain": "origin.local",
