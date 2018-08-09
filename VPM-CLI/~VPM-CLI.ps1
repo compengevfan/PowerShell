@@ -1,21 +1,22 @@
 ﻿[CmdletBinding()]
 Param(
-    [Parameter()] $vCenter
+    [Parameter()] $vCenter,
+    [Parameter()] $CredFile
 )
  
 $ScriptPath = $PSScriptRoot
 cd $ScriptPath
- 
+  
 $ScriptStarted = Get-Date -Format MM-dd-yyyy_hh-mm-ss
 $ScriptName = $MyInvocation.MyCommand.Name
- 
+  
 $ErrorActionPreference = "SilentlyContinue"
- 
+  
 Function Check-PowerCLI
 {
     Param(
     )
- 
+  
     if (!(Get-Module -Name VMware.VimAutomation.Core))
     {
         write-host ("Adding PowerCLI...")
@@ -23,18 +24,19 @@ Function Check-PowerCLI
         write-host ("Loaded PowerCLI.")
     }
 }
- 
+  
 if (!(Get-Module -ListAvailable -Name DupreeFunctions)) { Write-Host "'DupreeFunctions' module not available!!! Please check with Dupree!!! Script exiting!!!" -ForegroundColor Red; exit }
 if (!(Get-Module -Name DupreeFunctions)) { Import-Module DupreeFunctions }
 if (!(Test-Path .\~Logs)) { New-Item -Name "~Logs" -ItemType Directory | Out-Null }
-
+  
 Check-PowerCLI
-
-$a = Read-Host "Do you have a credential file? (y/n)"
-Remove-Variable Credential_To_Use -ErrorAction Ignore
-if ($a -eq "y") { Write-Host "Please select a credential file..."; $CredFile = Get-FileName -Filter "xml" }
-New-Variable -Name Credential_To_Use -Value $(Import-Clixml $($CredFile))
-
+ 
+if ($CredFile -ne $null)
+{
+    Remove-Variable Credential_To_Use -ErrorAction Ignore
+    New-Variable -Name Credential_To_Use -Value $(Import-Clixml $($CredFile))
+}
+ 
 Connect-vCenter -vCenter $vCenter -vCenterCredential $Credential_To_Use
 
 if (!(Test-Path .\~Output)) { New-Item -Name "~Output" -ItemType Directory | Out-Null }
