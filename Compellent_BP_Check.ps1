@@ -1,6 +1,50 @@
-﻿Import-Module "G:\Software\PS_SDK\DellStorage.ApiCommandSet.psd1"
+﻿[CmdletBinding()]
+Param(
+    [Parameter()] [string] $InputFile,
+    [Parameter()] $CredFile = $null,
+    [Parameter()] [bool] $SendEmail = $false
+)
+ 
+$ScriptPath = $PSScriptRoot
+cd $ScriptPath
+  
+$ScriptStarted = Get-Date -Format MM-dd-yyyy_hh-mm-ss
+$ScriptName = $MyInvocation.MyCommand.Name
+  
+#$ErrorActionPreference = "SilentlyContinue"
+  
+if (!(Get-Module -ListAvailable -Name DupreeFunctions)) { Write-Host "'DupreeFunctions' module not available!!! Please check with Dupree!!! Script exiting!!!" -ForegroundColor Red; exit }
+if (!(Get-Module -Name DupreeFunctions)) { Import-Module DupreeFunctions }
+if (!(Test-Path .\~Logs)) { New-Item -Name "~Logs" -ItemType Directory | Out-Null }
+  
+if ($CredFile -ne $null)
+{
+    Remove-Variable Credential_To_Use -ErrorAction Ignore
+    New-Variable -Name Credential_To_Use -Value $(Import-Clixml $($CredFile))
+}
 
-$ErrorActionPreference = "SilentlyContinue"
+##################
+#Email Variables
+###################emailTo is a comma separated list of strings eg. "email1","email2"
+$emailFrom = "GoAnywhereMonitor@fanatics.com"
+$emailTo = "cdupree@fanatics.com"
+$emailServer = "smtp.ff.p10"
+ 
+#DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType
+<#
+try { $CurrentJobLog = Get-Content "$GoAnywhereLogs\$($CurrentTime.ToString("yyyy-MM-dd"))\$($ActiveJob.jobNumber).log" }
+catch 
+{
+    $String = "Log file could not be read. The error encountered is:`n`r$($Error[0])`n`rScript executed on $($env:computername)."
+    DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Err -LogString $String
+    if ($SendEmail) { Send-MailMessage -smtpserver $emailServer -to $emailTo -from $emailFrom -subject "$ScriptName Encountered an Error" -Body $String }
+    exit
+}
+#>
+
+Import-Module "G:\Software\PS_SDK\DellStorage.ApiCommandSet.psd1"
+
+#$ErrorActionPreference = "SilentlyContinue"
 
 ###########
 #Functions#
@@ -88,19 +132,23 @@ Function FindISCSI-Instance
 ###############
 
 #Import securly stored credentials. P10 domain is using svcShavlik. Fanatics.corp and FF.WH domain is using svcNetwrixAD
+DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Importing credential files..."
 $P10Cred = Import-Clixml -Path G:\Software\PS_SDK\Credential-JAXF-SAN001-ff.p10.xml
 $FanaticsCred = Import-Clixml -Path G:\Software\PS_SDK\Credential-JAXF-SAN001-fanatics.corp.xml
 $FFCred = Import-Clixml -Path G:\Software\PS_SDK\Credential-JAXF-SAN001-ff.wh.xml
 
+DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Importing regkey information..."
 $RegKeys = Import-Csv G:\Software\PS_SDK\Compellent_BP_Check-data.csv
 
+DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Setting up variables..."
 $ProblemsFound = $false
 $ServerErrorList = "Attached is a list of servers with incorrect MPIO related registry settings.`nBelow is a list of servers that failed DNS lookup, ping test or WMI call test:`n`n"
 $OutputKeyList = @()
 
+DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Obtaining DSM connection creds..."
 $DsmHostName = "localhost"
 $DsmUserName = "svcTasks"
-$DsmPassword = get-content G:\Software\PS_SDK\cred.txt | convertto-securestring$Connection = Connect-DellApiConnection -HostName $DsmHostName -User $DsmUserName -Password $DsmPassword$Servers = Get-DellScServer -Connection $Connection | ? {$_.OperatingSystem -like "*Windows*MPIO" -and $_.Type -eq "Physical" -and $_.Status -eq "Up"} | select ScName,Name,PortType,OperatingSystem | Sort-Object ScName,Nameforeach ($Server in $Servers){    Write-Host "Begin processing server: $($Server.Name)"    #Checking to see if connection to server is possible    $ConnectionSuccess = $false    if ($Server.Name -like "*ff.p10" -or $Server.Name -like "*fanatics.corp" -or $Server.Name -like "*footballfanatics.wh")    { #Server already has Domain. Check connection        $FQDN = $Server.Name        if (!(Test-Connection $FQDN -Count 1)) { $ServerErrorList += "Ping to $FQDN failed.`n";$ProblemsFound = $true }        else { $ConnectionSuccess = $true }     } else    { #Server does not have Domain. Find domain and check connection        $Domain = DetermineDomain -ServerName $Server.Name        if ($Domain -eq "DNE") { $ServerErrorList +=  "DNS lookup for $($Server.Name) failed.`n";$ProblemsFound = $true }        else         {            $FQDN = $Server.Name + $Domain            if (!(Test-Connection $FQDN -Count 1)) { $ServerErrorList += "Ping to $FQDN failed.`n";$ProblemsFound = $true }             else { $ConnectionSuccess = $true }        }    }    $WMISuccess = $false    $WMITest = $null    if ($ConnectionSuccess)    {        $WMITest = Get-WmiObject Win32_Computersystem -ComputerName $FQDN        if ($WMITest -eq $null) { $ServerErrorList += "WMI call to $FQDN failed.`n";$ProblemsFound = $true }        else { $WMISuccess = $true }    }    if ($ConnectionSuccess -and $WMISuccess)    {        if ($FQDN -like "*ff.p10") { $iSCSICheck = Get-WMIObject Win32_Service -computer $FQDN -credential $P10Cred | where {$_.Name -EQ "MSiSCSI"} }
+$DsmPassword = get-content G:\Software\PS_SDK\cred.txt | convertto-securestringDoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Connecting to DSM..."$Connection = Connect-DellApiConnection -HostName $DsmHostName -User $DsmUserName -Password $DsmPasswordDoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Obtaining server list from DSM..."$Servers = Get-DellScServer -Connection $Connection | ? {$_.OperatingSystem -like "*Windows*MPIO" -and $_.Type -eq "Physical" -and $_.Status -eq "Up"} | select ScName,Name,PortType,OperatingSystem | Sort-Object ScName,Nameforeach ($Server in $Servers){    DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Begin processing server: $($Server.Name)"    DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Checking to see if connection to server is possible..."    $ConnectionSuccess = $false    if ($Server.Name -like "*ff.p10" -or $Server.Name -like "*fanatics.corp" -or $Server.Name -like "*footballfanatics.wh")    {        DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Server name already has a domain. Checking connection..."        $FQDN = $Server.Name        if (!(Test-Connection $FQDN -Count 1)) { DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Warn -LogString "Ping to $FQDN failed."; $ServerErrorList += "Ping to $FQDN failed.`n";$ProblemsFound = $true }        else { DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Succ -LogString "Ping to $FQDN succeeded."; $ConnectionSuccess = $true }     } else    { #Server does not have Domain. Find domain and check connection        DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Server name does not have a domain. Determining domain..."        $Domain = DetermineDomain -ServerName $Server.Name        if ($Domain -eq "DNE") { DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Warn -LogString "Domain look up for $($Server.Name) failed..."; $ServerErrorList +=  "DNS lookup for $($Server.Name) failed.`n";$ProblemsFound = $true }        else         {            DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Succ -LogString "Domain lookup successful. Checking connection..."            $FQDN = $Server.Name + $Domain            if (!(Test-Connection $FQDN -Count 1)) { DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Warn -LogString "Ping to $FQDN failed."; $ServerErrorList += "Ping to $FQDN failed.`n";$ProblemsFound = $true }             else { DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Succ -LogString "Ping to $FQDN succeeded."; $ConnectionSuccess = $true }        }    }    DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Setting WMI variables..."    $WMISuccess = $false    $WMITest = $null    if ($ConnectionSuccess)    {        DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Checking WMI connection..."        $WMITest = Get-WmiObject Win32_Computersystem -ComputerName $FQDN        if ($WMITest -eq $null) { DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Warn -LogString "WMI call to $FQDN failed..."; $ServerErrorList += "WMI call to $FQDN failed.`n";$ProblemsFound = $true }        else { DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Succ -LogString "WMI call to $FQDN succeeded."; $WMISuccess = $true }    }    if ($ConnectionSuccess -and $WMISuccess)    {        if ($FQDN -like "*ff.p10") { $iSCSICheck = Get-WMIObject Win32_Service -computer $FQDN -credential $P10Cred | where {$_.Name -EQ "MSiSCSI"} }
         if ($FQDN -like "*fanatics.corp") { $iSCSICheck = Get-WMIObject Win32_Service -computer $FQDN -credential $FanaticsCred | where {$_.Name -EQ "MSiSCSI"} }        if ($FQDN -like "*footballfanatics.wh") { $iSCSICheck = Get-WMIObject Win32_Service -computer $FQDN -credential $FFCred | where {$_.Name -EQ "MSiSCSI"} }        if ($($iSCSICheck.State) -eq "Running") { $InstanceNumber = FindISCSI-Instance -ServerName $FQDN }        Write-Host "This server has iSCSI."        foreach ($RegKey in $RegKeys)        {            #Write-Verbose "Begin Processing value: $($RegKey.Value)"            if (($RegKey.OS -eq "All" -or $Server.OperatingSystem.InstanceName -like "*$($RegKey.OS)*") -and ($RegKey.Fabric -eq "All" -or $RegKey.Fabric -eq $Server.PortType -as [string]))            {                if ($RegKey.Fabric -eq "iSCSI" -and $($iSCSICheck.Status) -eq "Running")                {                    $TempKey = $RegKey.Key.Replace("<Instance Number>", $InstanceNumber)                    $CurrentValue = AccessRegistry -ServerName $FQDN -key $TempKey -valuename $($RegKey.Value) -ValueType "DWORD"                    if ($CurrentValue -ne $($RegKey.CorrectData) -or $CurrentValue -eq $null)
                     {
 	                    if ($CurrentValue -eq $null) { $CurrentValue = "Value Missing" }
