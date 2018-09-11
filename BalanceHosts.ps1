@@ -87,12 +87,9 @@ while ($RunAgain)
 
     Move-VM -VM $VMtoMove -Destination $HostLeastUsed.Name -Confirm:$false | Out-Null
     DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Migrated $($VMtoMove.Name) from $($HostMostUsed.Name) to $($HostLeastUsed.Name)."
-    #Write-Host ("Migrated $($VMtoMove.Name) from $($HostMostUsed.Name) to $($HostLeastUsed.Name).")
 
-    #Retrieve datastores from cluster
     $HostsToBalance = Get-Cluster $Cluster | Get-VMHost | ? {$_.ConnectionState -eq "Connected"} | Sort-Object MemoryUsageGB
 
-    #Find datastore with least and most free space
     $HostLeastUsed = $HostsToBalance | Select-Object -First 1
     $HostMostUsed = $HostsToBalance | Select-Object -Last 1
 
