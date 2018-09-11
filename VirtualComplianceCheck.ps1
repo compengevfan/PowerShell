@@ -91,7 +91,7 @@ foreach ($ESXCluster in $ESXClusters)
             "DRS Enabled" = $ESXCluster.DrsEnabled
             "DRS Automation Level" = $ESXCluster.DrsAutomationLevel
             "DRS Migration Threshold" = $ESXCluster.ExtensionData.ConfigurationEx.DrsConfig.VmotionRate
-            "EVC Mode" = "disabled"
+            "EVC Mode" = $ESXCluster.EVCMode
         }
     }
 }
@@ -114,7 +114,7 @@ if ($clusterfails.Count -gt 0)
         if ($clusterfail.'DRS Enabled' -eq $false) { $EmailBody += "DRS Enabled: $($clusterfail.'DRS Enabled')`r`n" }
         if ($clusterfail.'DRS Automation Level' -ne "FullyAutomated") { $EmailBody += "DRS Automation Level: $($clusterfail.'DRS Automation Level')`r`n" }
         if ($clusterfail.'DRS Migration Threshold' -ne 5) { $EmailBody += "DRS Migration Threshold: $($clusterfail.'DRS Migration Threshold')`r`n" }
-        if ($clusterfail.'EVC Mode' -eq "disabled") { $EmailBody += "EVC Mode: $($clusterfail.'EVC Mode')`r`n" }
+        if ($clusterfail.'EVC Mode' -eq "") { $EmailBody += "EVC Mode: Disabled`r`n" }
 
         $EmailBody += "`r`n"
     }
