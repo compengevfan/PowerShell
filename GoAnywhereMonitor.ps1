@@ -9,7 +9,7 @@ Param(
 $ScriptPath = $PSScriptRoot
 cd $ScriptPath
   
-$ScriptStarted = Get-Date -Format MM-dd-yyyy_hh-mm-ss
+$ScriptStarted = Get-Date -Format MM-dd-yyyy_HH-mm-ss
 $ScriptName = $MyInvocation.MyCommand.Name
   
 #$ErrorActionPreference = "SilentlyContinue"
@@ -105,6 +105,7 @@ foreach ($ActiveJob in $ActiveJobs)
 
         if ($CurrentJobLog.EndsWith("'createFileList 1.0'"))
         {
+            "$CurrentJobLog" | Out-File .\~Logs\"$ScriptName $ScriptStarted.debug" -append
             DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Job number $($ActiveJob.jobNumber) appears to be stuck. Checking to see if it was cancelled on the previous run..."
             if ($Cancelled -match $($ActiveJob.jobNumber))
             {

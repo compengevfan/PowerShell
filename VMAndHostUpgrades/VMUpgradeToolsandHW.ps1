@@ -18,7 +18,7 @@ Check-PowerCLI
 #System/Global Variables
 ##################
 $ErrorActionPreference = "SilentlyContinue"
-$ScriptStarted = Get-Date -Format MM-dd-yyyy_hh-mm-ss
+$ScriptStarted = Get-Date -Format MM-dd-yyyy_HH-mm-ss
 $ScriptName = $MyInvocation.MyCommand.Name
 
 Connect-vCenter -vCenter $vCenter
