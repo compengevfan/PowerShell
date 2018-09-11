@@ -46,7 +46,14 @@ foreach ($VM in $VMsToMove)
 {
     DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Migrating VM $($VM.Name)..."
 
-    Move-VM -VM $VM -Datastore $Destination | Out-Null
+    $Task = Move-VM -VM $VM -Datastore $Destination -RunAsync
+    DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Waiting for task completion..."
+
+    while($true)
+    {
+        if ($($Task.State) -eq "Success") { break }
+        else { Start-Sleep 5 }
+    }
 
     DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Moving on..."
 }

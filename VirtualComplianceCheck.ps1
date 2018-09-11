@@ -281,7 +281,7 @@ if ($hostfails.Count -gt 0)
         if ($hostfail.SNMPState -eq "Wrong") { $EmailBody += "SNMP is running.`r`n" }
         if ($hostfail.SNMPPolicy -eq "Wrong") { $EmailBody += "SNMP is set to start with the host.`r`n" }
         if ($hostfail.DomainName -eq "Wrong") { $EmailBody += "Incorrect domain name.`r`n" }
-        if ($hostfail.SearchDomain -eq "Wrong") { $EmailBody += "Incorrect seatch domain.`r`n" }
+        if ($hostfail.SearchDomain -eq "Wrong") { $EmailBody += "Incorrect search domain.`r`n" }
         if ($hostfail.VMKernelGateway -eq "Wrong") { $EmailBody += "MGMT kernel adapter gateway incorrect.`r`n" }
         if ($hostfail.DNS -eq "Wrong") { $EmailBody += "Incorrect DNS servers.`r`n" }
         if ($hostfail.PowerPolicySetting -eq "Wrong") { $EmailBody += "Incorrect power policy setting.`r`n" }
