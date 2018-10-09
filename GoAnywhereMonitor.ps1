@@ -103,7 +103,7 @@ foreach ($ActiveJob in $ActiveJobs)
             exit
         }
 
-        if ($CurrentJobLog.EndsWith("'createFileList 1.0'"))
+        if ($CurrentJobLog[($CurrentJobLog.Count - 1)].EndsWith("'createFileList 1.0'"))
         {
             "$CurrentJobLog" | Out-File .\~Logs\"$ScriptName $ScriptStarted.debug" -append
             DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Job number $($ActiveJob.jobNumber) appears to be stuck. Checking to see if it was cancelled on the previous run..."
@@ -123,7 +123,11 @@ Script executed on $($env:computername).
             else
             {
                 DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Issuing command to cancel job $($ActiveJob.jobNumber)..."
-                try { Invoke-RestMethod -Uri "https://$($GoAnywhereServer):8001/goanywhere/rest/gacmd/v1/jobs/$($ActiveJob.jobNumber)/cancel" -Method Post -Credential $Credential_To_Use }
+                try
+                {
+                    Invoke-RestMethod -Uri "https://$($GoAnywhereServer):8001/goanywhere/rest/gacmd/v1/jobs/$($ActiveJob.jobNumber)/cancel" -Method Post -Credential $Credential_To_Use
+                    Send-MailMessage -smtpserver $emailServer -to $emailTo -from $emailFrom -subject "GoAnywhereMonitor Has Canceled a Job." -body "The GoAnywhereMonitor script has issued a cancel request for job ID $($ActiveJob.jobNumber).`n`r`n`rScript executed on $($env:computername)."
+                }
                 catch { Write-Host "Gotya" }
                 DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Logging job number to ensure cancel was successful on next run..."
                 $($ActiveJob.jobNumber) | Out-File .\GoAnywhereMonitor-$GoAnywhereServer-Data.txt -Append

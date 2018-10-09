@@ -178,10 +178,12 @@ else
     DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Updating VM Specs..."
     $Notes = "Deployed by " + (whoami) + " via Dupree's Script: " + (Get-Date -Format g)
     Get-VM $($DataFromFile.VMInfo.VMName) | Set-VM -MemoryGB $($DataFromFile.GuestInfo.RAM) -NumCpu $($DataFromFile.GuestInfo.vCPUs) -Description $Notes -Confirm:$false | Out-Null
-    DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Updating VM Owner attribute... "
-    Get-VM $($DataFromFile.VMInfo.VMName) | Set-Annotation -CustomAttribute "Owner" -Value "$($DataFromFile.VMInfo.Owner)" | Out-Null
-    DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Updating VM Purpose attribute... "
-    Get-VM $($DataFromFile.VMInfo.VMName) | Set-Annotation -CustomAttribute "Purpose" -Value "$($DataFromFile.VMInfo.Purpose)" | Out-Null
+    DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Updating VM ApplicationTeam attribute... "
+    Get-VM $($DataFromFile.VMInfo.VMName) | Set-Annotation -CustomAttribute "ApplicationTeam" -Value "$($DataFromFile.VMInfo.ApplicationTeam)" | Out-Null
+    DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Updating VM Application attribute... "
+    Get-VM $($DataFromFile.VMInfo.VMName) | Set-Annotation -CustomAttribute "Application" -Value "$($DataFromFile.VMInfo.Application)" | Out-Null
+    DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Updating VM Compliance attribute... "
+    Get-VM $($DataFromFile.VMInfo.VMName) | Set-Annotation -CustomAttribute "Compliance" -Value "$($DataFromFile.VMInfo.Compliance)" | Out-Null
     switch ($PortType) 
     {
         vds { Get-NetworkAdapter -VM $($DataFromFile.VMInfo.VMName) | where Name -eq "Network adapter 1" | Set-NetworkAdapter -PortGroup $PortGroup -Confirm:$false | Set-NetworkAdapter -StartConnected:$true -Confirm:$false | Out-Null }

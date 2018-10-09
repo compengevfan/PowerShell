@@ -9,8 +9,9 @@
 			"VMName": "TAFQ-BLAH101",
 			"Datastore": "TAFQ-VS",
 		  	"PortGroup": "vlan980-Servers",
-			"Owner": "Dupree",
-			"Purpose" : "Test"
+			"ApplicationTeam": "Dupree",
+			"Application": "Test",
+			"Compliance" : "Non-PCI"
 		}
 	],
   
