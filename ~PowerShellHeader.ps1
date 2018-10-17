@@ -35,7 +35,7 @@ $emailServer = "smtp.ff.p10"
 try { $CurrentJobLog = Get-Content "$GoAnywhereLogs\$($CurrentTime.ToString("yyyy-MM-dd"))\$($ActiveJob.jobNumber).log" }
 catch 
 {
-    $String = "[Error].`n`r$($Error[0])`n`rScript executed on $($env:computername)."
+    $String = "Error encountered is:`n`r$($Error[0])`n`rScript executed on $($env:computername)."
     DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Err -LogString $String
     if ($SendEmail) { Send-MailMessage -smtpserver $emailServer -to $emailTo -from $emailFrom -subject "$ScriptName Encountered an Error" -Body $String }
     exit

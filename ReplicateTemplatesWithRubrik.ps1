@@ -38,47 +38,185 @@ if ($CredFile -ne $null)
  
 Connect-vCenter -vCenter $vCenter -vCenterCredential $Credential_To_Use
 
-#List of OS Codes.
-$OSes = "2K12R2", "2K16"
-#Generate List of Template Names
-$TemplateNames = @()
-foreach ($OS in $OSes) { $TemplateNames += "TPL_GOLD_$OS"}
-
 ##################
 #Email Variables
 ###################emailTo is a comma separated list of strings eg. "email1","email2"
 $emailFrom = "TemplateReplication@fanatics.com"
-$emailTo = "TEAMEntCompute@fanatics.com","devops-engineering@fanatics.com"
+$emailTo = "cdupree@fanatics.com"
 $emailServer = "smtp.ff.p10"
 
 if (!(Test-Path .\~Logs)) { New-Item -Name "~Logs" -ItemType Directory | Out-Null }
 
-if (!(Get-Module -Name Rubrik)) { Import-Module Rubrik }
+DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Importing JSON Data File."
+$DataFromFile = ConvertFrom-JSON (Get-Content ".\ReplicateTemplatesWithRubrik-Data.json" -raw)
 
-DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Please provide your credentials for connecting to Rubrik."
-$RubrikCred = Get-Credential -Message "Please provide your credentials for connecting to Rubrik."
+#List of OS Codes.
+$OSes = $DataFromFile.OSCodes
 
-DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Connecting to IAD Rubrik..."
-Connect-Rubrik IAD-RUBK001 -Credential $RubrikCred | Out-Null
-$RubrikClusterID = Invoke-RubrikRESTCall -Endpoint cluster/me -Method GET #gets the id of the current rubrik cluster
-if ($RubrikClusterID -eq "" -or $RubrikClusterID -eq $null) { DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Err -LogString "Connection to IAD Rubrik cluster failed!!! Script exiting"; exit }
+#Generate List of Template Names
+$TemplateNames = @()
+foreach ($OSCode in $OSes) { $TemplateNames += "TPL_GOLD_$($OSCode.OSCode)" }
+
+DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Checking for Rubrik PS Module..."
+if (Get-Module -ListAvailable -Name Rubrik)
+{
+    DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Succ -LogString "Importing Rubrik PS module..."
+    Import-Module Rubrik
+}
+else
+{
+    DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Err -LogString "Rubrik PS Module is missing!!! Script exiting!!!"
+    exit
+}
+
+DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Obtaining Rubrik credentials."
+$RubrikCred = Get-Credential -Message "Please provide credentials for connecting to Rubrik. Note these credentials will be used to connect to all Rubrik devices."
+
+##################
+#Begin: Environment and sanity checks
+##################
+
+DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Warn -LogString "Beginning environment and sanity checks. Please wait for this to complete."
+Read-Host "Press 'Enter' to continue..."
+
+DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Verifying GOLD VMs exist..."
+foreach ($TemplateName in $TemplateNames)
+{
+    try
+    {
+        Get-Cluster IAD-PROD | Get-VM $TemplateName -ErrorAction SilentlyContinue | Out-Null
+        DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Succ -LogString "$TemplateName found."
+    }
+    catch
+    {
+        DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "$TemplateName not found!!! Script exiting!!!"
+        exit
+    }
+}
+
+DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Verifying IAD-PROD info..."
+$IADInfo = $DataFromFile.IADPROD
+try
+{
+    Get-Cluster IAD-PROD | Get-VMHost $($IADInfo.Host) -ErrorAction Stop | Out-Null
+    Get-VMHost $($IADInfo.Host) | Get-Datastore $($IADInfo.Datastore) -ErrorAction Stop | Out-Null
+    DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Succ -LogString "Host and Datastore in IAD-PROD located."
+}
+catch
+{
+    if ($Error[0] -like "*Get-VMHost*") { DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Err -LogString "IAD-PROD host is incorrect!!! Script Exiting!!!" }
+    if ($Error[0] -like "*Get-Datastore*") { DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Err -LogString "IAD-PROD datastore is incorrect!!! Script Exiting!!!" }
+    exit
+}
+
+$Rubriks = $DataFromFile.RubrikInfo | ? {$_.Enable -eq "Yes"}
+foreach ($Rubrik in $Rubriks)
+{
+    DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Checking connection to $($Rubrik.RubrikDevice)..."
+    try
+    {
+        Connect-Rubrik $($Rubrik.RubrikDevice) -Credential $RubrikCred | Out-Null
+        $RubrikClusterID = Invoke-RubrikRESTCall -Endpoint cluster/me -Method GET #gets the id of the current rubrik cluster
+        DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Succ -LogString "Connection to $($Rubrik.RubrikDevice) successful."
+        DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Storing the Rubrik ID..."
+        $Rubrik.ID = $RubrikClusterID.id
+        Disconnect-Rubrik -Confirm:$false
+    }
+    catch
+    {
+        DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Err -LogString "Connection to $($Rubrik.RubrikDevice) failed!!! Error encountered is:`n`r$($Error[0])`n`rScript exiting!!!"
+        exit
+    }
+
+    DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Verifying cluster $($Rubrik.Cluster)..."
+    try
+    {
+        Get-Cluster $($Rubrik.Cluster) -ErrorAction SilentlyContinue | Out-Null
+        DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Succ -LogString "Cluster $($Rubrik.Cluster) is valid."
+    }
+    catch
+    {
+        DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Err -LogString "Cluster $($Rubrik.Cluster) is invalid!!! Script exiting!!!"
+        exit
+    }
+
+    DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Verifying host $($Rubrik.Host)..."
+    try
+    {
+        Get-VMHost $($Rubrik.Host) -ErrorAction SilentlyContinue | Out-Null
+        DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Succ -LogString "Host $($Rubrik.Host) is valid."
+    }
+    catch
+    {
+        DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Err -LogString "Host $($Rubrik.Host) is invalid!!! Script exiting!!!"
+        exit
+    }
+
+    DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Verifying datastore $($Rubrik.Datastore)..."
+    try
+    {
+        Get-Datastore $($Rubrik.Datastore) -ErrorAction SilentlyContinue | Out-Null
+        DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Succ -LogString "Datastore $($Rubrik.Datastore) is valid"
+    }
+    catch
+    {
+        DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Err -LogString "Datastore $($Rubrik.Datastore) is invalid!!! Script exiting!!!"
+        exit
+    }
+}
+
+DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Checking connection to IAD Rubrik..."
+try
+{
+    Connect-Rubrik IAD-RUBK001 -Credential $RubrikCred | Out-Null
+    $RubrikClusterID = Invoke-RubrikRESTCall -Endpoint cluster/me -Method GET #gets the id of the current rubrik cluster
+    DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Succ -LogString "Connection to IAD Rubrik successful."
+}
+catch
+{
+    DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Err -LogString "Connection to IAD Rubrik cluster failed!!! Script exiting"
+    exit
+}
+
+DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Checking to make sure all enabled Rubriks have an SLA with the correct replication target..."
+foreach ($Rubrik in $Rubriks)
+{
+    DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Verifying SLA for $($Rubrik.RubrikDevice)..."
+    $SLA = Get-RubrikSLA | where { $_.Name -eq "Gold Templates to $($Rubrik.RubrikDevice)" }
+    if ($SLA -eq $null)
+    {
+        DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Err -LogString "IAD Rubrik does not have an SLA for $($Rubrik.RubrikDevice)!!! Script exiting!!!"
+        exit
+    }
+    else { DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Succ -LogString "SLA for $($Rubrik.RubrikDevice) found." }
+    
+    DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Verifying replication target..."
+    if ($SLA.replicationSpecs.locationId -ne $Rubrik.ID)
+    {
+        DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Err -LogString "SLA replication target is incorrect!!! Script exiting!!!"
+        exit
+    }
+    else { DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Succ -LogString "SLA replicaiton target verified." }
+}
+
+DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Succ -LogString "Environment and sanity checks completed successfully. Starting the replication process which could take several hours."
+Read-Host "Press 'Enter' to continue..."
+
+##################
+#End: Environment and sanity checks
+##################
 
 #Inform IEC and DevOps that template replication is starting.
 $EmailBody = "All,`n`nPlease be advised that the template replication process has been started in the IAD vCenter. This means that templates beginning with 'TPL_' will be deleted and recreated. The process will not interrupt the creation of a VM (the delete command will wait until the template is not being used) but may prevent you from starting a VM creation request. Note that some sites might not get updated templates due to [reasons].`n`nAdditional emails will follow to provide progress updates.`n`nAny questions, comments, or concerns should be directed to Nik Whittington or Chris Dupree.`n`nThank you!!!"
 Send-MailMessage -smtpserver $emailServer -to $emailTo -from $emailFrom -subject "Template Replication Started!!!" -Priority High -body $EmailBody
 
-#Get a list of all Template backup SLA's and create empty array for snapshot request data
-DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Obtaining a list of all Gold Template SLAs..."
-$SLAs = Get-RubrikSLA | where { $_.Name -like "Gold Templates*" } | Sort-Object Name
-#$SLAs = Get-RubrikSLA | where { $_.Name -like "Gold Templates to TAFQ-RUBK001" } | Sort-Object Name
-if ($SLAs -eq "" -or $SLAs -eq $null) { DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Err -LogString "No template SLAs found on the IAD Rubrik!!! Script exiting"; exit }
 $Snapshots = @()
 
 #Kick off template backups
 DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Creating manual backup jobs for each SLA..."
-foreach ($SLA in $SLAs)
+foreach ($Rubrik in $Rubriks)
 {
-    foreach ($TemplateName in $TemplateNames){ $Snapshots += Get-RubrikVM -name $TemplateName | where { $_.primaryClusterId -eq "$($RubrikClusterID.id)" } | New-RubrikSnapshot -SLA $($SLA.name) -Confirm:$false }
+    foreach ($TemplateName in $TemplateNames){ $Snapshots += Get-RubrikVM -name $TemplateName | where { $_.primaryClusterId -eq "$($RubrikClusterID.id)" } | New-RubrikSnapshot -SLA "Gold Templates to $($Rubrik.RubrikDevice)" -Confirm:$false }
 }
 
 #Wait for all backups to complete
@@ -102,39 +240,22 @@ if ($ProcessIAD)
 {
     #Create templates at IAD-Prod from the GOLD VMs
     DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Creating templates in IAD-PROD..."
-    $TplsForIAD = Get-Cluster IAD-Prod | Get-VM TPL_Gold*
-    foreach ($TplForIAD in $TplsForIAD)
+    foreach ($TemplateName in $TemplateNames)
     {
-        $TplName = ($TplForIAD.Name).replace("GOLD","IAD-PROD")
+        $TplName = $TemplateName.replace("GOLD","IAD-PROD")
         if ((Get-Template $TplName) -ne $null)
         {
             DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Deleting $TplName..."
             Remove-Template $TplName -DeletePermanently -Confirm:$false
         }
-        New-VM -VM $TplForIAD -Datastore $(Get-Datastore IAD-VS-DS01) -DiskStorageFormat Thick -Name $TplName -VMHost iad-vs01.fanatics.corp | Out-Null
+        New-VM -VM $TemplateName -Datastore $(Get-Datastore IAD-VS-DS01) -DiskStorageFormat Thick -Name $TplName -VMHost iad-vs01.fanatics.corp | Out-Null
         Get-VM $TplName | Set-VM -ToTemplate -Confirm:$false | Out-Null
         DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Succ -LogString "IAD-PROD templates have been recreated and are ready for use."
         Send-MailMessage -smtpserver $emailServer -to $emailTo -from $emailFrom -subject "Template Replication Update..." -body "$TplName has been recreated and is ready for use."
     }
-
-    #Create templates at IAD-DEVQC from the GOLD VMs
-    DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "IAD-Prod templates created. Creating templates in IAD-DEVQC..."
-    foreach ($TplForIAD in $TplsForIAD)
-    {
-        $TplName = ($TplForIAD.Name).replace("GOLD","IAD-DEVQC")
-        if ((Get-Template $TplName) -ne $null)
-        {
-            DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Deleting $TplName..."
-            Remove-Template $TplName -DeletePermanently -Confirm:$false
-        }
-        New-VM -VM $TplForIAD -Datastore $(Get-Datastore IAD-DEVQC-VS-DS01) -DiskStorageFormat Thick -Name $TplName -VMHost iad-devqc-vs01.fanatics.corp | Out-Null
-        Get-VM $TplName | Set-VM -ToTemplate -Confirm:$false | Out-Null
-        DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Succ -LogString "IAD-DEVQC templates have been recreated and are ready for use."
-        Send-MailMessage -smtpserver $emailServer -to $emailTo -from $emailFrom -subject "Template Replication Update..." -body "$TplName has been recreated and is ready for use."
-    }
 }
 else { DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Skipping IAD template creation..." }
-
+<#
 #Gather all snapshot endpoints
 DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Obtaining a list of snapshot endpoints..."
 $Endpoints = @()
@@ -249,3 +370,4 @@ while ($true)
 
 DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Succ -LogString "Template replication has completed successfully!!!"
 $EmailBody = Get-Content .\~Logs\"$ScriptName $ScriptStarted.log" | Out-String; Send-MailMessage -smtpserver $emailServer -to $emailTo -from $emailFrom -subject "Template Replication Completed!!!" -body $EmailBody
+#>

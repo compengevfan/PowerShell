@@ -79,7 +79,7 @@ else
 while ($RunAgain)
 {
     #Get list of VM on DS with least space and pick a random VM
-    $SourceVMs = Get-VMHost $HostMostUsed | Get-VM | Sort-Object Name
+    $SourceVMs = Get-VMHost $HostMostUsed | Get-VM | ? { $_.PowerState -eq "PoweredOn" } | Sort-Object Name
     $SourceVMCount = $SourceVMs.Count
     $RandomNumber = Get-Random -Maximum $SourceVMCount
 
