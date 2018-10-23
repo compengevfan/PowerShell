@@ -1,0 +1,147 @@
+{
+  	"OSCodes": [
+		{
+			"OSCode": "2K12R2"
+		},
+		{
+			"OSCode": "2K16"
+		}
+	],
+	
+	"IADPROD": [
+		{
+			"Host": "iad-vs07.fanatics.corp",
+			"Datastore": "IAD-VS-DS01-N",
+			"Datacenter": "IAD"
+		}
+	],
+	
+	"RubrikInfo": [
+		{
+			"ID": "",
+			"RubrikDevice": "CHNQ-Edge001",
+			"Cluster": "CHNQ",
+			"Datacenter": "CHNQ",
+			"Host": "chnq-vs01.fanatics.corp",
+			"Datastore": "CHNQ-DS01",
+			"Enable": "no"
+		},
+		{
+			"ID": "",
+			"RubrikDevice": "COPQ-Edge001",
+			"Cluster": "COPQ",
+			"Datacenter": "COPQ",
+			"Host": "copq-vs01.fanatics.corp",
+			"Datastore": "copq-vs-prod-ds1",
+			"Enable": "no"
+		},
+		{
+			"ID": "",
+			"RubrikDevice": "DFW-Edge001",
+			"Cluster": "DFW-Prod",
+			"Datacenter": "DFW",
+			"Host": "dfw-vs01.fanatics.corp",
+			"Datastore": "DFW-VS-DS01",
+			"Enable": "no"
+		},
+		{
+			"ID": "",
+			"RubrikDevice": "FAKW-RUBK001",
+			"Cluster": "FAKW",
+			"Datacenter": "FAKW",
+			"Host": "fakw-vs01.fanatics.corp",
+			"Datastore": "FAKW-VS-DS01",
+			"Enable": "no"
+		},
+		{
+			"ID": "",
+			"RubrikDevice": "FROW-RUBK001",
+			"Cluster": "FROW",
+			"Datacenter": "FROW",
+			"Host": "frow-vs01.fanatics.corp",
+			"Datastore": "frow-vs-prod-ds1",
+			"Enable": "no"
+		},
+		{
+			"ID": "",
+			"RubrikDevice": "JAXF-RUBK001",
+			"Cluster": "JAXF-Prod",
+			"Datacenter": "JAX",
+			"Host": "jaxf-vs01.fanatics.corp",
+			"Datastore": "jaxf-vs-prod-ds01",
+			"Enable": "no"
+		},
+		{
+			"ID": "",
+			"RubrikDevice": "JXFD-Edge001",
+			"Cluster": "JXFD",
+			"Datacenter": "JXFD",
+			"Host": "jxfd-vs03.fanatics.corp",
+			"Datastore": "jxfd-vs-prod-ds01",
+			"Enable": "no"
+		},
+		{
+			"ID": "",
+			"RubrikDevice": "JXFQ-Edge001",
+			"Cluster": "JXFQ",
+			"Datacenter": "JXFQ",
+			"Host": "jxfq-vs04.fanatics.corp",
+			"Datastore": "jxfq-vs-prod-ds01",
+			"Enable": "no"
+		},
+		{
+			"ID": "",
+			"RubrikDevice": "JXFW-RUBK001",
+			"Cluster": "JXFW",
+			"Datacenter": "JXFW",
+			"Host": "jxfw-vs01.fanatics.corp",
+			"Datastore": "JXFW-VS-DS01",
+			"Enable": "no"
+		},
+		{
+			"ID": "",
+			"RubrikDevice": "LVNW-Edge001",
+			"Cluster": "LVNW",
+			"Datacenter": "LVNW",
+			"Host": "lvnw-vs01.fanatics.corp",
+			"Datastore": "LVNW-VS-DS01",
+			"Enable": "no"
+		},
+		{
+			"ID": "",
+			"RubrikDevice": "NYNS-Edge001",
+			"Cluster": "NYNS",
+			"Datacenter": "NYNS",
+			"Host": "nyns-vs01.fanatics.corp",
+			"Datastore": "NYNS-VS-PROD-DS1",
+			"Enable": "no"
+		},
+		{
+			"ID": "",
+			"RubrikDevice": "SMCQ-Edge001",
+			"Cluster": "SMCQ-Prod",
+			"Datacenter": "SMCQ",
+			"Host": "smcq-vs01.fanatics.corp",
+			"Datastore": "SMCQ-VS-DS01",
+			"Enable": "no"
+		},
+		{
+			"ID": "",
+			"RubrikDevice": "SUFW-RUBK001",
+			"Cluster": "MRFW",
+			"Datacenter": "MRFW",
+			"Host": "mrfw-vs01.fanatics.corp",
+			"Datastore": "MRFW-VS-PROD-DS01-N",
+			"Enable": "no"
+		},
+		{
+			"ID": "",
+			"RubrikDevice": "TAFQ-RUBK001",
+			"Cluster": "TAFQ",
+			"Datacenter": "TAFQ",
+			"Host": "tafq-vs01.fanatics.corp",
+			"Datastore": "TAFQ-VS-DS01",
+			"Enable": "yes"
+		}
+	]
+}

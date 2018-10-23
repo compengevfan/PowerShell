@@ -48,7 +48,8 @@ $emailServer = "smtp.ff.p10"
 if (!(Test-Path .\~Logs)) { New-Item -Name "~Logs" -ItemType Directory | Out-Null }
 
 DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Importing JSON Data File."
-$DataFromFile = ConvertFrom-JSON (Get-Content ".\ReplicateTemplatesWithRubrik-Data.json" -raw)
+try { $DataFromFile = ConvertFrom-JSON (Get-Content ".\ReplicateTemplatesWithRubrik-Data.json" -raw) -ErrorAction SilentlyContinue }
+catch { DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Err -LogString "JSON Import failed!!!`n`rError encountered is:`n`r$($Error[0])`n`rScript Exiting!!!"; exit }
 
 #List of OS Codes.
 $OSes = $DataFromFile.OSCodes
@@ -84,12 +85,12 @@ foreach ($TemplateName in $TemplateNames)
 {
     try
     {
-        Get-Cluster IAD-PROD | Get-VM $TemplateName -ErrorAction SilentlyContinue | Out-Null
+        Get-Cluster $($IADInfo.Cluster) | Get-VM $TemplateName -ErrorAction SilentlyContinue | Out-Null
         DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Succ -LogString "$TemplateName found."
     }
     catch
     {
-        DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "$TemplateName not found!!! Script exiting!!!"
+        DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Err -LogString "$TemplateName not found!!! Error encountered is:`n`r$($Error[0])`n`rScript exiting!!!"
         exit
     }
 }
@@ -98,7 +99,7 @@ DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -L
 $IADInfo = $DataFromFile.IADPROD
 try
 {
-    Get-Cluster IAD-PROD | Get-VMHost $($IADInfo.Host) -ErrorAction Stop | Out-Null
+    Get-Cluster $($IADInfo.Cluster) | Get-VMHost $($IADInfo.Host) -ErrorAction Stop | Out-Null
     Get-VMHost $($IADInfo.Host) | Get-Datastore $($IADInfo.Datastore) -ErrorAction Stop | Out-Null
     DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Succ -LogString "Host and Datastore in IAD-PROD located."
 }
@@ -243,19 +244,20 @@ if ($ProcessIAD)
     foreach ($TemplateName in $TemplateNames)
     {
         $TplName = $TemplateName.replace("GOLD","IAD-PROD")
-        if ((Get-Template $TplName) -ne $null)
+        if ((Get-Template $TplName -ErrorAction SilentlyContinue) -ne $null)
         {
             DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Deleting $TplName..."
             Remove-Template $TplName -DeletePermanently -Confirm:$false
         }
-        New-VM -VM $TemplateName -Datastore $(Get-Datastore IAD-VS-DS01) -DiskStorageFormat Thick -Name $TplName -VMHost iad-vs01.fanatics.corp | Out-Null
-        Get-VM $TplName | Set-VM -ToTemplate -Confirm:$false | Out-Null
-        DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Succ -LogString "IAD-PROD templates have been recreated and are ready for use."
+        New-VM -VM $TemplateName -Datastore $(Get-Datastore $($IADInfo.Datastore)) -DiskStorageFormat Thick -Name $TplName -VMHost $($IADInfo.Host) | Out-Null
+        Set-VM $TplName -ToTemplate -Confirm:$false | Out-Null
+        Move-Template -Template $TplName -Destination $(Get-Datacenter $($IADInfo.Datacenter) | Get-Folder "Templates")
+        DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Succ -LogString "$TplName has been recreated and is ready for use."
         Send-MailMessage -smtpserver $emailServer -to $emailTo -from $emailFrom -subject "Template Replication Update..." -body "$TplName has been recreated and is ready for use."
     }
 }
 else { DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Skipping IAD template creation..." }
-<#
+
 #Gather all snapshot endpoints
 DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Obtaining a list of snapshot endpoints..."
 $Endpoints = @()
@@ -284,24 +286,19 @@ while($true)
 DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Disconnecting from IAD Rubrik..."
 Disconnect-Rubrik -Confirm:$false
 
-DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Getting Rubrik to host to datastore mapping info..."
-$DataFromFile = Import-Csv .\ReplicateTemplatesWithRubrik-Data.csv
-
 #Export new VMs to convert to templates
-foreach ($SLA in $SLAs)
+foreach ($Rubrik in $Rubriks)
 {
-    $RemoteRubrik = $($SLA.Name).replace("Gold Templates to ","")
-    DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Connecting to $RemoteRubrik..."
-    Connect-Rubrik $RemoteRubrik -Credential $RubrikCred | Out-Null
-    $RemoteRubrikClusterID = Invoke-RubrikRESTCall -Endpoint cluster/me -Method GET #gets the id of the current rubrik cluster
+    DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Connecting to $($Rubrik.RubrikDevice)..."
+    Connect-Rubrik $($Rubrik.RubrikDevice) -Credential $RubrikCred | Out-Null
     $Record = $DataFromFile | where { $_.RubrikDevice -eq "$RemoteRubrik" } #gets the proper information for the current Rubrik from the data file
 
     foreach ($TemplateName in $TemplateNames)
     {
-        DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Issuing export task on $RemoteRubrik for $TemplateName..."
+        DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Issuing export task on $($Rubrik.RubrikDevice) for $TemplateName..."
         $Replica = Get-RubrikVM $TemplateName | where { $_.primaryClusterId -eq "$($RubrikClusterID.id)" } | Get-RubrikSnapshot | select -First 1 #gets the ID of the replicated snapshot using the rubrik cluster ID
-        $ExportHost = $(Invoke-RubrikRESTCall -Endpoint vmware/host -Method Get).data | where { $_.name -eq "$($Record.Host)" -and $_.primaryClusterId -eq "$($RemoteRubrikClusterID.id)" } #gets the Rubrik ID of the host listed in the data file using the rubrik cluster ID
-        $ExportDatastore = $ExportHost.datastores | where { $_.name -eq $($Record.Datastore) } #gets the Rubrik ID of the datastore listed in the data file from the exporthost info above
+        $ExportHost = $(Invoke-RubrikRESTCall -Endpoint vmware/host -Method Get).data | where { $_.name -eq "$($Rubrik.Host)" -and $_.primaryClusterId -eq "$($Rubrik.ID)" } #gets the Rubrik ID of the host listed in the data file using the rubrik cluster ID
+        $ExportDatastore = $ExportHost.datastores | where { $_.name -eq $($Rubrik.Datastore) } #gets the Rubrik ID of the datastore listed in the data file from the exporthost info above
         $body = New-Object -TypeName PSObject -Property @{'hostId'=$($Exporthost.id);'datastoreId'=$($ExportDatastore.id)} #Assemble the POST payload for the REST API call
         Invoke-RubrikRESTCall -Endpoint vmware/vm/snapshot/$($Replica.id)/export -Method POST -Body $body | Out-Null #make rest api call to create an export job
     }
@@ -314,9 +311,9 @@ DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -L
 while ($true)
 {
     $Complete = $true
-    foreach ($Site in $DataFromFile)
+    foreach ($Rubrik in $Rubriks)
     {
-        $LocalGoldCopies = Get-Cluster $($Site.Cluster) | Get-VM TPL_GOLD*
+        $LocalGoldCopies = Get-Cluster $($Rubrik.Cluster) | Get-VM TPL_GOLD*
         foreach ($LocalGoldCopy in $LocalGoldCopies)
         {
             $PowerState = $LocalGoldCopy.PowerState
@@ -326,15 +323,15 @@ while ($true)
                 {
                     if ($LocalGoldCopy.Name -like "$TemplateName*") 
                     {
-                        $TemplateNameModified = $TemplateName.Replace("GOLD", $($Site.Cluster))
+                        $TemplateNameModified = $TemplateName.Replace("GOLD", $($Rubrik.Cluster))
 
-                        if ((Get-Template $TemplateNameModified) -ne $null)
+                        if ((Get-Template $TemplateNameModified -ErrorAction SilentlyContinue) -ne $null)
                         {
                             DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Deleting $TemplateNameModified..."
                             Remove-Template $TemplateNameModified -DeletePermanently -Confirm:$false
                         }
 
-                        DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Converting '$($LocalGoldCopy.Name)' at '$($Site.Cluster)' to template..."
+                        DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Converting '$($LocalGoldCopy.Name)' at '$($Rubrik.Cluster)' to template..."
                         DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Waiting for VMware tools to start..."
                         $Ready = $false
                         while (!($Ready))
@@ -352,9 +349,10 @@ while ($true)
                             $PowerState = (Get-VM $($LocalGoldCopy.Name)).PowerState
                         }
                         DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Renaming VM..."
-                        $VMRenamed = Get-Cluster $($Site.Cluster) | Get-VM $($LocalGoldCopy.Name) | Set-VM -Name $TemplateNameModified -Confirm:$false
+                        $VMRenamed = Get-Cluster $($Rubrik.Cluster) | Get-VM $($LocalGoldCopy.Name) | Set-VM -Name $TemplateNameModified -Confirm:$false
                         DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Converting to template..."
                         Set-VM $VMRenamed -ToTemplate -Confirm:$false | Out-Null
+                        Move-Template -Template $VMRenamed -Destination $(Get-Datacenter $($Rubrik.Datacenter) | Get-Folder Templates)
                         DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Continuing export completion checks..."
                         Send-MailMessage -smtpserver $emailServer -to $emailTo -from $emailFrom -subject "Template Replication Update..." -body "$VMRenamed template has been recreated and is ready for use."
                     }
@@ -370,4 +368,3 @@ while ($true)
 
 DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Succ -LogString "Template replication has completed successfully!!!"
 $EmailBody = Get-Content .\~Logs\"$ScriptName $ScriptStarted.log" | Out-String; Send-MailMessage -smtpserver $emailServer -to $emailTo -from $emailFrom -subject "Template Replication Completed!!!" -body $EmailBody
-#>
