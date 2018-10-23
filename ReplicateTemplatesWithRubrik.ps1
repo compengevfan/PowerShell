@@ -80,21 +80,6 @@ $RubrikCred = Get-Credential -Message "Please provide credentials for connecting
 DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Warn -LogString "Beginning environment and sanity checks. Please wait for this to complete."
 Read-Host "Press 'Enter' to continue..."
 
-DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Verifying GOLD VMs exist..."
-foreach ($TemplateName in $TemplateNames)
-{
-    try
-    {
-        Get-Cluster $($IADInfo.Cluster) | Get-VM $TemplateName -ErrorAction SilentlyContinue | Out-Null
-        DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Succ -LogString "$TemplateName found."
-    }
-    catch
-    {
-        DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Err -LogString "$TemplateName not found!!! Error encountered is:`n`r$($Error[0])`n`rScript exiting!!!"
-        exit
-    }
-}
-
 DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Verifying IAD-PROD info..."
 $IADInfo = $DataFromFile.IADPROD
 try
@@ -108,6 +93,21 @@ catch
     if ($Error[0] -like "*Get-VMHost*") { DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Err -LogString "IAD-PROD host is incorrect!!! Script Exiting!!!" }
     if ($Error[0] -like "*Get-Datastore*") { DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Err -LogString "IAD-PROD datastore is incorrect!!! Script Exiting!!!" }
     exit
+}
+
+DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Verifying GOLD VMs exist..."
+foreach ($TemplateName in $TemplateNames)
+{
+    try
+    {
+        Get-Cluster $($IADInfo.Cluster) | Get-VM $TemplateName -ErrorAction SilentlyContinue | Out-Null
+        DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Succ -LogString "$TemplateName found."
+    }
+    catch
+    {
+        DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Err -LogString "$TemplateName not found!!! Error encountered is:`n`r$($Error[0])`n`rScript exiting!!!"
+        exit
+    }
 }
 
 $Rubriks = $DataFromFile.RubrikInfo | ? {$_.Enable -eq "Yes"}

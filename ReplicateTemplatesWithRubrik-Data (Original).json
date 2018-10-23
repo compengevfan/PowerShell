@@ -10,9 +10,10 @@
 	
 	"IADPROD": [
 		{
+			"Cluster": "IAD-PROD",
+			"Datacenter": "IAD",
 			"Host": "iad-vs07.fanatics.corp",
-			"Datastore": "IAD-VS-DS01-N",
-			"Datacenter": "IAD"
+			"Datastore": "IAD-VS-DS01-N"
 		}
 	],
 	
