@@ -1,6 +1,5 @@
 ﻿[CmdletBinding()]
 Param(
-    [Parameter()] [bool] $ProcessIAD = $true
 )
 
 $ScriptPath = $PSScriptRoot
@@ -86,12 +85,14 @@ try
 {
     Get-Cluster $($IADInfo.Cluster) | Get-VMHost $($IADInfo.Host) -ErrorAction Stop | Out-Null
     Get-VMHost $($IADInfo.Host) | Get-Datastore $($IADInfo.Datastore) -ErrorAction Stop | Out-Null
-    DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Succ -LogString "Host and Datastore in IAD-PROD located."
+    Get-Datacenter $($IADInfo.Datacenter) | Get-Folder "Templates" -ErrorAction Stop | Out-Null
+    DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Succ -LogString "Host, Datastore and Folder located."
 }
 catch
 {
     if ($Error[0] -like "*Get-VMHost*") { DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Err -LogString "IAD-PROD host is incorrect!!! Script Exiting!!!" }
     if ($Error[0] -like "*Get-Datastore*") { DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Err -LogString "IAD-PROD datastore is incorrect!!! Script Exiting!!!" }
+    if ($Error[0] -like "*Get-Folder*") { DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Err -LogString "IAD datacenter does not have a 'Templates' folder!!! Script Exiting!!!" }
     exit
 }
 
@@ -164,6 +165,18 @@ foreach ($Rubrik in $Rubriks)
         DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Err -LogString "Datastore $($Rubrik.Datastore) is invalid!!! Script exiting!!!"
         exit
     }
+
+    DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Verifying 'Templates' folder..."
+    try
+    {
+        Get-Datacenter $($Rubrik.Datacenter) | Get-Folder "Templates" | Out-Null
+        DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Succ -LogString "Templates folder located."
+    }
+    catch
+    {
+        DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Templates folder not found in $($Rubrik.Datacenter) Datacenter!!! Script exiting!!!"
+        exit
+    }
 }
 
 DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Checking connection to IAD Rubrik..."
@@ -217,27 +230,41 @@ $Snapshots = @()
 DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Creating manual backup jobs for each SLA..."
 foreach ($Rubrik in $Rubriks)
 {
-    foreach ($TemplateName in $TemplateNames){ $Snapshots += Get-RubrikVM -name $TemplateName | where { $_.primaryClusterId -eq "$($RubrikClusterID.id)" } | New-RubrikSnapshot -SLA "Gold Templates to $($Rubrik.RubrikDevice)" -Confirm:$false }
+    foreach ($TemplateName in $TemplateNames)
+    {
+        $Snapshots += New-Object -Type PSObject -Property (@{
+            id = $(Get-RubrikVM -name $TemplateName | where { $_.primaryClusterId -eq "$($RubrikClusterID.id)" } | New-RubrikSnapshot -SLA "Gold Templates to $($Rubrik.RubrikDevice)" -Confirm:$false).id
+            Rubrik = $($Rubrik.RubrikDevice)
+            Template = $TemplateName
+            BackupComplete = "Not Complete"})
+    }
 }
 
 #Wait for all backups to complete
 DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Waiting for manual backup jobs to complete..."
 while($true)
 {
-    $Complete = $true
+    cls
     foreach ($Snapshot in $Snapshots)
     {
         $Status = Invoke-RubrikRESTCall -Endpoint "vmware/vm/request/$($Snapshot.id)" -Method Get
-        if ($Status.Status -ne "SUCCEEDED") { $Complete = $false }
+        if ($Status.Status -eq "SUCCEEDED") { $Snapshot.BackupComplete = "Complete" }
     }
 
-    if ($Complete) { break }
+    if (!($Snapshots.BackupComplete -eq "Not Complete")) { break }
+
+    Write-Host "Script has been running since $ScriptStarted."
+    Write-Host "Backup status at $(Get-Date -Format MM-dd-yyyy_HH-mm-ss)`r`n"
+    foreach ($Snapshot in $Snapshots)
+    {
+        Write-Host "$($Snapshot.Rubrik) - $($Snapshot.Template) --> $($Snapshot.BackupComplete)"
+    }
     Start-Sleep 30
 }
 
 DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Backup jobs complete."
 
-if ($ProcessIAD)
+if ($($IADInfo.Enable) -eq "yes")
 {
     #Create templates at IAD-Prod from the GOLD VMs
     DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Creating templates in IAD-PROD..."
@@ -247,7 +274,7 @@ if ($ProcessIAD)
         if ((Get-Template $TplName -ErrorAction SilentlyContinue) -ne $null)
         {
             DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Deleting $TplName..."
-            Remove-Template $TplName -DeletePermanently -Confirm:$false
+            Remove-Template $TplName -DeletePermanently -Confirm:$false | Out-Null
         }
         New-VM -VM $TemplateName -Datastore $(Get-Datastore $($IADInfo.Datastore)) -DiskStorageFormat Thick -Name $TplName -VMHost $($IADInfo.Host) | Out-Null
         Set-VM $TplName -ToTemplate -Confirm:$false | Out-Null
@@ -263,26 +290,35 @@ DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -L
 $Endpoints = @()
 foreach ($Snapshot in $Snapshots)
 {
-    $Endpoints += Invoke-RubrikRESTCall -Endpoint "vmware/vm/request/$($Snapshot.id)" -Method Get
+    $Endpoints += New-Object -Type PSObject -Property (@{
+        id = ($(Invoke-RubrikRESTCall -Endpoint "vmware/vm/request/$($Snapshot.id)" -Method Get).links | where { $_.rel -eq "result" }).href.replace("https://iad-rubk001/api/v1/vmware/vm/snapshot/","")
+        Rubrik = $Snapshot.Rubrik
+        Template = $Snapshot.Template
+        ReplicationComplete = "Not Complete"})
 }
 
 #Monitor for replication completion
 DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Waiting for replication to complete..."
 while($true)
 {
-    $Complete = $true
+    cls
     foreach ($Endpoint in $Endpoints)
     {
-        $EndpointID = $($EndPoint.links | where { $_.rel -eq "result" }).href.replace("https://iad-rubk001/api/v1/vmware/vm/snapshot/","")
-
-        $Status = Invoke-RubrikRESTCall -Endpoint "vmware/vm/snapshot/$EndpointID" -Method Get
-        if ($Status.replicationLocationIds -eq $null) { $Complete = $false }
+        $Status = Invoke-RubrikRESTCall -Endpoint "vmware/vm/snapshot/$($Endpoint.ID)" -Method Get
+        if ($Status.replicationLocationIds -ne $null) { $Endpoint.ReplicationComplete = "Complete" }
     }
 
-    if ($Complete) { break }
+    if (!($Endpoints.ReplicationComplete -eq "Not Complete")) { break }
+
+    Write-Host "Script has been running since $ScriptStarted."
+    Write-Host "Replication status at $(Get-Date -Format MM-dd-yyyy_HH-mm-ss)`r`n"
+    foreach ($Endpoint in $Endpoints)
+    {
+        Write-Host "$($Endpoint.Rubrik) - $($Endpoint.Template) --> $($Endpoint.ReplicationComplete)"
+    }
     Start-Sleep 60
 }
-
+<#
 DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Disconnecting from IAD Rubrik..."
 Disconnect-Rubrik -Confirm:$false
 
@@ -352,7 +388,7 @@ while ($true)
                         $VMRenamed = Get-Cluster $($Rubrik.Cluster) | Get-VM $($LocalGoldCopy.Name) | Set-VM -Name $TemplateNameModified -Confirm:$false
                         DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Converting to template..."
                         Set-VM $VMRenamed -ToTemplate -Confirm:$false | Out-Null
-                        Move-Template -Template $VMRenamed -Destination $(Get-Datacenter $($Rubrik.Datacenter) | Get-Folder Templates)
+                        Move-Template -Template $VMRenamed -Destination $(Get-Datacenter $($Rubrik.Datacenter) | Get-Folder "Templates")
                         DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Continuing export completion checks..."
                         Send-MailMessage -smtpserver $emailServer -to $emailTo -from $emailFrom -subject "Template Replication Update..." -body "$VMRenamed template has been recreated and is ready for use."
                     }
@@ -368,3 +404,4 @@ while ($true)
 
 DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Succ -LogString "Template replication has completed successfully!!!"
 $EmailBody = Get-Content .\~Logs\"$ScriptName $ScriptStarted.log" | Out-String; Send-MailMessage -smtpserver $emailServer -to $emailTo -from $emailFrom -subject "Template Replication Completed!!!" -body $EmailBody
+#>
