@@ -29,11 +29,17 @@ catch
 if (!(Get-Module -ListAvailable -Name AzureRM)) { Write-Host "'AzureRM' module not available!!! Script exiting!!!" -ForegroundColor Red; exit }
 if (!(Get-Module -Name Azure)) { Import-Module AzureRM }
 
-Write-Host "Connecting to Azure..."
-Add-AzureRMAccount
-
-Write-Host "Setting default Azure connection..."
-Select-AzureSubscription -SubscriptionId 83d0d0ba-42d5-4c21-a019-3c1b250fbf15
+try
+{
+    $AzureInfo = Get-AzureRmSubscription
+    if ($AzureInfo.Id -ne "83d0d0ba-42d5-4c21-a019-3c1b250fbf15") { Write-Host "Azure Connection is incorrect!!!"; exit }
+    else { Write-Host "Already Connected to the Correct Azure Subscription..." }
+}
+catch
+{
+    Write-Host "Connecting to Azure..."
+    Connect-AzureRMAccount
+}
 
 Write-Host "Importing data file..."
 $DataFromFile = Import-Csv .\AzureDRTestPrep-Data.csv
@@ -56,11 +62,15 @@ foreach ($Vault in $Vaults)
         $RecoveryPoints = Get-AzureRmRecoveryServicesBackupRecoveryPoint -Item $BackupItem
 
         Write-Host "Creating restore job..."
-        $RestoreJob = Restore-AzureRmRecoveryServicesBackupItem -RecoveryPoint $RecoveryPoints[0] -StorageAccountName asrfannonpcistorage -StorageAccountResourceGroupName $($Vault.ResourceGroupName) -TargetResourceGroupName DRTEST
-        Write-Host "Waiting for restore job completion..."
-        Wait-AzureRmRecoveryServicesBackupJob -Job $RestoreJob
-        $RestoreJob = Get-AzureRmRecoveryServicesBackupJob -Job $RestoreJob
-        $Details = Get-AzureRmRecoveryServicesBackupJobDetails -Job $RestoreJob
+        try
+        {
+            $RestoreJob = Restore-AzureRmRecoveryServicesBackupItem -RecoveryPoint $RecoveryPoints[0] -StorageAccountName $($DataFromFile | Where-Object {$_.Server -eq "$($Container.FriendlyName)"}).StorageAccountName -StorageAccountResourceGroupName $($Vault.ResourceGroupName) -TargetResourceGroupName DRTEST -ErrorAction SilentlyContinue 
+            Write-Host "Waiting for restore job completion..."
+            Wait-AzureRmRecoveryServicesBackupJob -Job $RestoreJob
+            $RestoreJob = Get-AzureRmRecoveryServicesBackupJob -Job $RestoreJob
+            $Details = Get-AzureRmRecoveryServicesBackupJobDetails -Job $RestoreJob
+        }
+        catch { Write-Host "Error!!!"; exit }
 
         Write-Host "Creating VM from restored disks..."
         $StorageAccountName = $Details.Properties.'Target Storage Account Name'
@@ -82,7 +92,7 @@ foreach ($Vault in $Vaults)
         }
 
         Write-Host "Setting network information..."
-        $vnet = Get-AzureRmVirtualNetwork -Name CorpSpoke2VNet -ResourceGroupName rgnetworking
+        $vnet = Get-AzureRmVirtualNetwork -Name $($DataFromFile | Where-Object {$_.Server -eq "$($Container.FriendlyName)"}).VNet -ResourceGroupName $($DataFromFile | Where-Object {$_.Server -eq "$($Container.FriendlyName)"}).VNetRG
         $subnetindex=0
         $nic = New-AzureRmNetworkInterface -Name $("$($Container.FriendlyName)" + "-DRTNIC") -ResourceGroupName DRTEST -Location "eastus" -SubnetId $vnet.Subnets[$subnetindex].Id -PrivateIpAddress $($DataFromFile | Where-Object {$_.Server -eq "$($Container.FriendlyName)"}).AzureIP
         $NewVM=Add-AzureRmVMNetworkInterface -VM $NewVM -Id $nic.Id
