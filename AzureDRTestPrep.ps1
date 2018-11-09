@@ -39,13 +39,14 @@ catch
 {
     Write-Host "Connecting to Azure..."
     Connect-AzureRMAccount
+    Select-AzureRmSubscription -Subscription "83d0d0ba-42d5-4c21-a019-3c1b250fbf15"
 }
 
 Write-Host "Importing data file..."
 $DataFromFile = Import-Csv .\AzureDRTestPrep-Data.csv
 
 Write-Host "Obtaining a list of the ASR Vaults..."
-$Vaults = Get-AzureRmRecoveryServicesVault -Name ASRFanNonPCIVault
+$Vaults = Get-AzureRmRecoveryServicesVault
 
 foreach ($Vault in $Vaults)
 {
@@ -64,7 +65,7 @@ foreach ($Vault in $Vaults)
         Write-Host "Creating restore job..."
         try
         {
-            $RestoreJob = Restore-AzureRmRecoveryServicesBackupItem -RecoveryPoint $RecoveryPoints[0] -StorageAccountName $($DataFromFile | Where-Object {$_.Server -eq "$($Container.FriendlyName)"}).StorageAccountName -StorageAccountResourceGroupName $($Vault.ResourceGroupName) -TargetResourceGroupName DRTEST -ErrorAction SilentlyContinue 
+            $RestoreJob = Restore-AzureRmRecoveryServicesBackupItem -RecoveryPoint $RecoveryPoints[0] -StorageAccountName drtestfanstorage -StorageAccountResourceGroupName DRTEST -TargetResourceGroupName DRTEST -ErrorAction SilentlyContinue 
             Write-Host "Waiting for restore job completion..."
             Wait-AzureRmRecoveryServicesBackupJob -Job $RestoreJob
             $RestoreJob = Get-AzureRmRecoveryServicesBackupJob -Job $RestoreJob
