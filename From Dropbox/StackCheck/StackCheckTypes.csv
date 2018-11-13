@@ -1,0 +1,11 @@
+ServerType,NumServers,MemReserve,CPUCount,RAMAmount,DiskCount,Disk1,Disk2,Disk3
+ASP,5,No,2,32,3,16,4,50
+CLS,1,No,8,64,0,0,0,0
+ELOG,1,No,2,32,3,32,100,5
+FS,1,No,2,16,3,32,50,5
+IDX,1,No,4,32,3,32,10,5
+MCH,10,Yes,2,32,3,16,4,50
+MQ,2,No,2,16,3,32,5,25
+MW,4,No,4,32,2,36,70,0
+SRCH,20,No,2,32,3,32,10,5
+WEB,40,No,4,32,3,32,6,5

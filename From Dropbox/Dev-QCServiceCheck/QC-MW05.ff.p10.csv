@@ -1,0 +1,16 @@
+ServiceType,ServiceName
+Win,Fanatics.BarclaysPrescreenService
+Win,Fanatics.CacheRehydratorService
+Win,Fanatics.DataTransferService
+Win,TRXN Email Service 5.4.0
+Win,FF.Security.Service
+Win,SEO XML Service 1.0.0.0
+IIS,TCS Customer Relations Manager Service
+IIS,Email Subscription Service
+IIS,Fanatics.InventoryService
+IIS,Fanatics.OrderHistory
+IIS,Fanatics.ShippingService
+IIS,Fanatics.Web.OrderPaymentService
+IIS,Fanatics.OrderFulfillment
+IIS,Fanatics.OrderRequestGateway
+IIS,GiftCardServiceAppPool

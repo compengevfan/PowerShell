@@ -1,0 +1,16 @@
+"Name","NumPorts","VDSwitch","Vlan"
+"dvPG-vmMGMT001","128","dvSwitch-FAKW_Trunk","2"
+"dvPG-vmMGMT002","128","dvSwitch-FAKW_Trunk","2"
+"dvPG-vMotion001","128","dvSwitch-FAKW_Trunk","2"
+"dvPG-vMotion002","128","dvSwitch-FAKW_Trunk","2"
+"fakw-vs01-iSCSI01","128","dvSwitch-FAKW_iSCSI",
+"fakw-vs01-iSCSI02","128","dvSwitch-FAKW_iSCSI",
+"fakw-vs02-iSCSI01","128","dvSwitch-FAKW_iSCSI",
+"fakw-vs02-iSCSI02","128","dvSwitch-FAKW_iSCSI",
+"fakw-vs03-iSCSI01","128","dvSwitch-FAKW_iSCSI",
+"fakw-vs03-iSCSI02","128","dvSwitch-FAKW_iSCSI",
+"vlan2-server","128","dvSwitch-FAKW_Trunk","2"
+"vlan3-office","128","dvSwitch-FAKW_Trunk","3"
+"vlan4-voip","128","dvSwitch-FAKW_Trunk","4"
+"vlan5-Warehouse","128","dvSwitch-FAKW_Trunk","5"
+"vlan99-heartbeat","128","dvSwitch-FAKW_Trunk","99"

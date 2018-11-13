@@ -1,0 +1,12 @@
+"Name","NumPorts","VDSwitch","Vlan"
+"dvPG-vmMGMT001","128","dvSwitch-SFCQ-Trunk","2"
+"dvPG-vmMGMT002","128","dvSwitch-SFCQ-Trunk","2"
+"dvPG-vMotion001","128","dvSwitch-SFCQ-Trunk","2"
+"dvPG-vMotion002","128","dvSwitch-SFCQ-Trunk","2"
+"sfcq-vs01-iSCSI01","128","dvSwitch-SFCQ_iSCSI",
+"sfcq-vs01-iSCSI02","128","dvSwitch-SFCQ_iSCSI",
+"sfcq-vs02-iSCSI01","128","dvSwitch-SFCQ_iSCSI",
+"sfcq-vs02-iSCSI02","128","dvSwitch-SFCQ_iSCSI",
+"vlan2-management","128","dvSwitch-SFCQ-Trunk","2"
+"vlan3-servers","128","dvSwitch-SFCQ-Trunk","3"
+"vlan4-iSCSI","128","dvSwitch-SFCQ_iSCSI",

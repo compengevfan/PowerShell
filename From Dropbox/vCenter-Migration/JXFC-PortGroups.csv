@@ -1,0 +1,14 @@
+"Name","NumPorts","VDSwitch","Vlan"
+"dvPG-vmMGMT001","128","dvSwitch-JXFC-Trunk","12"
+"dvPG-vmMGMT002","128","dvSwitch-JXFC-Trunk","12"
+"dvPG-vMotion001","128","dvSwitch-JXFC-Trunk","12"
+"dvPG-vMotion002","128","dvSwitch-JXFC-Trunk","12"
+"jxfc-vs01-iSCSI01","128","dvSwitch-JXFC_iSCSI",
+"jxfc-vs01-iSCSI02","128","dvSwitch-JXFC_iSCSI",
+"jxfc-vs02-iSCSI01","128","dvSwitch-JXFC_iSCSI",
+"jxfc-vs02-iSCSI02","128","dvSwitch-JXFC_iSCSI",
+"vlan12-Servers","28","dvSwitch-JXFC-Trunk","12"
+"vlan13-iSCSI","128","dvSwitch-JXFC_iSCSI",
+"vlan2-CustServ","128","dvSwitch-JXFC-Trunk","2"
+"vlan5-BoxSeat","128","dvSwitch-JXFC-Trunk","5"
+"vlan6-Marketing","128","dvSwitch-JXFC-Trunk","6"

@@ -1,0 +1,11 @@
+"Name","NumPorts","VDSwitch","Vlan"
+"copq-vs01-iSCSI01","128","dvSwitch-COPQ_iSCSI",
+"copq-vs01-iSCSI02","128","dvSwitch-COPQ_iSCSI",
+"copq-vs02-iSCSI01","128","dvSwitch-COPQ_iSCSI",
+"copq-vs02-iSCSI02","128","dvSwitch-COPQ_iSCSI",
+"dvPG-vmMGMT001","128","dvSwitch-COPQ_Trunk",
+"dvPG-vmMGMT002","128","dvSwitch-COPQ_Trunk",
+"dvPG-vMotion001","128","dvSwitch-COPQ_Trunk",
+"dvPG-vMotion002","128","dvSwitch-COPQ_Trunk",
+"vlan2-server","128","dvSwitch-COPQ_Trunk",
+"vlan7-iscsi","128","dvSwitch-COPQ_iSCSI",

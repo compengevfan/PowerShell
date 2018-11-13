@@ -1,0 +1,16 @@
+"Name","NumPorts","VDSwitch","Vlan"
+"dvPG-vmMGMT001","128","dvSwitch-FROW-Trunk","3"
+"dvPG-vmMGMT002","128","dvSwitch-FROW-Trunk","3"
+"dvPG-vMotion001","128","dvSwitch-FROW-Trunk","3"
+"dvPG-vMotion002","128","dvSwitch-FROW-Trunk","3"
+"frow-vs01-iSCSI01","128","dvSwitch-FROW_iSCSI",
+"frow-vs01-iSCSI02","128","dvSwitch-FROW_iSCSI",
+"frow-vs02-iSCSI01","128","dvSwitch-FROW_iSCSI",
+"frow-vs02-iSCSI02","128","dvSwitch-FROW_iSCSI",
+"frow-vs03-iSCSI01","128","dvSwitch-FROW_iSCSI",
+"frow-vs03-iSCSI02","128","dvSwitch-FROW_iSCSI",
+"vlan2-management","128","dvSwitch-FROW-Trunk","2"
+"vlan3-servers","128","dvSwitch-FROW-Trunk","3"
+"vlan4-iSCSI","128","dvSwitch-FROW_iSCSI",
+"vlan99-heartbeat","128","dvSwitch-FROW-Trunk","99"
+"vlan9-pyramid","128","dvSwitch-FROW-Trunk","9"

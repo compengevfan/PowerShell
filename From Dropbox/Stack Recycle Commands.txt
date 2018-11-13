@@ -1,0 +1,13 @@
+.\Reset-IIS.ps1 -stack JAX-s01
+.\Reset-IIS.ps1 -stack JAX-s02
+.\Reset-IIS.ps1 -stack JAX-s03
+.\Reset-IIS.ps1 -stack JAX-s04
+.\Reset-IIS.ps1 -stack JAX-s05
+
+.\Reset-IIS.ps1 -stack ORD-s01
+.\Reset-IIS.ps1 -stack ORD-s02
+.\Reset-IIS.ps1 -stack ORD-s03
+.\Reset-IIS.ps1 -stack ORD-s04
+.\Reset-IIS.ps1 -stack ORD-s05
+
+cd g:\scripts

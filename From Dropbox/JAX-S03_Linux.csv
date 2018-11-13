@@ -1,0 +1,16 @@
+Name,Role,Cluster,BaseCustomizationSpec,Template,Folder1,Folder2,Folder3,Datastore,GuestID,NumCpu,MemoryGB,Disk1,Disk2,Disk3,Disk4,NIC1_Portgroup,NIC1_IP,NIC1_Subnet,Gateway,NIC2_Portgroup,NIC2_IP,NIC2_Subnet,NIC3_Portgroup,NIC3_IP,NIC3_Subnet,NIC4_Portgroup,NIC4_IP,NIC4_Subnet,DNS1,DNS2
+JAX-S03-ASP001,Web,JAX-Prod-3,JAX-MCHx,Template-MCHxx,Linux,S03,,jax-vs-prod-ds03,debian6_64Guest,,,,,,,jax-s03-mwsrch,10.140.34.24,255.255.255.0,10.140.34.1,,,,,,,,,,192.168.125.140,192.168.125.141
+JAX-S03-ASP002,Web,JAX-Prod-3,JAX-MCHx,Template-MCHxx,Linux,S03,,jax-vs-prod-ds04,debian6_64Guest,,,,,,,jax-s03-mwsrch,10.140.34.25,255.255.255.0,10.140.34.1,,,,,,,,,,192.168.125.140,192.168.125.141
+JAX-S03-ASP003,Web,JAX-Prod-3,JAX-MCHx,Template-MCHxx,Linux,S03,,jax-vs-prod-ds05,debian6_64Guest,,,,,,,jax-s03-mwsrch,10.140.34.26,255.255.255.0,10.140.34.1,,,,,,,,,,192.168.125.140,192.168.125.141
+JAX-S03-ASP004,Web,JAX-Prod-3,JAX-MCHx,Template-MCHxx,Linux,S03,,jax-vs-prod-ds06,debian6_64Guest,,,,,,,jax-s03-mwsrch,10.140.34.27,255.255.255.0,10.140.34.1,,,,,,,,,,192.168.125.140,192.168.125.141
+JAX-S03-ASP005,Web,JAX-Prod-3,JAX-MCHx,Template-MCHxx,Linux,S03,,jax-vs-prod-ds07,debian6_64Guest,,,,,,,jax-s03-mwsrch,10.140.34.28,255.255.255.0,10.140.34.1,,,,,,,,,,192.168.125.140,192.168.125.141
+JAX-S03-MCH001,Web,JAX-Prod-3,JAX-MCHx,Template-MCHxx,Linux,S03,,jax-vs-prod-ds08,debian6_64Guest,,,,,,,jax-s03-webdmz,10.140.30.201,255.255.255.0,10.140.30.1,,,,,,,,,,192.168.125.140,192.168.125.141
+JAX-S03-MCH002,Web,JAX-Prod-3,JAX-MCHx,Template-MCHxx,Linux,S03,,jax-vs-prod-ds09,debian6_64Guest,,,,,,,jax-s03-webdmz,10.140.30.202,255.255.255.0,10.140.30.1,,,,,,,,,,192.168.125.140,192.168.125.141
+JAX-S03-MCH003,Web,JAX-Prod-3,JAX-MCHx,Template-MCHxx,Linux,S03,,jax-vs-prod-ds10,debian6_64Guest,,,,,,,jax-s03-webdmz,10.140.30.203,255.255.255.0,10.140.30.1,,,,,,,,,,192.168.125.140,192.168.125.141
+JAX-S03-MCH004,Web,JAX-Prod-3,JAX-MCHx,Template-MCHxx,Linux,S03,,jax-vs-prod-ds11,debian6_64Guest,,,,,,,jax-s03-webdmz,10.140.30.204,255.255.255.0,10.140.30.1,,,,,,,,,,192.168.125.140,192.168.125.141
+JAX-S03-MCH005,Web,JAX-Prod-3,JAX-MCHx,Template-MCHxx,Linux,S03,,jax-vs-prod-ds12,debian6_64Guest,,,,,,,jax-s03-webdmz,10.140.30.205,255.255.255.0,10.140.30.1,,,,,,,,,,192.168.125.140,192.168.125.141
+JAX-S03-MCH006,Web,JAX-Prod-3,JAX-MCHx,Template-MCHxx,Linux,S03,,jax-vs-prod-ds13,debian6_64Guest,,,,,,,jax-s03-webdmz,10.140.30.206,255.255.255.0,10.140.30.1,,,,,,,,,,192.168.125.140,192.168.125.141
+JAX-S03-MCH007,Web,JAX-Prod-3,JAX-MCHx,Template-MCHxx,Linux,S03,,jax-vs-prod-ds14,debian6_64Guest,,,,,,,jax-s03-webdmz,10.140.30.207,255.255.255.0,10.140.30.1,,,,,,,,,,192.168.125.140,192.168.125.141
+JAX-S03-MCH008,Web,JAX-Prod-3,JAX-MCHx,Template-MCHxx,Linux,S03,,jax-vs-prod-ds15,debian6_64Guest,,,,,,,jax-s03-webdmz,10.140.30.208,255.255.255.0,10.140.30.1,,,,,,,,,,192.168.125.140,192.168.125.141
+JAX-S03-MCH009,Web,JAX-Prod-3,JAX-MCHx,Template-MCHxx,Linux,S03,,jax-vs-prod-ds16,debian6_64Guest,,,,,,,jax-s03-webdmz,10.140.30.209,255.255.255.0,10.140.30.1,,,,,,,,,,192.168.125.140,192.168.125.141
+JAX-S03-MCH010,Web,JAX-Prod-3,JAX-MCHx,Template-MCHxx,Linux,S03,,jax-vs-prod-ds17,debian6_64Guest,,,,,,,jax-s03-webdmz,10.140.30.210,255.255.255.0,10.140.30.1,,,,,,,,,,192.168.125.140,192.168.125.141

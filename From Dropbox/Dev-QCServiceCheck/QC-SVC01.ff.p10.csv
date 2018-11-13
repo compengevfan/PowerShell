@@ -1,0 +1,9 @@
+ServiceType,ServiceName
+Win,FF.PackageManagement.Host
+Win,FF.ProcessCuts.Service
+Win,Fanatics.NotificationSender
+Win,FF.Order Status Update Service
+Win,FF.Payments.Service
+Win,FF.Security.Service
+Win,Chase Paymentech Orbital SDK 7.0.0 .Net 4.0
+Win,Fanatics.OrderProcessorService

@@ -1,0 +1,13 @@
+"Name","NumPorts","VDSwitch","Vlan"
+"dvPG-vmMGMT001","128","dvSwitch-NBIQ-Trunk","2"
+"dvPG-vmMGMT002","128","dvSwitch-NBIQ-Trunk","2"
+"dvPG-vMotion001","128","dvSwitch-NBIQ-Trunk","2"
+"dvPG-vMotion002","128","dvSwitch-NBIQ-Trunk","2"
+"nbiq-vs01-iSCSI01","128","dvSwitch-NBIQ_iSCSI",
+"nbiq-vs01-iSCSI02","128","dvSwitch-NBIQ_iSCSI",
+"nbiq-vs02-iSCSI01","128","dvSwitch-NBIQ_iSCSI",
+"nbiq-vs02-iSCSI02","128","dvSwitch-NBIQ_iSCSI",
+"vlan30-iSCSI","128","dvSwitch-NBIQ_iSCSI",
+"vlan40-servers","128","dvSwitch-NBIQ-Trunk","40"
+"vlan50-IT","128","dvSwitch-NBIQ-Trunk","50"
+"vlan55-office","128","dvSwitch-NBIQ-Trunk","55"
