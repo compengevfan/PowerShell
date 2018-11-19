@@ -1,8 +1,8 @@
 ﻿[CmdletBinding()]
 Param(
-    [Parameter()] [string] $InputFile,
-    [Parameter()] $CredFile = $null,
-    [Parameter()] [bool] $SendEmail = $false
+    [Parameter(Mandatory=$true)] [ValidateSet("Corp","Ecom")] $Environment,
+    [Parameter()] [bool] $SingleServer = $true,
+    [Parameter()] [string] $ServertoCheck
 )
  
 $ScriptPath = $PSScriptRoot
@@ -17,20 +17,28 @@ if (!(Get-Module -ListAvailable -Name DupreeFunctions)) { Write-Host "'DupreeFun
 if (!(Get-Module -Name DupreeFunctions)) { Import-Module DupreeFunctions }
 if (!(Test-Path .\~Logs)) { New-Item -Name "~Logs" -ItemType Directory | Out-Null }
   
-if ($CredFile -ne $null)
-{
-    Remove-Variable Credential_To_Use -ErrorAction Ignore
-    New-Variable -Name Credential_To_Use -Value $(Import-Clixml $($CredFile))
-}
-
 ##################
 #Email Variables
 ##################
 #emailTo is a comma separated list of strings eg. "email1","email2"
-$emailFrom = "JAXF-SAN001@fanatics.corp"
-$emailTo = "cdupree@fanatics.com"
+switch ($Environment)
+{
+    "Corp"
+    {
+        $emailFrom = "JAXF-SAN001@fanatics.corp"
+        $emailServer = "SMTP-WH.footballfanatics.wh"
+    }
+    "Ecom"
+    {
+        $emailFrom = "JAX-SAN001@fanatics.corp"
+        $emailServer = "SMTP.ff.p10"
+    }
+}
+
+#$emailTo = "cdupree@fanatics.com"
+$emailTo = "TEAMEntCompute@fanatics.com"
 $emailSubject = "Windows Servers Improperly Configured!!!"
-$emailServer = "SMTP-WH.footballfanatics.wh"
+
  
 #DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType
 <#
@@ -44,9 +52,21 @@ catch
 }
 #>
 
-Import-Module "G:\Software\PS_SDK\DellStorage.ApiCommandSet.psd1"
+DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Checking to see if PowerShell is running as svcTasks..."
+if ($(whoami) -notlike "*svcTasks")
+{
+    DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Err -LogString "Please run PowerShell as 'svcTasks' when executing this script!!! Script exiting!!!"
+    exit
+}
 
-#$ErrorActionPreference = "SilentlyContinue"
+DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Checking to see if the SingleServer switch is true and if so, that a server to check is provided..."
+if ($SingleServer -and $ServertoCheck -eq "")
+{
+    DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Err -LogString "SingleServer is set to true which requires a value for ServertoCheck!!! Please rerun the script and provide a value for the ServertoCheck Parameter!!!`n`rScript exiting!!!"
+    exit
+}
+
+Import-Module "G:\Software\PS_SDK\DellStorage.ApiCommandSet.psd1"
 
 ###########
 #Functions#
@@ -55,8 +75,6 @@ Import-Module "G:\Software\PS_SDK\DellStorage.ApiCommandSet.psd1"
 Function DetermineDomain
 {
     Param ([Parameter(Position=0, Mandatory=$True, ValueFromPipeline=$True)] [string]$ServerName)
-
-    #Write-Verbose "Begin Function 'DetermineDomain'."
 
 	$Domains = @{
 		".footballfanatics.wh" = "FF"
@@ -75,8 +93,6 @@ Function DetermineDomain
     #Catch not found
     if ($RetDomain -eq $NULL) { $RetDomain = "DNE" }
 
-    #Write-Verbose "End Function 'DetermineDomain'."
-
     Return $RetDomain
 }
 
@@ -86,8 +102,6 @@ Function AccessRegistry
             [Parameter(Mandatory=$True)] [string]$key,
             [Parameter()] [string]$valuename,
             [Parameter()] [string]$ValueType)
-
-    #Write-Verbose "Begin Function 'AccessRegistry'."
 
     $HKEY_Local_Machine = 2147483650
 
@@ -102,16 +116,12 @@ Function AccessRegistry
         "String" { $value = $wmi.GetStringValue($HKEY_Local_Machine,$key,$valuename).sValue }
     }
 
-    #Write-Verbose "End Function 'AccessRegistry'."
-
     Return $value
 }
 
 Function FindISCSI-Instance
 {
     Param ([Parameter(Position=0, Mandatory=$True, ValueFromPipeline=$True)] [string]$ServerName)
-
-    #Write-Verbose "Begin Function 'FindISCSI-Instance'."
 
     $HKEY_Local_Machine = 2147483650
     $key = "SYSTEM\CurrentControlSet\Control\Class\{4D36E97B-E325-11CE-BFC1-08002BE10318}"
@@ -142,16 +152,27 @@ Function FindISCSI-Instance
 
 #Import securly stored credentials. P10 domain is using svcShavlik. Fanatics.corp and FF.WH domain is using svcNetwrixAD
 DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Importing credential files..."
-$P10Cred = Import-Clixml -Path G:\Software\PS_SDK\Credential-JAXF-SAN001-ff.p10.xml
-$FanaticsCred = Import-Clixml -Path G:\Software\PS_SDK\Credential-JAXF-SAN001-fanatics.corp.xml
-$FFCred = Import-Clixml -Path G:\Software\PS_SDK\Credential-JAXF-SAN001-ff.wh.xml
+switch ($Environment) {
+    "Corp"
+    {
+        $P10Cred = Import-Clixml -Path G:\Software\PS_SDK\Credential-JAXF-SAN001-ff.p10.xml
+        $FanaticsCred = Import-Clixml -Path G:\Software\PS_SDK\Credential-JAXF-SAN001-fanatics.corp.xml
+        $FFCred = Import-Clixml -Path G:\Software\PS_SDK\Credential-JAXF-SAN001-ff.wh.xml
+    }
+    "Ecom"
+    {
+        $P10Cred = Import-Clixml -Path G:\Software\PS_SDK\Credential-JAX-SAN001-ff.p10.xml
+        $FanaticsCred = Import-Clixml -Path G:\Software\PS_SDK\Credential-JAX-SAN001-fanatics.corp.xml
+        #$FFCred = Import-Clixml -Path G:\Software\PS_SDK\Credential-JAX-SAN001-ff.wh.xml
+    }
+}
 
 DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Importing regkey information..."
 $RegKeys = Import-Csv G:\Software\PS_SDK\Compellent_BP_Check-data.csv
 
 DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Setting up variables..."
 $ProblemsFound = $false
-$ServerErrorList = "Attached is a list of servers with incorrect MPIO related registry settings.`nBelow is a list of servers that failed DNS lookup, ping test or WMI call test:`n`n"
+$ServerErrorList = "Attached is a list of servers with incorrect MPIO related registry settings.`nPlease use this file, together with 'Compellent_BP_Set.ps1', to correct these settings.`nBelow is a list of servers that failed DNS lookup, ping test or WMI call test:`n`n"
 $OutputKeyList = @()
 
 DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Obtaining DSM connection creds..."
@@ -162,8 +183,20 @@ $DsmPassword = get-content G:\Software\PS_SDK\cred.txt | convertto-securestring
 DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Connecting to DSM..."
 $Connection = Connect-DellApiConnection -HostName $DsmHostName -User $DsmUserName -Password $DsmPassword
 
-DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Obtaining server list from DSM..."
-$Servers = Get-DellScServer -Connection $Connection | ? {$_.OperatingSystem -like "*Windows*MPIO" -and $_.Type -eq "Physical" -and $_.Status -eq "Up"} | select ScName,Name,PortType,OperatingSystem | Sort-Object ScName,Name
+DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Obtaining server list/information from DSM..."
+if ($SingleServer)
+{
+    $Servers = Get-DellScServer -Connection $Connection | ? {$_.OperatingSystem -like "*Windows*MPIO" -and $_.Type -eq "Physical" -and $_.Status -eq "Up" -and $_.Name -eq $ServertoCheck} | select ScName,Name,PortType,OperatingSystem | Sort-Object ScName,Name
+    if ($Servers -eq $null)
+    {
+        DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Server name provided in ServertoCheck variable not found in DSM!!!`n`rPlease ensure the name provided is exactly as it appears in DSM, the server is up, and the operating system in DSM is set to a Windows MPIO option!!!`n`rScript exiting!!!"
+        exit
+    }
+}
+else
+{
+    $Servers = Get-DellScServer -Connection $Connection | ? {$_.OperatingSystem -like "*Windows*MPIO" -and $_.Type -eq "Physical" -and $_.Status -eq "Up"} | select ScName,Name,PortType,OperatingSystem | Sort-Object ScName,Name
+}
 
 foreach ($Server in $Servers)
 {
@@ -182,7 +215,7 @@ foreach ($Server in $Servers)
     {
         DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Server name does not have a domain. Determining domain..."
         $Domain = DetermineDomain -ServerName $Server.Name
-        if ($Domain -eq "DNE") { DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Warn -LogString "Domain look up for $($Server.Name) failed..."; $ServerErrorList +=  "DNS lookup for $($Server.Name) failed.`n";$ProblemsFound = $true }
+        if ($Domain -eq "DNE") { DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Warn -LogString "Domain look up for $($Server.Name) failed..."; $ServerErrorList += "DNS lookup for $($Server.Name) failed.`n";$ProblemsFound = $true }
         else 
         {
             DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Succ -LogString "Domain lookup successful. Checking connection..."
@@ -199,9 +232,18 @@ foreach ($Server in $Servers)
     if ($ConnectionSuccess)
     {
         DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Checking WMI connection..."
-        $WMITest = Get-WmiObject Win32_Computersystem -ComputerName $FQDN
-        if ($WMITest -eq $null) { DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Warn -LogString "WMI call to $FQDN failed..."; $ServerErrorList += "WMI call to $FQDN failed.`n";$ProblemsFound = $true }
-        else { DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Succ -LogString "WMI call to $FQDN succeeded."; $WMISuccess = $true }
+        try
+        {
+            Get-WmiObject Win32_Computersystem -ComputerName $FQDN -ErrorAction Stop
+            DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Succ -LogString "WMI call to $FQDN succeeded."
+            $WMISuccess = $true
+        }
+        catch
+        {
+            DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Warn -LogString "WMI call to $FQDN failed..."
+            $ServerErrorList += "WMI call to $FQDN failed.`n"
+            $ProblemsFound = $true
+        }
     }
 
     if ($ConnectionSuccess -and $WMISuccess)
@@ -212,13 +254,14 @@ foreach ($Server in $Servers)
 
         if ($($iSCSICheck.State) -eq "Running") { $InstanceNumber = FindISCSI-Instance -ServerName $FQDN }
 
-        Write-Host "This server has iSCSI."
+        DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "This server has iSCSI. Instance number is $InstanceNumber."
 
         foreach ($RegKey in $RegKeys)
         {
+            DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Processing: $($RegKey.Key)..."
             if (($RegKey.OS -eq "All" -or $Server.OperatingSystem.InstanceName -like "*$($RegKey.OS)*") -and ($RegKey.Fabric -eq "All" -or $RegKey.Fabric -eq $Server.PortType -as [string]))
             {
-                if ($RegKey.Fabric -eq "iSCSI" -and $($iSCSICheck.Status) -eq "Running")
+                if ($($RegKey.Fabric) -eq "iSCSI" -and $($iSCSICheck.State) -eq "Running")
                 {
                     $TempKey = $RegKey.Key.Replace("<Instance Number>", $InstanceNumber)
                     $CurrentValue = AccessRegistry -ServerName $FQDN -key $TempKey -valuename $($RegKey.Value) -ValueType "DWORD"
@@ -230,7 +273,7 @@ foreach ($Server in $Servers)
 	                    $OutputKeyList += New-Object -Type PSObject -Property (@{
 	                    Compellent = $($Server.ScName)
 	                    Server = $FQDN
-	                    Key = $($RegKey.Key) + "\" + $($RegKey.Value)
+	                    Key = $TempKey + "\" + $($RegKey.Value)
 	                    IncorrectValue = $CurrentValue
 	                    CorrectValue = $($RegKey.CorrectData)
 	                    })
@@ -238,7 +281,7 @@ foreach ($Server in $Servers)
                     }
                 }
                 
-                if ($RegKey.Fabric -ne "iSCSI") 
+                if ($($RegKey.Fabric) -ne "iSCSI") 
                 {
                     $CurrentValue = AccessRegistry -ServerName $FQDN -key $($RegKey.Key) -valuename $($RegKey.Value) -ValueType "DWORD"
 
@@ -260,17 +303,22 @@ foreach ($Server in $Servers)
         }
     }
 
-    Write-Host "End processing server: $($Server.Name)."
+    DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "End processing server: $($Server.Name)."
 }
 
 
 if ($ProblemsFound)
 {
-    $OutputKeyList | Select-Object Compellent, Server, Key, IncorrectValue, CorrectValue | Export-Csv -LiteralPath G:\Software\PS_SDK\RegProblemList.csv -NoTypeInformation
+    $OutputKeyList | Select-Object Compellent, Server, Key, IncorrectValue, CorrectValue | Export-Csv -LiteralPath G:\Software\PS_SDK\Compellent_BP_Set-Data.csv -NoTypeInformation
 
-    $ServerErrorList += "`n`rScript executed on $($env:computername)."
-
-    Send-MailMessage -smtpserver $emailServer -to $emailTo -from $emailFrom -subject $emailSubject -body $ServerErrorList -Attachments G:\Software\PS_SDK\RegProblemList.csv
-
-    Remove-Item G:\Software\PS_SDK\RegProblemList.csv
+    if (!($SingleServer))
+    {
+        $ServerErrorList += "`nScript executed on $($env:computername)."
+        Send-MailMessage -smtpserver $emailServer -to $emailTo -from $emailFrom -subject $emailSubject -body $ServerErrorList -Attachments G:\Software\PS_SDK\Compellent_BP_Set-Data.csv
+        Remove-Item G:\Software\PS_SDK\Compellent_BP_Set-Data.csv
+    }
+    else 
+    {
+        DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Compellent_BP_Data.csv has been created.`n`rPlease use this file, together with 'Compellent_BP_Set.ps1', to correct these settings on the local machine."
+    }
 }
