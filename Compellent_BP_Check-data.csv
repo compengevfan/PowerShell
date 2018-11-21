@@ -11,6 +11,8 @@ System\CurrentControlSet\Services\mpio\Parameters,DiskPathCheckEnabled,2008,1,Al
 System\CurrentControlSet\Services\mpio\Parameters,DiskPathCheckInterval,2008,25,All
 System\CurrentControlSet\Services\mpio\Parameters,DiskPathCheckDisabled,2012,0,All
 System\CurrentControlSet\Services\mpio\Parameters,DiskPathCheckInterval,2012,25,All
+System\CurrentControlSet\Services\mpio\Parameters,DiskPathCheckDisabled,2016,0,All
+System\CurrentControlSet\Services\mpio\Parameters,DiskPathCheckInterval,2016,25,All
 SYSTEM\CurrentControlSet\Control\Class\{4D36E97B-E325-11CE-BFC1-08002BE10318}\<Instance Number>\Parameters,MaxRequestHoldTime,All,90,iSCSI
 SYSTEM\CurrentControlSet\Control\Class\{4D36E97B-E325-11CE-BFC1-08002BE10318}\<Instance Number>\Parameters,LinkDownTime,All,35,iSCSI
 SYSTEM\CurrentControlSet\Control\Class\{4D36E97B-E325-11CE-BFC1-08002BE10318}\<Instance Number>\Parameters,TCPConnectTime,All,15,iSCSI

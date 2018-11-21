@@ -4,6 +4,8 @@ Param(
     [Parameter()] [bool] $SingleServer = $true,
     [Parameter()] [string] $ServertoCheck
 )
+
+#requires -Version 3.0
  
 $ScriptPath = $PSScriptRoot
 cd $ScriptPath
@@ -321,4 +323,8 @@ if ($ProblemsFound)
     {
         DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Compellent_BP_Data.csv has been created.`n`rPlease use this file, together with 'Compellent_BP_Set.ps1', to correct these settings on the local machine."
     }
+}
+else 
+{
+    DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Succ -LogString "No MPIO issues found!!!" 
 }

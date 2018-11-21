@@ -1,7 +1,9 @@
 [CmdletBinding()]
 Param(
 )
- 
+
+#requires -Version 3.0
+
 $ScriptPath = $PSScriptRoot
 cd $ScriptPath
 <#
@@ -32,7 +34,13 @@ catch
 }
 #>
 
-#Requires -RunAsAdministrator
+$currentPrincipal = New-Object Security.Principal.WindowsPrincipal([Security.Principal.WindowsIdentity]::GetCurrent())
+
+if (!($currentPrincipal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)))
+{
+    Write-Host "PowerShell session not run as Administrator, which is required to access the registry. Please rerun your command after opening PowerShell as Administrator." -ForegroundColor Red
+    exit
+}
 
 $MPIOCheck = Get-WmiObject -query "select * from Win32_OptionalFeature where name = 'MultipathIo'"
 if ($MPIOCheck.InstallState -eq 1)
@@ -65,6 +73,7 @@ $ProblemsToFix = $DataFromFile | Where-Object { $_.Server -eq $ServerName }
 foreach ($Problem in $ProblemsToFix)
 {
     $FullPath = "HKLM:\$($Problem.Key)"
+
     $i = $FullPath.Length
     while ($true)
     {
@@ -76,8 +85,17 @@ foreach ($Problem in $ProblemsToFix)
             break
         }
     }
-    Write-Host "Updating $FullPath..."
-    Set-ItemProperty -Path $Key -Name $Name -Value $Problem.CorrectValue
+    
+    if ($($Problem.IncorrectValue) -eq "Value Missing")
+    {
+        Write-Host "Creating $FullPath..."
+        New-ItemProperty -Path $Key -Name $Name -Value $Problem.CorrectValue -PropertyType DWord
+    }
+    else 
+    {
+        Write-Host "Updating $FullPath..."
+        Set-ItemProperty -Path $Key -Name $Name -Value $Problem.CorrectValue
+    }
 }
 
 Write-Host "MPIO Registry settings have been updated. Please reboot for changes to take effect." -ForegroundColor Yellow

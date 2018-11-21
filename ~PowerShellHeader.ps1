@@ -4,7 +4,9 @@ Param(
     [Parameter()] $CredFile = $null,
     [Parameter()] [bool] $SendEmail = $false
 )
- 
+
+#requires -Version 3.0
+
 $ScriptPath = $PSScriptRoot
 cd $ScriptPath
   
@@ -25,7 +27,8 @@ if ($CredFile -ne $null)
 
 ##################
 #Email Variables
-###################emailTo is a comma separated list of strings eg. "email1","email2"
+##################
+#emailTo is a comma separated list of strings eg. "email1","email2"
 $emailFrom = "GoAnywhereMonitor@fanatics.com"
 $emailTo = "cdupree@fanatics.com"
 $emailServer = "smtp.ff.p10"

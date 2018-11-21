@@ -1,0 +1,32 @@
+{
+	"VMInfo": [
+		{
+			"vCenter": "iad-vc001.fanatics.corp",
+			"Template": "TPL_JAXF-Prod_2K8R2",
+			"Datacenter": "JAX",
+			"Cluster": "JAXF-Prod",
+			"FolderPath": "JAX/Discovered virtual machine",
+			"VMName": "JAXF-DTST001",
+			"Datastore": "CML-SC8000-JAXF",
+		  	"PortGroup": "vlan6-corp-servers",
+			"ApplicationTeam": "Dupree",
+			"Application": "MPIO Test",
+			"Compliance" : "Non-PCI"
+		}
+	],
+  
+  	"GuestInfo": [
+		{
+			"CustomizationSpec": "Windows-Corp-KMS",
+			"vCPUs": "2",
+			"RAM": "8",
+			"IPAddress": "10.143.101.136",
+			"SubnetMask": "255.255.255.0",
+			"Gateway": "10.143.101.1",
+			"Domain": "fanatics.corp",
+			"DNS1": "10.143.101.21",
+			"DNS2": "10.143.101.22",
+			"OU": "Servers/JAXF"
+		}
+	]
+}
