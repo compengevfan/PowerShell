@@ -10,7 +10,7 @@ cd $ScriptPath
 $ScriptStarted = Get-Date -Format MM-dd-yyyy_HH-mm-ss
 $ScriptName = $MyInvocation.MyCommand.Name
  
-$ErrorActionPreference = "SilentlyContinue"
+#$ErrorActionPreference = "SilentlyContinue"
  
 Function Check-PowerCLI
 {
@@ -336,4 +336,38 @@ if ($CompellentAttached -eq "y")
         }
     }
     else { DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Succ -LogString "All Compellent volumes are set to the correct Storage Array Type." }
+
+    DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Checking host for Software iSCSI adapter..."
+    if ($esxcli.iscsi.adapter.list.Invoke().Description -eq "iSCSI Software Adapter")
+    {
+        DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Succ -LogString "Software iSCSI adapter found...Obtaining adapter name..."
+        $iSCSIAdapterName = $($esxcli.iscsi.adapter.list.Invoke() | Where-Object { $_.Description -eq "iSCSI Software Adapter" }).Adapter
+
+        DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Checking iSCSI module queue depth..."
+        $iSCSIQueueDepth = $($($esxcli.system.module.parameters.list.Invoke(@{module="iscsi_vmk"})) | Where-Object { $_.Name -eq "iscsivmk_LunQDepth" }).Value
+        if ($iSCSIQueueDepth -eq $null -or $iSCSIQueueDepth -ne "255")
+        {
+            DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Warn -LogString "Setting iSCSI module queue depth..."
+            $esxcli.system.module.parameters.set.Invoke(@{module="iscsi_vmk";parameterstring="iscsivmk_LunQDepth=255"})
+            DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Warn -LogString "!!!THIS CHANGE REQUIRES A HOST REBOOT!!!"
+        }
+        else { DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "iSCSI Queue Depth is correct."}
+
+        DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Checking iSCSI login timeout..."
+        $iSCSILoginTimeout = $($esxcli.iscsi.adapter.param.get.Invoke(@{adapter=$iSCSIAdapterName}) | Where-Object { $_.Name -eq "LoginTimeout" }).Current
+        if ($iSCSILoginTimeout -eq $null -or $iSCSILoginTimeout -ne "5")
+        {
+            DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Warn -LogString "Setting iSCSI login timeout..."
+            $esxcli.iscsi.adapter.param.set.Invoke(@{adapter=$iSCSIAdapterName;key="LoginTimeout";value=5})
+            DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Warn -LogString "!!!THIS CHANGE REQUIRES A HOST REBOOT!!!"
+        }
+        else { DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Succ -LogString "iSCSI Login Timeout is correct." }
+    }
+    else { DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Warn -LogString "Software iSCSI adapter not found." }
+
+    DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Checking host for FC/FCoE adapters..."
+    if ($($HosttoConfig | Get-VMHostHba | Where-Object { $_.Type -eq "FibreChannel" -and $_.Status -eq "Online" }).Count -ge 1)
+    {
+        DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "FC/FCoE adapter(s) found..."
+    }
 }
