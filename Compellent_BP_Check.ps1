@@ -311,17 +311,17 @@ foreach ($Server in $Servers)
 
 if ($ProblemsFound)
 {
-    $OutputKeyList | Select-Object Compellent, Server, Key, IncorrectValue, CorrectValue | Export-Csv -LiteralPath G:\Software\PS_SDK\Compellent_BP_Set-Data.csv -NoTypeInformation
-
     if (!($SingleServer))
     {
+        $OutputKeyList | Select-Object Compellent, Server, Key, IncorrectValue, CorrectValue | Export-Csv -LiteralPath G:\Software\PS_SDK\Compellent_BP_Set-Data.csv -NoTypeInformation
         $ServerErrorList += "`nScript executed on $($env:computername)."
         Send-MailMessage -smtpserver $emailServer -to $emailTo -from $emailFrom -subject $emailSubject -body $ServerErrorList -Attachments G:\Software\PS_SDK\Compellent_BP_Set-Data.csv
         Remove-Item G:\Software\PS_SDK\Compellent_BP_Set-Data.csv
     }
     else 
     {
-        DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Compellent_BP_Data.csv has been created.`n`rPlease use this file, together with 'Compellent_BP_Set.ps1', to correct these settings on the local machine."
+        $OutputKeyList | Select-Object Compellent, Server, Key, IncorrectValue, CorrectValue | Export-Csv -LiteralPath "G:\Software\PS_SDK\Compellent_BP_Set-Data_$($Server.Name).csv" -NoTypeInformation
+        DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Succ -LogString "Compellent_BP_Set-Data_$($Server.Name) has been created.`n`rPlease use this file, together with 'Compellent_BP_Set.ps1', to correct these settings on the local machine. The data file will need to be renamed to 'Compellent_BP_Set-Data.csv'."
     }
 }
 else 

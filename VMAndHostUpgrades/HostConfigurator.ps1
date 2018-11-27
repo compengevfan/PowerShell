@@ -5,7 +5,7 @@ Param(
 )
  
 $ScriptPath = $PSScriptRoot
-cd $ScriptPath
+Set-Location $ScriptPath
  
 $ScriptStarted = Get-Date -Format MM-dd-yyyy_HH-mm-ss
 $ScriptName = $MyInvocation.MyCommand.Name
@@ -53,7 +53,7 @@ $ProperInfo = $DataFromFile | ? { $_.Cluster -eq $ParentCluster }
 #Verify ESXi build number. If wrong, exit.
 ##################
 DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Checking ESXi build number..."
-$OSInfo = Get-View -ViewType HostSystem -Filter @{"Name"=$($HostToConfig).Name} -Property Name,Config.Product | foreach {$_.Name, $_.Config.Product}
+$OSInfo = Get-View -ViewType HostSystem -Filter @{"Name"=$($HostToConfig).Name} -Property Name,Config.Product | ForEach-Object {$_.Name, $_.Config.Product}
 if ($OSInfo.Build -eq 7388607)
 {
     DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "ESXi build number is correct..."
@@ -84,7 +84,7 @@ else
 DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Getting the list of NTP servers..."
 $NTPServers = Get-VMHostNtpServer $HostToConfig
 DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Getting the NTP Daemon settings..."	
-$ntp = Get-VmHostService -VMhost $HostToConfig | Where {$_.Key -eq 'ntpd'}
+$ntp = Get-VmHostService -VMhost $HostToConfig | Where-Object {$_.Key -eq 'ntpd'}
 
 DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Checking the NTP server config..."
 #Check the NTP Servers on the host.
@@ -128,7 +128,7 @@ else { DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType 
 ##################
 #Ensure service is not runnig and not configured to start with host.
 DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Getting the SNMP Daemon settings..."
-$snmp = Get-VMHostService -VMHost $HostToConfig | where {$_.Key -eq 'snmpd'}
+$snmp = Get-VMHostService -VMHost $HostToConfig | Where-Object {$_.Key -eq 'snmpd'}
 DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Checking to see if the SNMP service is running..."
 if ($snmp.Running -eq "True")
 {
@@ -263,7 +263,7 @@ else
     {
         foreach ($DistributedSwitch in $DistributedSwitches)
         {
-            $Nics = Get-VMHostNetworkAdapter -VMHost $HostToConfig -DistributedSwitch $DistributedSwitch -Physical | sort name
+            $Nics = Get-VMHostNetworkAdapter -VMHost $HostToConfig -DistributedSwitch $DistributedSwitch -Physical | Sort-Object name
             if ($Nics.Count -lt 2)
             {
                 DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Err -LogString "Distributed switch '$DistributedSwitch' does not have at least 2 physical NICs!!!"
@@ -279,7 +279,7 @@ else
 }
 
 ##################
-#VAAI and ALUA Config Check
+#VAAI, ALUA, iSCSI/FC Config Check
 ##################
 if ($CompellentAttached -eq "y")
 {
@@ -315,7 +315,7 @@ if ($CompellentAttached -eq "y")
     $esxcli = Get-EsxCli -V2 -VMHost $HostToConfig
 
     DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Checking default path selection policy setting for SATP 'VMW_SATP_ALUA'..."
-    if ($($esxcli.storage.nmp.satp.list.Invoke() | where {$_.Name -eq "VMW_SATP_ALUA"}).DefaultPSP -ne "VMW_PSP_RR")
+    if ($($esxcli.storage.nmp.satp.list.Invoke() | Where-Object {$_.Name -eq "VMW_SATP_ALUA"}).DefaultPSP -ne "VMW_PSP_RR")
     {
         DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Warn -LogString "Default path selection policy is incorrect..."
         $esxcli.storage.nmp.satp.set.Invoke(@{defaultpsp="VMW_PSP_RR";satp="VMW_SATP_ALUA"}) | Out-Null
@@ -325,7 +325,7 @@ if ($CompellentAttached -eq "y")
     else { DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Succ -LogString "Path Selection Policy setting is correct." }
 
     DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Checking Compellent volume Storage Array Type..."
-    $CompellentVolumeCheck = $esxcli.storage.nmp.device.list.Invoke() | ? { $_.DeviceDisplayName -like "COMPELNT*" -and $_.StorageArrayType -ne "VMW_SATP_ALUA" }
+    $CompellentVolumeCheck = $esxcli.storage.nmp.device.list.Invoke() | Where-Object { $_.DeviceDisplayName -like "COMPELNT*" -and $_.StorageArrayType -ne "VMW_SATP_ALUA" }
     if ($CompellentVolumeCheck -ne $null)
     {
         foreach($Volume in $CompellentVolumeCheck)
@@ -365,9 +365,15 @@ if ($CompellentAttached -eq "y")
     }
     else { DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Warn -LogString "Software iSCSI adapter not found." }
 
-    DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Checking host for FC/FCoE adapters..."
-    if ($($HosttoConfig | Get-VMHostHba | Where-Object { $_.Type -eq "FibreChannel" -and $_.Status -eq "Online" }).Count -ge 1)
+    DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Checking host for QLogic FC/FCoE adapters..."
+    if ($($esxcli.system.module.list.Invoke() | Where-Object { $_.Name -like "ql*" -or $_.Name -eq "qedentv" }).Count -ge 1)
     {
         DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "FC/FCoE adapter(s) found..."
+        DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Setting QLogic FC/FCoE queue depth and timeouts..."
+        $esxcli.system.module.parameters.set.Invoke(@{module="qlnativefc";parameterstring="ql2xmaxqdepth=255 ql2xloginretrycount=60 qlport_down_retry=60"}) | Out-Null
+    }
+    else 
+    {
+        DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Warn -LogString "QLogic FC/FCoE adapters not found!!!"
     }
 }

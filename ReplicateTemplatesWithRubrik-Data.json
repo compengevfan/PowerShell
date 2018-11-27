@@ -134,7 +134,7 @@
 			"Datacenter": "MRFW",
 			"Host": "mrfw-vs01.fanatics.corp",
 			"Datastore": "MRFW-VS-PROD-DS01-N",
-			"Enable": "yes"
+			"Enable": "no"
 		},
 		{
 			"ID": "",
