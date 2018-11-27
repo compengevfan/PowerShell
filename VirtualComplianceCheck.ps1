@@ -41,7 +41,8 @@ Connect-vCenter -vCenter $vCenter -vCenterCredential $Credential_To_Use
 
 ##################
 #Email Variables
-###################emailTo is a comma separated list of strings eg. "email1","email2"
+##################
+#emailTo is a comma separated list of strings eg. "email1","email2"
 $emailFrom = "VirtualComplianceCheck@fanatics.com"
 $emailTo = "fanatics+IEC@service-now.com"
 $emailServer = "smtp.ff.p10"
@@ -191,7 +192,7 @@ foreach ($ESXHost in $ESXHosts)
         }
     }
 
-    #VAAI and ALUA Config Check
+    #VAAI, ALUA, iSCSI/FC Config Check
     $StorageDevices = @($ESXHost | Get-Datastore | where {$_.type -eq "VMFS"} |   
     Select Name,  
         @{N="DisplayName";E={(Get-ScsiLun -CanonicalName ($_.ExtensionData.Info.Vmfs.Extent[0]).DiskName -VMHost (Get-VIObjectByVIView $_.ExtensionData.Host[0].Key)).ExtensionData.DisplayName}})
@@ -210,6 +211,26 @@ foreach ($ESXHost in $ESXHosts)
 
         $CompellentVolumeCheck = $esxcli.storage.nmp.device.list.Invoke() | ? { $_.DeviceDisplayName -like "COMPELNT*" -and $_.StorageArrayType -ne "VMW_SATP_ALUA" }
         if ($CompellentVolumeCheck -ne $null) { $ = "Wrong" }
+
+        if ($esxcli.iscsi.adapter.list.Invoke().Description -eq "iSCSI Software Adapter")
+        {
+            $iSCSIAdapterName = $($esxcli.iscsi.adapter.list.Invoke() | Where-Object { $_.Description -eq "iSCSI Software Adapter" }).Adapter
+
+            $iSCSIQueueDepth = $($($esxcli.system.module.parameters.list.Invoke(@{module="iscsi_vmk"})) | Where-Object { $_.Name -eq "iscsivmk_LunQDepth" }).Value
+            if ($iSCSIQueueDepth -eq $null -or $iSCSIQueueDepth -ne "255") { $iSCSIQueueDepthCheck = "Wrong" }
+
+            $iSCSILoginTimeout = $($esxcli.iscsi.adapter.param.get.Invoke(@{adapter=$iSCSIAdapterName}) | Where-Object { $_.Name -eq "LoginTimeout" }).Current
+            if ($iSCSILoginTimeout -eq $null -or $iSCSILoginTimeout -ne "5") { $iSCSILoginTimeoutCheck = "Wrong" }
+        }
+
+        if ($($esxcli.system.module.list.Invoke() | Where-Object { $_.Name -like "ql*" -or $_.Name -eq "qedentv" }).Count -ge 1)
+        {
+            if ($($esxcli.system.module.parameters.list.Invoke(@{module="qlnativefc"}) | Where-Object { $_.Name -eq "ql2xmaxqdepth" }).Value -ne "255") { $FCMaxQueueDepth = "Wrong" }
+
+            if ($($esxcli.system.module.parameters.list.Invoke(@{module="qlnativefc"}) | Where-Object { $_.Name -eq "ql2xloginretrycount" }).Value -ne "60") { $FCLoginRetryCount = "Wrong" }
+
+            if ($($esxcli.system.module.parameters.list.Invoke(@{module="qlnativefc"}) | Where-Object { $_.Name -eq "qlport_down_retry" }).Value -ne "60") { $FCDownRetry = "Wrong" }
+        }
     }
 
     if ($BuildCheck -eq "Wrong" `
@@ -231,7 +252,12 @@ foreach ($ESXHost in $ESXHosts)
      -or $VAAIConfig1Check -eq "Wrong" `
      -or $VAAIConfig1Check -eq "Wrong" `
      -or $DefaultPSP -eq "Wrong" `
-     -or $StorageArrayTypeCheck -eq "Wrong")
+     -or $StorageArrayTypeCheck -eq "Wrong" `
+     -or $iSCSIQueueDepthCheck -eq "Wrong" `
+     -or $iSCSILoginTimeoutCheck -eq "Wrong" `
+     -or $FCMaxQueueDepth -eq "Wrong" `
+     -or $FCLoginRetryCount -eq "Wrong" `
+     -or $FCDownRetry -eq "Wrong")
      {
         DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Warn -LogString "$($ESXHost.Name) has a config problem."
         $hostfails += New-Object PSObject -Property @{
@@ -257,10 +283,15 @@ foreach ($ESXHost in $ESXHosts)
             VAAIConfig3Check = $VAAIConfig3Check
             DefaultPSP = $DefaultPSP
             StorageArrayTypeCheck = $StorageArrayTypeCheck
+            iSCSIQueueDepthCheck = $iSCSIQueueDepthCheck
+            iSCSILoginTimeoutCheck = $iSCSILoginTimeoutCheck
+            FCMaxQueueDepth = $FCMaxQueueDepth
+            FCLoginRetryCount = $FCLoginRetryCount
+            FCDownRetry = $FCDownRetry
         }
      }
 
-    Clear-Variable BuildCheck,ProperInfoCheck,FQDN,TimeServers,TimePolicy,SNMPState,SNMPPolicy,DomainName,SearchDomain,VMKernelGateway,DNS,PowerPolicySetting,AlarmActions,StandardSwitchCheck,DistributedSwitchCheck1,DistributedSwitchCheck2,VAAIConfig1Check,VAAIConfig2Check,VAAIConfig3Check,DefaultPSP,StorageArrayTypeCheck -ErrorAction Ignore
+    Clear-Variable BuildCheck,ProperInfoCheck,FQDN,TimeServers,TimePolicy,SNMPState,SNMPPolicy,DomainName,SearchDomain,VMKernelGateway,DNS,PowerPolicySetting,AlarmActions,StandardSwitchCheck,DistributedSwitchCheck1,DistributedSwitchCheck2,VAAIConfig1Check,VAAIConfig2Check,VAAIConfig3Check,DefaultPSP,StorageArrayTypeCheck,iSCSIQueueDepthCheck,iSCSILoginTimeoutCheck,FCMaxQueueDepth,FCLoginRetryCount,FCDownRetry -ErrorAction Ignore
 }
 
 if ($hostfails.Count -gt 0)
@@ -294,6 +325,11 @@ if ($hostfails.Count -gt 0)
         if ($hostfail.VAAIConfig3Check -eq "Wrong") { $EmailBody += "HardwareAcceleratedLocking setting is not correct.`r`n" }
         if ($hostfail.DefaultPSP -eq "Wrong") { $EmailBody += "Default Path Selection Policy is incorrect.`r`n" }
         if ($hostfail.StorageArrayTypeCheck -eq "Wrong") { $EmailBody += "Host has Compellent volumes not set to use the correct Storage Array Type.`r`n" }
+        if ($hostfail.iSCSIQueueDepthCheck -eq "Wrong") { $EmailBody += "iSCSI queue depth is incorrect.`r`n" }
+        if ($hostfail.iSCSILoginTimeoutCheck -eq "Wrong") { $EmailBody += "iSCSI login timeout is incorrect.`r`n" }
+        if ($hostfail.FCMaxQueueDepth -eq "Wrong") { $EmailBody += "FC/FCoE Max Queue Depth is incorrect.`r`n" }
+        if ($hostfail.FCLoginRetryCount -eq "Wrong") { $EmailBody += "FC/FCoE Login Retry Count is incorret.`r`n" }
+        if ($hostfail.FCDownRetry -eq "Wrong") { $EmailBody += "FC/FCoE Down Retry is incorrect.`r`n" }
 
         $EmailBody += "`r`n"
     }
