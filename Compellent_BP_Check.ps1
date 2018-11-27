@@ -321,7 +321,7 @@ if ($ProblemsFound)
     else 
     {
         $OutputKeyList | Select-Object Compellent, Server, Key, IncorrectValue, CorrectValue | Export-Csv -LiteralPath "G:\Software\PS_SDK\Compellent_BP_Set-Data_$($Server.Name).csv" -NoTypeInformation
-        DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Succ -LogString "Compellent_BP_Set-Data_$($Server.Name) has been created.`n`rPlease use this file, together with 'Compellent_BP_Set.ps1', to correct these settings on the local machine. The data file will need to be renamed to 'Compellent_BP_Set-Data.csv'."
+        DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Succ -LogString "G:\Software\PS_SDK\Compellent_BP_Set-Data_$($Server.Name) has been created.`n`rPlease use this file, together with 'Compellent_BP_Set.ps1', to correct these settings on the server to be fixed. The data file will need to be renamed to 'Compellent_BP_Set-Data.csv'."
     }
 }
 else 
