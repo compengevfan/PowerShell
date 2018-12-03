@@ -5,125 +5,63 @@ Param(
 $ScriptPath = $PSScriptRoot
 Set-Location $ScriptPath
   
-$ScriptStarted = Get-Date -Format MM-dd-yyyy_HH-mm-ss
-$ScriptName = $MyInvocation.MyCommand.Name
+#$ScriptStarted = Get-Date -Format MM-dd-yyyy_HH-mm-ss
+#$ScriptName = $MyInvocation.MyCommand.Name
   
 #$ErrorActionPreference = "SilentlyContinue"
   
-if (!(Get-Module -ListAvailable -Name DupreeFunctions)) { Write-Host "'DupreeFunctions' module not available!!! Please check with Dupree!!! Script exiting!!!" -ForegroundColor Red; exit }
-if (!(Get-Module -Name DupreeFunctions)) { Import-Module DupreeFunctions }
-if (!(Test-Path .\~Logs)) { New-Item -Name "~Logs" -ItemType Directory | Out-Null }
+#if (!(Get-Module -ListAvailable -Name DupreeFunctions)) { Write-Host "'DupreeFunctions' module not available!!! Please check with Dupree!!! Script exiting!!!" -ForegroundColor Red; exit }
+#if (!(Get-Module -Name DupreeFunctions)) { Import-Module DupreeFunctions }
+#if (!(Test-Path .\~Logs)) { New-Item -Name "~Logs" -ItemType Directory | Out-Null }
   
 #DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType 
 <#
 try { $CurrentJobLog = Get-Content "$GoAnywhereLogs\$($CurrentTime.ToString("yyyy-MM-dd"))\$($ActiveJob.jobNumber).log" }
 catch 
 {
-    $String = "`n`rError encountered is:`n`r$($Error[0])`n`rScript executed on $($env:computername)."
+    $String = "Error encountered is:`n`r$($Error[0])`n`rScript executed on $($env:computername)."
     DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Err -LogString $String
     if ($SendEmail) { Send-MailMessage -smtpserver $emailServer -to $emailTo -from $emailFrom -subject "$ScriptName Encountered an Error" -Body $String }
     exit
 }
 #>
 
-if (!(Get-Module -ListAvailable -Name AzureRM)) { DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogType "'AzureRM' module not available!!! Script exiting!!!" -ForegroundColor Red; exit }
-try { if (!(Get-Module -Name AzureRM)) { DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Importing Azure PowerShell module..."; Import-Module AzureRM } }
-catch { DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Err -LogString "Azure PowerShell module import failed!!!`n`rError encountered is:`n`r$($Error[0])`n`rScript executed on $($env:computername).`n`rScript Exiting!!!"; exit }
+if (!(Get-Module -ListAvailable -Name AzureRM)) { Write-Host "'AzureRM' module not available!!! Script exiting!!!" -ForegroundColor Red; exit }
+if (!(Get-Module -Name Azure)) { Import-Module AzureRM }
 
-try 
-{
-    $AzureInfo = Get-AzureRmSubscription
-    if ($($AzureInfo).Id -eq "83d0d0ba-42d5-4c21-a019-3c1b250fbf15") { DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Already connected to correct subscription..." }
-}
-catch 
-{
-<<<<<<< HEAD
-    DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Connecting to Azure..."
-    Add-AzureRmAccount
-    DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Setting default subscription..."
-    Select-AzureRmSubscription -Subscription "83d0d0ba-42d5-4c21-a019-3c1b250fbf15"    
-=======
-    Write-Host "Connecting to Azure..."
-    Connect-AzureRMAccount
->>>>>>> parent of 7a85135... update
-}
+Write-Host "Connecting to Azure..."
+Add-AzureRMAccount
 
-DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Importing data file..."
+Write-Host "Setting default Azure connection..."
+Select-AzureSubscription -SubscriptionId 83d0d0ba-42d5-4c21-a019-3c1b250fbf15
+
+Write-Host "Importing data file..."
 $DataFromFile = Import-Csv .\AzureDRTestPrep-Data.csv
 
-<<<<<<< HEAD
-DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Obtaining a list of the ASR Vaults..."
-$Vaults = Get-AzureRmRecoveryServicesVault
-=======
 Write-Host "Obtaining a list of the ASR Vaults..."
 $Vaults = Get-AzureRmRecoveryServicesVault -Name ASRFanNonPCIVault
->>>>>>> parent of 7a85135... update
 
-$RestoreJobs = @()
 foreach ($Vault in $Vaults)
 {
-    DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Setting vault context..."
+    Write-Host "Setting vault context..."
     Set-AzureRmRecoveryServicesVaultContext -Vault $Vault
-    DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Getting backup containers..."
+    Write-Host "Getting backup containers..."
     $Containers = Get-AzureRmRecoveryServicesBackupContainer -ContainerType AzureVM
 
     foreach ($Container in $Containers)
     {
-        DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Obtaining backup item..."
+        Write-Host "Obtaining backup item..."
         $BackupItem = Get-AzureRmRecoveryServicesBackupItem -Container $Container -WorkloadType AzureVM
-        DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Getting latest recovery point..."
+        Write-Host "Getting latest recovery point..."
         $RecoveryPoints = Get-AzureRmRecoveryServicesBackupRecoveryPoint -Item $BackupItem
 
-        DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Creating restore job for $($Container.FriendlyName)..."
-        try
-        {
-<<<<<<< HEAD
-            $RestoreJobs += Restore-AzureRmRecoveryServicesBackupItem -RecoveryPoint $RecoveryPoints[0] -StorageAccountName drtestfanstorage -StorageAccountResourceGroupName DRTEST -TargetResourceGroupName DRTEST -ErrorAction Stop
-        }
-        catch { DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Err -LogString "Restore job creation failed!!!`n`rError encountered is:`n`r$($Error[0])`n`rScript Exiting!!!"; exit }
-    }
-}
+        Write-Host "Creating restore job..."
+        $RestoreJob = Restore-AzureRmRecoveryServicesBackupItem -RecoveryPoint $RecoveryPoints[0] -StorageAccountName asrfannonpcistorage -StorageAccountResourceGroupName $($Vault.ResourceGroupName) -TargetResourceGroupName DRTEST
+        Write-Host "Waiting for restore job completion..."
+        Wait-AzureRmRecoveryServicesBackupJob -Job $RestoreJob
+        $RestoreJob = Get-AzureRmRecoveryServicesBackupJob -Job $RestoreJob
+        $Details = Get-AzureRmRecoveryServicesBackupJobDetails -Job $RestoreJob
 
-DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Monitoring for restore job completion..."
-foreach ($RestoreJob in $RestoreJobs)
-{
-    $RestoreTrack = Get-AzureRmRecoveryServicesBackupJob -Job $RestoreJob
-    Wait-AzureRmRecoveryServicesBackupJob -Job $RestoreTrack
-}
-<#do 
-{
-    $RestoresComplete = $true
-    foreach ($RestoreJob in $RestoreJobs)
-    {
-        $JobStatus = $(Get-AzureRmRecoveryServicesBackupJob -Job $RestoreJob).Status
-        switch ($JobStatus) 
-        {
-            "InProgress" { $RestoresComplete = $false }
-            "Failed"
-            {
-                DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Err -LogString "A Restore Task Failed!!!`n`rError encountered is:`n`r$($Error[0])`n`rScript Exiting!!!"
-                exit
-            }
-            "Cancelled"
-            {
-                DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Err -LogString "A Restore Task Was Cancelled!!!`n`rScript Exiting!!!"
-                exit
-            }
-=======
-            $RestoreJob = Restore-AzureRmRecoveryServicesBackupItem -RecoveryPoint $RecoveryPoints[0] -StorageAccountName $($DataFromFile | Where-Object {$_.Server -eq "$($Container.FriendlyName)"}).StorageAccountName -StorageAccountResourceGroupName $($Vault.ResourceGroupName) -TargetResourceGroupName DRTEST -ErrorAction SilentlyContinue 
-            Write-Host "Waiting for restore job completion..."
-            Wait-AzureRmRecoveryServicesBackupJob -Job $RestoreJob
-            $RestoreJob = Get-AzureRmRecoveryServicesBackupJob -Job $RestoreJob
-            $Details = Get-AzureRmRecoveryServicesBackupJobDetails -Job $RestoreJob
->>>>>>> parent of 7a85135... update
-        }
-    } 
-    Start-Sleep 60
-} while ($RestoresComplete -eq $false)#>
-DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Succ -LogString "Restore jobs completed."
-
-<#
-#$Details = Get-AzureRmRecoveryServicesBackupJobDetails -Job $RestoreJob
         Write-Host "Creating VM from restored disks..."
         $StorageAccountName = $Details.Properties.'Target Storage Account Name'
         $ContainerName = $Details.Properties.'Config Blob Container Name'
@@ -144,12 +82,13 @@ DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Succ -L
         }
 
         Write-Host "Setting network information..."
-        $vnet = Get-AzureRmVirtualNetwork -Name $($DataFromFile | Where-Object {$_.Server -eq "$($Container.FriendlyName)"}).VNet -ResourceGroupName $($DataFromFile | Where-Object {$_.Server -eq "$($Container.FriendlyName)"}).VNetRG
+        $vnet = Get-AzureRmVirtualNetwork -Name CorpSpoke2VNet -ResourceGroupName rgnetworking
         $subnetindex=0
         $nic = New-AzureRmNetworkInterface -Name $("$($Container.FriendlyName)" + "-DRTNIC") -ResourceGroupName DRTEST -Location "eastus" -SubnetId $vnet.Subnets[$subnetindex].Id -PrivateIpAddress $($DataFromFile | Where-Object {$_.Server -eq "$($Container.FriendlyName)"}).AzureIP
         $NewVM=Add-AzureRmVMNetworkInterface -VM $NewVM -Id $nic.Id
 
         Write-Host "Issuing command to build VM..."
-        New-AzureRmVM -ResourceGroupName DRTEST -Location "eastus" -VM $NewVM#>
-
+        New-AzureRmVM -ResourceGroupName DRTEST -Location "eastus" -VM $NewVM
+    }
+}
 Write-Host "DR Test VM Deploy Complete!!!"
