@@ -37,17 +37,27 @@ try
 }
 catch 
 {
+<<<<<<< HEAD
     DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Connecting to Azure..."
     Add-AzureRmAccount
     DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Setting default subscription..."
     Select-AzureRmSubscription -Subscription "83d0d0ba-42d5-4c21-a019-3c1b250fbf15"    
+=======
+    Write-Host "Connecting to Azure..."
+    Connect-AzureRMAccount
+>>>>>>> parent of 7a85135... update
 }
 
 DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Importing data file..."
 $DataFromFile = Import-Csv .\AzureDRTestPrep-Data.csv
 
+<<<<<<< HEAD
 DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Obtaining a list of the ASR Vaults..."
 $Vaults = Get-AzureRmRecoveryServicesVault
+=======
+Write-Host "Obtaining a list of the ASR Vaults..."
+$Vaults = Get-AzureRmRecoveryServicesVault -Name ASRFanNonPCIVault
+>>>>>>> parent of 7a85135... update
 
 $RestoreJobs = @()
 foreach ($Vault in $Vaults)
@@ -67,6 +77,7 @@ foreach ($Vault in $Vaults)
         DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Creating restore job for $($Container.FriendlyName)..."
         try
         {
+<<<<<<< HEAD
             $RestoreJobs += Restore-AzureRmRecoveryServicesBackupItem -RecoveryPoint $RecoveryPoints[0] -StorageAccountName drtestfanstorage -StorageAccountResourceGroupName DRTEST -TargetResourceGroupName DRTEST -ErrorAction Stop
         }
         catch { DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Err -LogString "Restore job creation failed!!!`n`rError encountered is:`n`r$($Error[0])`n`rScript Exiting!!!"; exit }
@@ -98,6 +109,13 @@ foreach ($RestoreJob in $RestoreJobs)
                 DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Err -LogString "A Restore Task Was Cancelled!!!`n`rScript Exiting!!!"
                 exit
             }
+=======
+            $RestoreJob = Restore-AzureRmRecoveryServicesBackupItem -RecoveryPoint $RecoveryPoints[0] -StorageAccountName $($DataFromFile | Where-Object {$_.Server -eq "$($Container.FriendlyName)"}).StorageAccountName -StorageAccountResourceGroupName $($Vault.ResourceGroupName) -TargetResourceGroupName DRTEST -ErrorAction SilentlyContinue 
+            Write-Host "Waiting for restore job completion..."
+            Wait-AzureRmRecoveryServicesBackupJob -Job $RestoreJob
+            $RestoreJob = Get-AzureRmRecoveryServicesBackupJob -Job $RestoreJob
+            $Details = Get-AzureRmRecoveryServicesBackupJobDetails -Job $RestoreJob
+>>>>>>> parent of 7a85135... update
         }
     } 
     Start-Sleep 60

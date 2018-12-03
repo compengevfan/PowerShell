@@ -1,5 +1,5 @@
-Server,AzureIP,VNet,VNetRG
-ASR-DC001,10.176.4.21,CorpSpoke2VNet,rgnetworking
-ASR-DC003,10.176.4.23,CorpSpoke2VNet,rgnetworking
-ASR-DC001-p10,10.176.8.21,PCISpoke2VNet,rgnetworking_pci
-ASR-DB16,,CorpSpoke2VNet,rgnetworking
+Server,AzureIP,StorageAccountName,VNet,VNetRG
+ASR-DC001,10.176.4.21,asrfannonpcistorage,CorpSpoke2VNet,rgnetworking
+ASR-DC003,10.176.4.23,asrfannonpcistorage,CorpSpoke2VNet,rgnetworking
+ASR-DC001-p10,10.176.8.21,asrfanpcistorage,PCISpoke2VNet,rgnetworking_pci
+ASR-DB16,,asrfannonpcistorage,CorpSpoke2VNet,rgnetworking
