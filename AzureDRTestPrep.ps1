@@ -5,8 +5,8 @@ Param(
 $ScriptPath = $PSScriptRoot
 Set-Location $ScriptPath
   
-#$ScriptStarted = Get-Date -Format MM-dd-yyyy_HH-mm-ss
-#$ScriptName = $MyInvocation.MyCommand.Name
+$ScriptStarted = Get-Date -Format MM-dd-yyyy_HH-mm-ss
+$ScriptName = $MyInvocation.MyCommand.Name
   
 #$ErrorActionPreference = "SilentlyContinue"
   
@@ -29,50 +29,65 @@ catch
 if (!(Get-Module -ListAvailable -Name AzureRM)) { Write-Host "'AzureRM' module not available!!! Script exiting!!!" -ForegroundColor Red; exit }
 if (!(Get-Module -Name Azure)) { Import-Module AzureRM }
 
-Write-Host "Connecting to Azure..."
-Add-AzureRMAccount
+try 
+{
+    $AzureInfo = Get-AzureRmSubscription
+    if ($($AzureInfo).Id -eq "83d0d0ba-42d5-4c21-a019-3c1b250fbf15") { DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Already connected to correct subscription..." }
+}
+catch 
+{
+    DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Connecting to Azure..."
+    Add-AzureRmAccount
+    DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Setting default subscription..."
+    Select-AzureRmSubscription -Subscription "83d0d0ba-42d5-4c21-a019-3c1b250fbf15"    
+}
 
-Write-Host "Setting default Azure connection..."
-Select-AzureSubscription -SubscriptionId 83d0d0ba-42d5-4c21-a019-3c1b250fbf15
-
-Write-Host "Importing data file..."
+DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Importing data file..."
 $DataFromFile = Import-Csv .\AzureDRTestPrep-Data.csv
 
-Write-Host "Obtaining a list of the ASR Vaults..."
-$Vaults = Get-AzureRmRecoveryServicesVault -Name ASRFanNonPCIVault
+DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Obtaining a list of the ASR Vaults..."
+$Vaults = Get-AzureRmRecoveryServicesVault
 
 foreach ($Vault in $Vaults)
 {
-    Write-Host "Setting vault context..."
+    DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Setting vault context..."
     Set-AzureRmRecoveryServicesVaultContext -Vault $Vault
-    Write-Host "Getting backup containers..."
+    DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Getting backup containers..."
     $Containers = Get-AzureRmRecoveryServicesBackupContainer -ContainerType AzureVM
 
     foreach ($Container in $Containers)
     {
-        Write-Host "Obtaining backup item..."
+        DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Obtaining backup item..."
         $BackupItem = Get-AzureRmRecoveryServicesBackupItem -Container $Container -WorkloadType AzureVM
-        Write-Host "Getting latest recovery point..."
+        DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Getting latest recovery point..."
         $RecoveryPoints = Get-AzureRmRecoveryServicesBackupRecoveryPoint -Item $BackupItem
 
-        Write-Host "Creating restore job..."
-        $RestoreJob = Restore-AzureRmRecoveryServicesBackupItem -RecoveryPoint $RecoveryPoints[0] -StorageAccountName asrfannonpcistorage -StorageAccountResourceGroupName $($Vault.ResourceGroupName) -TargetResourceGroupName DRTEST
-        Write-Host "Waiting for restore job completion..."
-        Wait-AzureRmRecoveryServicesBackupJob -Job $RestoreJob
-        $RestoreJob = Get-AzureRmRecoveryServicesBackupJob -Job $RestoreJob
-        $Details = Get-AzureRmRecoveryServicesBackupJobDetails -Job $RestoreJob
+        DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Creating restore job for $($Container.FriendlyName)..."
+        try
+        {
+            $RestoreJob = Restore-AzureRmRecoveryServicesBackupItem -RecoveryPoint $RecoveryPoints[0] -StorageAccountName drtestfanstorage -StorageAccountResourceGroupName DRTEST -TargetResourceGroupName DRTEST -ErrorAction Stop
+            DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Waiting for restore job completion..."
+            Wait-AzureRmRecoveryServicesBackupJob -Job $RestoreJob | Out-Null
+            $RestoreJob = Get-AzureRmRecoveryServicesBackupJob -Job $RestoreJob
+            $Details = Get-AzureRmRecoveryServicesBackupJobDetails -Job $RestoreJob
+        }
+        catch
+        {
+            DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Restore job creation for $($Container.FriendlyName) failed!!! Script Exiting!!!"
+            exit
+        }
 
-        Write-Host "Creating VM from restored disks..."
+        DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Creating VM from restored disks..."
         $StorageAccountName = $Details.Properties.'Target Storage Account Name'
         $ContainerName = $Details.Properties.'Config Blob Container Name'
         $ConfigBlobName = $Details.Properties.'Config Blob Name'
 
-        Write-Host "Setting the Azure storage context and restoring the JSON configuration file..."
-        Set-AzureRmCurrentStorageAccount -Name $StorageAccountName -ResourceGroupName $($Vault.ResourceGroupName)
+        DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Setting the Azure storage context and restoring the JSON configuration file..."
+        Set-AzureRmCurrentStorageAccount -Name $StorageAccountName -ResourceGroupName DRTest
         $BlobContent = Get-AzureStorageBlobContent -Container $containerName -Blob $configBlobName -Force
         $obj = ((Get-Content -Path .\$($BlobContent.Name) -Raw -Encoding Unicode)).TrimEnd([char]0x00) | ConvertFrom-Json
 
-        Write-Host "Building VM Configuration and attaching disks..."
+        DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Building VM Configuration and attaching disks..."
         $NewVM = New-AzureRmVMConfig -VMSize $obj.'properties.hardwareProfile'.vmSize -VMName $("$($Container.FriendlyName)" + "-DRT")
         Set-AzureRmVMOSDisk -VM $NewVM -Name "osdisk" -VhdUri $obj.'properties.StorageProfile'.osDisk.vhd.Uri -CreateOption "Attach"
         $NewVM.StorageProfile.OsDisk.OsType = $obj.'properties.StorageProfile'.OsDisk.OsType
@@ -81,14 +96,17 @@ foreach ($Vault in $Vaults)
             $NewVM = Add-AzureRmVMDataDisk -VM $NewVM -Name "datadisk1" -VhdUri $dd.vhd.Uri -DiskSizeInGB 127 -Lun $dd.Lun -CreateOption "Attach"
         }
 
-        Write-Host "Setting network information..."
-        $vnet = Get-AzureRmVirtualNetwork -Name CorpSpoke2VNet -ResourceGroupName rgnetworking
+        DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Setting network information..."
+        $vnet = Get-AzureRmVirtualNetwork -Name $($DataFromFile | Where-Object {$_.Server -eq "$($Container.FriendlyName)"}).VNet -ResourceGroupName $($DataFromFile | Where-Object {$_.Server -eq "$($Container.FriendlyName)"}).VNetRG
         $subnetindex=0
         $nic = New-AzureRmNetworkInterface -Name $("$($Container.FriendlyName)" + "-DRTNIC") -ResourceGroupName DRTEST -Location "eastus" -SubnetId $vnet.Subnets[$subnetindex].Id -PrivateIpAddress $($DataFromFile | Where-Object {$_.Server -eq "$($Container.FriendlyName)"}).AzureIP
         $NewVM=Add-AzureRmVMNetworkInterface -VM $NewVM -Id $nic.Id
 
-        Write-Host "Issuing command to build VM..."
+        DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Issuing command to build VM..."
         New-AzureRmVM -ResourceGroupName DRTEST -Location "eastus" -VM $NewVM
     }
 }
-Write-Host "DR Test VM Deploy Complete!!!"
+
+DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Removing JSON files created as part of the deploy process..."
+Get-ChildItem .\config*.json | Remove-Item
+DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "DR Test VM Deploy Complete!!!"
