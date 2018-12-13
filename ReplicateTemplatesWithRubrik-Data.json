@@ -35,7 +35,7 @@
 			"Datacenter": "COPQ",
 			"Host": "copq-vs01.fanatics.corp",
 			"Datastore": "copq-vs-prod-ds1",
-			"Enable": "no"
+			"Enable": "yes"
 		},
 		{
 			"ID": "",
@@ -44,7 +44,7 @@
 			"Datacenter": "DFW",
 			"Host": "dfw-vs01.fanatics.corp",
 			"Datastore": "DFW-VS-DS01",
-			"Enable": "yes"
+			"Enable": "no"
 		},
 		{
 			"ID": "",

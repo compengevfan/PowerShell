@@ -114,70 +114,70 @@ foreach ($TemplateName in $TemplateNames)
     }
 }
 
-$Rubriks = $DataFromFile.RubrikInfo | Where-Object {$_.Enable -eq "Yes"}
-foreach ($Rubrik in $Rubriks)
+$RemoteRubriks = $DataFromFile.RubrikInfo | Where-Object {$_.Enable -eq "Yes"}
+foreach ($RemoteRubrik in $RemoteRubriks)
 {
-    DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Checking connection to $($Rubrik.RubrikDevice)..."
+    DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Checking connection to $($RemoteRubrik.RubrikDevice)..."
     try
     {
-        Connect-Rubrik $($Rubrik.RubrikDevice) -Credential $RubrikCred | Out-Null
+        Connect-Rubrik $($RemoteRubrik.RubrikDevice) -Credential $RubrikCred | Out-Null
         $RubrikClusterID = Invoke-RubrikRESTCall -Endpoint cluster/me -Method GET #gets the id of the current rubrik cluster
-        DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Succ -LogString "Connection to $($Rubrik.RubrikDevice) successful."
+        DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Succ -LogString "Connection to $($RemoteRubrik.RubrikDevice) successful."
         DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Storing the Rubrik ID..."
-        $Rubrik.ID = $RubrikClusterID.id
+        $RemoteRubrik.ID = $RubrikClusterID.id
         Disconnect-Rubrik -Confirm:$false
     }
     catch
     {
-        DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Err -LogString "Connection to $($Rubrik.RubrikDevice) failed!!! Error encountered is:`n`r$($Error[0])`n`rScript exiting!!!"
+        DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Err -LogString "Connection to $($RemoteRubrik.RubrikDevice) failed!!! Error encountered is:`n`r$($Error[0])`n`rScript exiting!!!"
         exit
     }
 
-    DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Verifying cluster $($Rubrik.Cluster)..."
+    DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Verifying cluster $($RemoteRubrik.Cluster)..."
     try
     {
-        Get-Cluster $($Rubrik.Cluster) -ErrorAction SilentlyContinue | Out-Null
-        DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Succ -LogString "Cluster $($Rubrik.Cluster) is valid."
+        Get-Cluster $($RemoteRubrik.Cluster) -ErrorAction SilentlyContinue | Out-Null
+        DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Succ -LogString "Cluster $($RemoteRubrik.Cluster) is valid."
     }
     catch
     {
-        DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Err -LogString "Cluster $($Rubrik.Cluster) is invalid!!! Script exiting!!!"
+        DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Err -LogString "Cluster $($RemoteRubrik.Cluster) is invalid!!! Script exiting!!!"
         exit
     }
 
-    DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Verifying host $($Rubrik.Host)..."
+    DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Verifying host $($RemoteRubrik.Host)..."
     try
     {
-        Get-VMHost $($Rubrik.Host) -ErrorAction SilentlyContinue | Out-Null
-        DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Succ -LogString "Host $($Rubrik.Host) is valid."
+        Get-VMHost $($RemoteRubrik.Host) -ErrorAction SilentlyContinue | Out-Null
+        DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Succ -LogString "Host $($RemoteRubrik.Host) is valid."
     }
     catch
     {
-        DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Err -LogString "Host $($Rubrik.Host) is invalid!!! Script exiting!!!"
+        DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Err -LogString "Host $($RemoteRubrik.Host) is invalid!!! Script exiting!!!"
         exit
     }
 
-    DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Verifying datastore $($Rubrik.Datastore)..."
+    DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Verifying datastore $($RemoteRubrik.Datastore)..."
     try
     {
-        Get-Datastore $($Rubrik.Datastore) -ErrorAction SilentlyContinue | Out-Null
-        DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Succ -LogString "Datastore $($Rubrik.Datastore) is valid"
+        Get-Datastore $($RemoteRubrik.Datastore) -ErrorAction SilentlyContinue | Out-Null
+        DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Succ -LogString "Datastore $($RemoteRubrik.Datastore) is valid"
     }
     catch
     {
-        DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Err -LogString "Datastore $($Rubrik.Datastore) is invalid!!! Script exiting!!!"
+        DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Err -LogString "Datastore $($RemoteRubrik.Datastore) is invalid!!! Script exiting!!!"
         exit
     }
 
     DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Verifying 'Templates' folder..."
     try
     {
-        Get-Datacenter $($Rubrik.Datacenter) | Get-Folder "Templates" | Out-Null
+        Get-Datacenter $($RemoteRubrik.Datacenter) | Get-Folder "Templates" | Out-Null
         DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Succ -LogString "Templates folder located."
     }
     catch
     {
-        DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Templates folder not found in $($Rubrik.Datacenter) Datacenter!!! Script exiting!!!"
+        DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Templates folder not found in $($RemoteRubrik.Datacenter) Datacenter!!! Script exiting!!!"
         exit
     }
 }
@@ -196,19 +196,19 @@ catch
 }
 
 DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Checking to make sure all enabled Rubriks have an SLA with the correct replication target..."
-foreach ($Rubrik in $Rubriks)
+foreach ($RemoteRubrik in $RemoteRubriks)
 {
-    DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Verifying SLA for $($Rubrik.RubrikDevice)..."
-    $SLA = Get-RubrikSLA | Where-Object { $_.Name -eq "Gold Templates to $($Rubrik.RubrikDevice)" }
+    DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Verifying SLA for $($RemoteRubrik.RubrikDevice)..."
+    $SLA = Get-RubrikSLA | Where-Object { $_.Name -eq "Gold Templates to $($RemoteRubrik.RubrikDevice)" }
     if ($null -eq $SLA)
     {
-        DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Err -LogString "IAD Rubrik does not have an SLA for $($Rubrik.RubrikDevice)!!! Script exiting!!!"
+        DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Err -LogString "IAD Rubrik does not have an SLA for $($RemoteRubrik.RubrikDevice)!!! Script exiting!!!"
         exit
     }
-    else { DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Succ -LogString "SLA for $($Rubrik.RubrikDevice) found." }
+    else { DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Succ -LogString "SLA for $($RemoteRubrik.RubrikDevice) found." }
     
     DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Verifying replication target..."
-    if ($SLA.replicationSpecs.locationId -ne $Rubrik.ID)
+    if ($SLA.replicationSpecs.locationId -ne $RemoteRubrik.ID)
     {
         DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Err -LogString "SLA replication target is incorrect!!! Script exiting!!!"
         exit
@@ -231,13 +231,13 @@ $Snapshots = @()
 
 #Kick off template backups
 DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Creating manual backup jobs for each SLA..."
-foreach ($Rubrik in $Rubriks)
+foreach ($RemoteRubrik in $RemoteRubriks)
 {
     foreach ($TemplateName in $TemplateNames)
     {
         $Snapshots += New-Object -Type PSObject -Property (@{
-            id = $(Get-RubrikVM -name $TemplateName | Where-Object { $_.primaryClusterId -eq "$($RubrikClusterID.id)" } | New-RubrikSnapshot -SLA "Gold Templates to $($Rubrik.RubrikDevice)" -Confirm:$false).id
-            Rubrik = $($Rubrik.RubrikDevice)
+            id = $(Get-RubrikVM -name $TemplateName | Where-Object { $_.primaryClusterId -eq "$($RubrikClusterID.id)" } | New-RubrikSnapshot -SLA "Gold Templates to $($RemoteRubrik.RubrikDevice)" -Confirm:$false).id
+            Rubrik = $($RemoteRubrik.RubrikDevice)
             Template = $TemplateName
             BackupComplete = "Not Complete"})
     }
@@ -280,10 +280,10 @@ if ($($IADInfo.Enable) -eq "yes")
             Remove-Template $TplName -DeletePermanently -Confirm:$false | Out-Null
         }
         New-VM -VM $TemplateName -Datastore $(Get-Datastore $($IADInfo.Datastore)) -DiskStorageFormat Thick -Name $TplName -VMHost $($IADInfo.Host) | Out-Null
-        Set-VM $TplName -ToTemplate -Confirm:$false | Out-Null
-        Move-Template -Template $TplName -Destination $(Get-Datacenter $($IADInfo.Datacenter) | Get-Folder "Templates")
+        $ConvertedToTemplate = Set-VM $TplName -ToTemplate -Confirm:$false
+        Move-Template -Template $ConvertedToTemplate -Destination $(Get-Datacenter $($IADInfo.Datacenter) | Get-Folder "Templates")
         DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Succ -LogString "$TplName has been recreated and is ready for use."
-        Send-MailMessage -smtpserver $emailServer -to $emailTo -from $emailFrom -subject "Template Replication Update..." -body "$TplName has been recreated and is ready for use."
+        Send-MailMessage -smtpserver $emailServer -to $emailTo -from $emailFrom -subject "Template Replication Update..." -body "$($TplName.Name) has been recreated and is ready for use."
     }
 }
 else { DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Skipping IAD template creation..." }
@@ -320,7 +320,8 @@ while($true)
     Write-Host "Replication status at $(Get-Date -Format MM-dd-yyyy_HH-mm-ss)`r`n"
     foreach ($Endpoint in $Endpoints)
     {
-        Write-Host "$($Endpoint.Rubrik) - $($Endpoint.Template) --> $($Endpoint.ReplicationComplete)"
+        if ($($Endpoint.ReplicationComplete) -eq "Complete") { Write-Host "$($Endpoint.Rubrik) - $($Endpoint.Template) --> $($Endpoint.ReplicationComplete)" -ForegroundColor Green }
+        else { Write-Host "$($Endpoint.Rubrik) - $($Endpoint.Template) --> $($Endpoint.ReplicationComplete)" }
     }
     Start-Sleep 60
 }
@@ -329,19 +330,27 @@ DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -L
 Disconnect-Rubrik -Confirm:$false
 
 #Export new VMs to convert to templates
-foreach ($Rubrik in $Rubriks)
+foreach ($RemoteRubrik in $RemoteRubriks)
 {
-    DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Connecting to $($Rubrik.RubrikDevice)..."
-    Connect-Rubrik $($Rubrik.RubrikDevice) -Credential $RubrikCred | Out-Null
+    DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Connecting to $($RemoteRubrik.RubrikDevice)..."
+    Connect-Rubrik $($RemoteRubrik.RubrikDevice) -Credential $RubrikCred | Out-Null
 
     foreach ($TemplateName in $TemplateNames)
     {
-        DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Issuing export task on $($Rubrik.RubrikDevice) for $TemplateName..."
-        $Replica = Get-RubrikVM $TemplateName | Where-Object { $_.primaryClusterId -eq "$($RubrikClusterID.id)" } | Get-RubrikSnapshot | Select-Object -First 1 #gets the ID of the replicated snapshot using the rubrik cluster ID
-        $ExportHost = $(Invoke-RubrikRESTCall -Endpoint vmware/host -Method Get).data | Where-Object { $_.name -eq "$($Rubrik.Host)" -and $_.primaryClusterId -eq "$($Rubrik.ID)" } #gets the Rubrik ID of the host listed in the data file using the rubrik cluster ID
-        $ExportDatastore = $ExportHost.datastores | Where-Object { $_.name -eq $($Rubrik.Datastore) } #gets the Rubrik ID of the datastore listed in the data file from the exporthost info above
+        try
+        {
+        DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Issuing export task on $($RemoteRubrik.RubrikDevice) for $TemplateName..."
+        $Replica = Get-RubrikVM $TemplateName | Where-Object { $_.primaryClusterId -eq "$($RemoteRubrik.ID)" } | Get-RubrikSnapshot | Select-Object -First 1 #gets the ID of the replicated snapshot using the rubrik cluster ID
+        $ExportHost = $(Invoke-RubrikRESTCall -Endpoint vmware/host -Method Get).data | Where-Object { $_.name -eq "$($RemoteRubrik.Host)" -and $_.primaryClusterId -eq "$($RemoteRubrik.ID)" } #gets the Rubrik ID of the host listed in the data file using the rubrik cluster ID
+        $ExportDatastore = $ExportHost.datastores | Where-Object { $_.name -eq $($RemoteRubrik.Datastore) } #gets the Rubrik ID of the datastore listed in the data file from the exporthost info above
         $body = New-Object -TypeName PSObject -Property @{'hostId'=$($Exporthost.id);'datastoreId'=$($ExportDatastore.id)} #Assemble the POST payload for the REST API call
         Invoke-RubrikRESTCall -Endpoint vmware/vm/snapshot/$($Replica.id)/export -Method POST -Body $body | Out-Null #make rest api call to create an export job
+        }
+        catch
+        {
+            DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Error encountered while creating export tasks:`n`r$($Error[0])`n`rScript Exiting!!!"
+            exit
+        }
     }
 
     Disconnect-Rubrik -Confirm:$false
@@ -352,9 +361,9 @@ DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -L
 while ($true)
 {
     $Complete = $true
-    foreach ($Rubrik in $Rubriks)
+    foreach ($RemoteRubrik in $RemoteRubriks)
     {
-        $LocalGoldCopies = Get-Cluster $($Rubrik.Cluster) | Get-VM TPL_GOLD*
+        $LocalGoldCopies = Get-Cluster $($RemoteRubrik.Cluster) | Get-VM TPL_GOLD*
         foreach ($LocalGoldCopy in $LocalGoldCopies)
         {
             $PowerState = $LocalGoldCopy.PowerState
@@ -364,7 +373,7 @@ while ($true)
                 {
                     if ($LocalGoldCopy.Name -like "$TemplateName*") 
                     {
-                        $TemplateNameModified = $TemplateName.Replace("GOLD", $($Rubrik.Cluster))
+                        $TemplateNameModified = $TemplateName.Replace("GOLD", $($RemoteRubrik.Cluster))
 
                         if ($null -ne (Get-Template $TemplateNameModified -ErrorAction SilentlyContinue))
                         {
@@ -372,7 +381,7 @@ while ($true)
                             Remove-Template $TemplateNameModified -DeletePermanently -Confirm:$false
                         }
 
-                        DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Converting '$($LocalGoldCopy.Name)' at '$($Rubrik.Cluster)' to template..."
+                        DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Converting '$($LocalGoldCopy.Name)' at '$($RemoteRubrik.Cluster)' to template..."
                         DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Waiting for VMware tools to start..."
                         $Ready = $false
                         while (!($Ready))
@@ -390,10 +399,10 @@ while ($true)
                             $PowerState = (Get-VM $($LocalGoldCopy.Name)).PowerState
                         }
                         DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Renaming VM..."
-                        $VMRenamed = Get-Cluster $($Rubrik.Cluster) | Get-VM $($LocalGoldCopy.Name) | Set-VM -Name $TemplateNameModified -Confirm:$false
+                        $VMRenamed = Get-Cluster $($RemoteRubrik.Cluster) | Get-VM $($LocalGoldCopy.Name) | Set-VM -Name $TemplateNameModified -Confirm:$false
                         DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Converting to template..."
                         $VMConverted = Set-VM $VMRenamed -ToTemplate -Confirm:$false
-                        Move-Template -Template $VMConverted -Destination $(Get-Datacenter $($Rubrik.Datacenter) | Get-Folder "Templates")
+                        Move-Template -Template $VMConverted -Destination $(Get-Datacenter $($RemoteRubrik.Datacenter) | Get-Folder "Templates")
                         DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Continuing export completion checks..."
                         Send-MailMessage -smtpserver $emailServer -to $emailTo -from $emailFrom -subject "Template Replication Update..." -body "$($VMRenamed.Name) template has been recreated and is ready for use."
                     }

@@ -37,7 +37,7 @@ try
 catch 
 {
     DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Connecting to Azure..."
-    Add-AzureRmAccount
+    Connect-AzureRmAccount
     DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Setting default subscription..."
     Select-AzureRmSubscription -Subscription "83d0d0ba-42d5-4c21-a019-3c1b250fbf15"    
 }
