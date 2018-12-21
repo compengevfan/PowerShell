@@ -1,6 +1,4 @@
-﻿#Credential File Creator
-
-$Domains = Get-Content .\CredentialFileCreator-Data.txt
+﻿$Domains = Get-Content .\CredentialFileCreator-Data.txt
 
 $Domains_In_Array = @()
 
@@ -8,30 +6,26 @@ $i = 0
 
 $ComputerName = $env:computername
 
-cls
+Clear-Host
 
-foreach ($Domain in $Domains)
-{
+foreach ($Domain in $Domains) {
     $i++
-	$Domains_In_Array += New-Object -Type PSObject -Property (@{
-		Identifyer = $i
-		CredName = $Domain
-	})
+    $Domains_In_Array += New-Object -Type PSObject -Property (@{
+            Identifyer = $i
+            CredName   = $Domain
+        })
 }
 
 Write-Host "`nList of available domains:"
 
-foreach ($Domain_In_Array in $Domains_In_Array)
-{
-	Write-Host $("`t"+$Domain_In_Array.Identifyer+". "+$Domain_In_Array.CredName)
+foreach ($Domain_In_Array in $Domains_In_Array) {
+    Write-Host $("`t" + $Domain_In_Array.Identifyer + ". " + $Domain_In_Array.CredName)
 }
 
 $Selection = Read-Host "Please select the domain to create/override a credential. To exit, enter 'e'"
 
-if ($Selection -le $i)
-{
-    do
-    {
+if ($Selection -le $i) {
+    do {
         $Selection -= 1
         $Cred_To_Update = $Domains_In_Array[$Selection].CredName
 
@@ -40,7 +34,7 @@ if ($Selection -le $i)
         #Obtain credentials. If credential file exists remove it and recreate. If not, create new.
         $Creds = Get-Credential -Message "Please Enter your $Cred_To_Update creds."
 
-        $UserName = $Creds.Username; $UserName = $UserName.Replace("\","_")
+        $UserName = $Creds.Username; $UserName = $UserName.Replace("\", "_")
 
         if (Test-Path .\"Credential-$UserName-$Cred_To_Update-$ComputerName.xml") { Remove-Item .\"Credential-$UserName-$Cred_To_Update-$ComputerName.xml" }
 

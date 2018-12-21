@@ -11,6 +11,7 @@
 	"IADPROD": [
 		{
 			"Cluster": "IAD-PROD",
+			"RubrikDevice": "IAD-RUBK001",
 			"Datacenter": "IAD",
 			"Host": "iad-vs07.fanatics.corp",
 			"Datastore": "IAD-VS-DS01-N",
@@ -26,15 +27,15 @@
 			"Datacenter": "CHNQ",
 			"Host": "chnq-vs01.fanatics.corp",
 			"Datastore": "CHNQ-DS01",
-			"Enable": "no"
+			"Enable": "yes"
 		},
 		{
 			"ID": "",
 			"RubrikDevice": "COPQ-Edge001",
 			"Cluster": "COPQ",
 			"Datacenter": "COPQ",
-			"Host": "copq-vs01.fanatics.corp",
-			"Datastore": "copq-vs-prod-ds1",
+			"Host": "copq-vs03.fanatics.corp",
+			"Datastore": "copq-vs-prod-ds1-N",
 			"Enable": "yes"
 		},
 		{
@@ -43,8 +44,8 @@
 			"Cluster": "DFW-Prod",
 			"Datacenter": "DFW",
 			"Host": "dfw-vs01.fanatics.corp",
-			"Datastore": "DFW-VS-DS01",
-			"Enable": "no"
+			"Datastore": "DFW-VS-DS01-N",
+			"Enable": "yes"
 		},
 		{
 			"ID": "",
@@ -52,7 +53,7 @@
 			"Cluster": "FAKW",
 			"Datacenter": "FAKW",
 			"Host": "fakw-vs01.fanatics.corp",
-			"Datastore": "FAKW-VS-DS01",
+			"Datastore": "FAKW-VS-DS01-N",
 			"Enable": "no"
 		},
 		{
@@ -61,7 +62,7 @@
 			"Cluster": "FROW",
 			"Datacenter": "FROW",
 			"Host": "frow-vs01.fanatics.corp",
-			"Datastore": "frow-vs-prod-ds1",
+			"Datastore": "frow-vs-prod-ds1-N",
 			"Enable": "no"
 		},
 		{
@@ -70,7 +71,7 @@
 			"Cluster": "JAXF-Prod",
 			"Datacenter": "JAX",
 			"Host": "jaxf-vs01.fanatics.corp",
-			"Datastore": "jaxf-vs-prod-ds01",
+			"Datastore": "jaxf-vs-prod-ds01-N",
 			"Enable": "no"
 		},
 		{
@@ -79,7 +80,7 @@
 			"Cluster": "JXFD",
 			"Datacenter": "JXFD",
 			"Host": "jxfd-vs03.fanatics.corp",
-			"Datastore": "jxfd-vs-prod-ds01",
+			"Datastore": "jxfd-vs-prod-ds01-N",
 			"Enable": "no"
 		},
 		{
@@ -88,7 +89,7 @@
 			"Cluster": "JXFQ",
 			"Datacenter": "JXFQ",
 			"Host": "jxfq-vs04.fanatics.corp",
-			"Datastore": "jxfq-vs-prod-ds01",
+			"Datastore": "jxfq-vs-prod-ds01-N",
 			"Enable": "no"
 		},
 		{
@@ -97,7 +98,7 @@
 			"Cluster": "JXFW",
 			"Datacenter": "JXFW",
 			"Host": "jxfw-vs01.fanatics.corp",
-			"Datastore": "JXFW-VS-DS01",
+			"Datastore": "JXFW-VS-DS01-N",
 			"Enable": "no"
 		},
 		{
@@ -106,7 +107,7 @@
 			"Cluster": "LVNW",
 			"Datacenter": "LVNW",
 			"Host": "lvnw-vs01.fanatics.corp",
-			"Datastore": "LVNW-VS-DS01",
+			"Datastore": "LVNW-VS-DS01-N",
 			"Enable": "no"
 		},
 		{
@@ -115,7 +116,7 @@
 			"Cluster": "NYNS",
 			"Datacenter": "NYNS",
 			"Host": "nyns-vs01.fanatics.corp",
-			"Datastore": "NYNS-VS-PROD-DS1",
+			"Datastore": "NYNS-VS-PROD-DS1-N",
 			"Enable": "no"
 		},
 		{
@@ -124,8 +125,8 @@
 			"Cluster": "SMCQ-Prod",
 			"Datacenter": "SMCQ",
 			"Host": "smcq-vs01.fanatics.corp",
-			"Datastore": "SMCQ-VS-DS01",
-			"Enable": "no"
+			"Datastore": "SMCQ-VS-DS01-N",
+			"Enable": "yes"
 		},
 		{
 			"ID": "",
@@ -143,7 +144,7 @@
 			"Datacenter": "TAFQ",
 			"Host": "tafq-vs01.fanatics.corp",
 			"Datastore": "TAFQ-VS-DS01",
-			"Enable": "no"
+			"Enable": "yes"
 		}
 	]
 }

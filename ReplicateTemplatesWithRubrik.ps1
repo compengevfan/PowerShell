@@ -50,7 +50,7 @@ $emailServer = "smtp.ff.p10"
 if (!(Test-Path .\~Logs)) { New-Item -Name "~Logs" -ItemType Directory | Out-Null }
 
 DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Importing JSON Data File."
-try { $DataFromFile = ConvertFrom-JSON (Get-Content ".\ReplicateTemplatesWithRubrik-Data.json" -raw) -ErrorAction SilentlyContinue }
+try { $DataFromFile = ConvertFrom-JSON (Get-Content ".\ReplicateTemplatesWithRubrik-Data.json" -raw) -ErrorAction Stop }
 catch { DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Err -LogString "JSON Import failed!!!`n`rError encountered is:`n`r$($Error[0])`n`rScript Exiting!!!"; exit }
 
 #List of OS Codes.
@@ -104,7 +104,7 @@ foreach ($TemplateName in $TemplateNames)
 {
     try
     {
-        Get-Cluster $($IADInfo.Cluster) | Get-VM $TemplateName -ErrorAction SilentlyContinue | Out-Null
+        Get-Cluster $($IADInfo.Cluster) | Get-VM $TemplateName -ErrorAction Stop | Out-Null
         DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Succ -LogString "$TemplateName found."
     }
     catch
@@ -136,7 +136,7 @@ foreach ($RemoteRubrik in $RemoteRubriks)
     DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Verifying cluster $($RemoteRubrik.Cluster)..."
     try
     {
-        Get-Cluster $($RemoteRubrik.Cluster) -ErrorAction SilentlyContinue | Out-Null
+        Get-Cluster $($RemoteRubrik.Cluster) -ErrorAction Stop | Out-Null
         DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Succ -LogString "Cluster $($RemoteRubrik.Cluster) is valid."
     }
     catch
@@ -148,7 +148,7 @@ foreach ($RemoteRubrik in $RemoteRubriks)
     DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Verifying host $($RemoteRubrik.Host)..."
     try
     {
-        Get-VMHost $($RemoteRubrik.Host) -ErrorAction SilentlyContinue | Out-Null
+        Get-VMHost $($RemoteRubrik.Host) -ErrorAction Stop | Out-Null
         DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Succ -LogString "Host $($RemoteRubrik.Host) is valid."
     }
     catch
@@ -160,7 +160,7 @@ foreach ($RemoteRubrik in $RemoteRubriks)
     DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Verifying datastore $($RemoteRubrik.Datastore)..."
     try
     {
-        Get-Datastore $($RemoteRubrik.Datastore) -ErrorAction SilentlyContinue | Out-Null
+        Get-Datastore $($RemoteRubrik.Datastore) -ErrorAction Stop | Out-Null
         DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Succ -LogString "Datastore $($RemoteRubrik.Datastore) is valid"
     }
     catch
@@ -172,12 +172,14 @@ foreach ($RemoteRubrik in $RemoteRubriks)
     DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Verifying 'Templates' folder..."
     try
     {
-        Get-Datacenter $($RemoteRubrik.Datacenter) | Get-Folder "Templates" | Out-Null
+        $Folders = Get-Datacenter $($RemoteRubrik.Datacenter) | Get-Folder "Templates"
+        if ($Folders.Count -gt 1) { throw "Too Many Folders" }
         DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Succ -LogString "Templates folder located."
     }
     catch
     {
-        DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Templates folder not found in $($RemoteRubrik.Datacenter) Datacenter!!! Script exiting!!!"
+        if ($Error[0].Exception.tostring() -like "*Too Many Folders") { DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Err -LogString "Multiple templates folders found in $($RemoteRubrik.Datacenter) Datacenter!!! Script exiting!!!" }
+        else { DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Err -LogString "Templates folder not found in $($RemoteRubrik.Datacenter) Datacenter!!! Script exiting!!!" }
         exit
     }
 }
@@ -185,7 +187,7 @@ foreach ($RemoteRubrik in $RemoteRubriks)
 DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Checking connection to IAD Rubrik..."
 try
 {
-    Connect-Rubrik IAD-RUBK001 -Credential $RubrikCred | Out-Null
+    Connect-Rubrik $($IADInfo.RubrikDevice) -Credential $RubrikCred | Out-Null
     $RubrikClusterID = Invoke-RubrikRESTCall -Endpoint cluster/me -Method GET #gets the id of the current rubrik cluster
     DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Succ -LogString "Connection to IAD Rubrik successful."
 }
@@ -260,7 +262,8 @@ while($true)
     Write-Host "Backup status at $(Get-Date -Format MM-dd-yyyy_HH-mm-ss)`r`n"
     foreach ($Snapshot in $Snapshots)
     {
-        Write-Host "$($Snapshot.Rubrik) - $($Snapshot.Template) --> $($Snapshot.BackupComplete)"
+        if ($($Snapshot.BackupComplete) -eq "Complete") { Write-Host "$($Snapshot.Rubrik) - $($Snapshot.Template) --> $($Snapshot.BackupComplete)" -ForegroundColor Green }
+        else { Write-Host "$($Snapshot.Rubrik) - $($Snapshot.Template) --> $($Snapshot.BackupComplete)" }
     }
     Start-Sleep 30
 }
@@ -339,16 +342,16 @@ foreach ($RemoteRubrik in $RemoteRubriks)
     {
         try
         {
-        DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Issuing export task on $($RemoteRubrik.RubrikDevice) for $TemplateName..."
-        $Replica = Get-RubrikVM $TemplateName | Where-Object { $_.primaryClusterId -eq "$($RemoteRubrik.ID)" } | Get-RubrikSnapshot | Select-Object -First 1 #gets the ID of the replicated snapshot using the rubrik cluster ID
-        $ExportHost = $(Invoke-RubrikRESTCall -Endpoint vmware/host -Method Get).data | Where-Object { $_.name -eq "$($RemoteRubrik.Host)" -and $_.primaryClusterId -eq "$($RemoteRubrik.ID)" } #gets the Rubrik ID of the host listed in the data file using the rubrik cluster ID
-        $ExportDatastore = $ExportHost.datastores | Where-Object { $_.name -eq $($RemoteRubrik.Datastore) } #gets the Rubrik ID of the datastore listed in the data file from the exporthost info above
-        $body = New-Object -TypeName PSObject -Property @{'hostId'=$($Exporthost.id);'datastoreId'=$($ExportDatastore.id)} #Assemble the POST payload for the REST API call
-        Invoke-RubrikRESTCall -Endpoint vmware/vm/snapshot/$($Replica.id)/export -Method POST -Body $body | Out-Null #make rest api call to create an export job
+            DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Issuing export task on $($RemoteRubrik.RubrikDevice) for $TemplateName..."
+            $Replica = Get-RubrikVM $TemplateName | Where-Object { $_.primaryClusterId -eq "$($RubrikClusterID.id)" } | Get-RubrikSnapshot | Select-Object -First 1 #gets the ID of the replicated snapshot using the rubrik cluster ID
+            $ExportHost = $(Invoke-RubrikRESTCall -Endpoint vmware/host -Method Get).data | Where-Object { $_.name -eq "$($RemoteRubrik.Host)" -and $_.primaryClusterId -eq "$($RemoteRubrik.ID)" } #gets the Rubrik ID of the host listed in the data file using the rubrik cluster ID
+            $ExportDatastore = $ExportHost.datastores | Where-Object { $_.name -eq $($RemoteRubrik.Datastore) } #gets the Rubrik ID of the datastore listed in the data file from the exporthost info above
+            $body = New-Object -TypeName PSObject -Property @{'hostId'=$($Exporthost.id);'datastoreId'=$($ExportDatastore.id)} #Assemble the POST payload for the REST API call
+            Invoke-RubrikRESTCall -Endpoint vmware/vm/snapshot/$($Replica.id)/export -Method POST -Body $body | Out-Null #make rest api call to create an export job
         }
         catch
         {
-            DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Error encountered while creating export tasks:`n`r$($Error[0])`n`rScript Exiting!!!"
+            DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Err -LogString "Error encountered while creating export tasks:`n`r$($Error[0])`n`rScript Exiting!!!"
             exit
         }
     }
