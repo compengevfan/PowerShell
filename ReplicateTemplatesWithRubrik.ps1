@@ -88,7 +88,8 @@ try
 {
     Get-Cluster $($IADInfo.Cluster) | Get-VMHost $($IADInfo.Host) -ErrorAction Stop | Out-Null
     Get-VMHost $($IADInfo.Host) | Get-Datastore $($IADInfo.Datastore) -ErrorAction Stop | Out-Null
-    Get-Datacenter $($IADInfo.Datacenter) | Get-Folder "Templates" -ErrorAction Stop | Out-Null
+    $Folders = Get-Datacenter $($IADInfo.Datacenter) | Get-Folder "Templates" -ErrorAction Stop | Out-Null
+    if ($Folders.Count -gt 1) { throw "Too Many Folders" }
     DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Succ -LogString "Host, Datastore and Folder located."
 }
 catch
@@ -96,6 +97,7 @@ catch
     if ($Error[0] -like "*Get-VMHost*") { DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Err -LogString "IAD-PROD host is incorrect!!! Script Exiting!!!" }
     if ($Error[0] -like "*Get-Datastore*") { DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Err -LogString "IAD-PROD datastore is incorrect!!! Script Exiting!!!" }
     if ($Error[0] -like "*Get-Folder*") { DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Err -LogString "IAD datacenter does not have a 'Templates' folder!!! Script Exiting!!!" }
+    if ($Error[0].Exception.tostring() -like "*Too Many Folders") { DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Err -LogString "Multiple templates folders found in $($IADInfo.Datacenter) Datacenter!!! Script exiting!!!" }
     exit
 }
 
