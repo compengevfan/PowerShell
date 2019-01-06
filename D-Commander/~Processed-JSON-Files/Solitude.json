@@ -1,0 +1,32 @@
+{
+	"VMInfo": [
+		{
+			"vCenter": "discography.evorigin.com",
+			"Template": "Win10Template",
+			"Datacenter": "DC1",
+			"Cluster": "C1",
+			"FolderPath": "DC1/Discovered virtual machine",
+			"VMName": "Solitude",
+			"Datastore": "Storage2",
+		  	"PortGroup": "JAX-EvOrigin",
+			"ApplicationTeam": "Dupree",
+			"Application": "Misc",
+			"Compliance" : "Non-PCI"
+		}
+	],
+  
+  	"GuestInfo": [
+		{
+			"CustomizationSpec": "Win10Template",
+			"vCPUs": "2",
+			"RAM": "8",
+			"IPAddress": "192.168.1.122",
+			"SubnetMask": "255.255.255.0",
+			"Gateway": "192.168.1.254",
+			"Domain": "evorigin.com",
+			"DNS1": "192.168.1.101",
+			"DNS2": "192.168.1.100",
+			"OU": "Virtual Servers"
+		}
+	]
+}
