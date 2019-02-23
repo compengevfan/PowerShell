@@ -34,7 +34,7 @@ switch ($DiskType) {
     Default {}
 }
 
-Set-Location "C:\Cloud\Dropbox\EpisodeTracker"
+Set-Location "G:\Cloud\Dropbox\EpisodeTracker"
 $SeasonFile = Get-FileName -Filter "csv"
 $SeasonFileObject = Get-Item $SeasonFile
 $SeasonInfo = Import-Csv $SeasonFile
