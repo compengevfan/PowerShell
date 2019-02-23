@@ -66,6 +66,6 @@ foreach ($Disk in $Disks)
 
 $BatchFileOutput | Out-File $($SeasonFileObject.DirectoryName + "\Season $SeasonNumber" + ".bat") -Encoding ascii
 
-if (!(Test-Path "\\storage1\Media\TV Shows\$SeriesName\Season $SeasonNumber\")) { New-Item -ItemType folder } 
+if (!(Test-Path "\\storage1\Media\TV Shows\$SeriesName\Season $SeasonNumber\")) { New-Item "\\storage1\Media\TV Shows\$SeriesName\Season $SeasonNumber\" -ItemType Directory } 
 
 Start-Process -FilePath $($SeasonFileObject.DirectoryName + "\Season $SeasonNumber" + ".bat")
