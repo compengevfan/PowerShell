@@ -1,40 +1,66 @@
 [CmdletBinding()]
 Param(
-    [Parameter(Mandatory=$true)] [string] $SeriesName,
+    [parameter(Mandatory=$true)] [ValidateSet("dvd","bluray")] [String] $DiskType,
     [Parameter(Mandatory=$true)] [int] $SeasonNumber,
     [Parameter(Mandatory=$true)] [string] $SeasonPath
 )
 
-$BeginCommand = '"c:\Program Files\Handbrake\HandBrakeCLI" -Z "Roku 720p30 Surround" --no-dvdnav -i'
-$EndCommand = '.mp4" -m -a "1" -s "scan"'
+#requires -Version 3.0
+
+$ScriptPath = $PSScriptRoot
+cd $ScriptPath
+  
+$ScriptStarted = Get-Date -Format MM-dd-yyyy_HH-mm-ss
+$ScriptName = $MyInvocation.MyCommand.Name
+  
+#$ErrorActionPreference = "SilentlyContinue"
+  
+if (!(Get-Module -ListAvailable -Name DupreeFunctions)) { Write-Host "'DupreeFunctions' module not available!!! Please check with Dupree!!! Script exiting!!!" -ForegroundColor Red; exit }
+if (!(Get-Module -Name DupreeFunctions)) { Import-Module DupreeFunctions }
+if (!(Test-Path .\~Logs)) { New-Item -Name "~Logs" -ItemType Directory | Out-Null }
+else { Get-ChildItem .\~Logs | Where-Object CreationTime -LT (Get-Date).AddDays(-30) | Remove-Item }
+
+switch ($DiskType) {
+    "dvd" 
+        {
+            $BeginCommand = '"c:\Program Files\Handbrake\HandBrakeCLI" -Z "Roku 720p30 Surround" --no-dvdnav -i'
+            $EndCommand = '.mp4" -m -a "1" -s "scan"'
+        }
+    "bluray"
+        {
+            $BeginCommand = '"c:\Program Files\Handbrake\HandBrakeCLI" -Z "Roku 1080p30 Surround" --no-dvdnav -i'
+            $EndCommand = '.mp4" -m -a "1" -s "scan"'
+        }
+    Default {}
+}
+
+Set-Location "C:\Cloud\Dropbox\EpisodeTracker"
+$SeasonFile = Get-FileName -Filter "csv"
+$SeasonFileObject = Get-Item $SeasonFile
+$SeasonInfo = Import-Csv $SeasonFile
+$SeriesName = $SeasonFileObject.Directory.Name
 
 $BatchFileOutput = ""
 
-$EpisodeNumber = 1
-
 $Path = "FileSystem::" + $SeasonPath
-$Disks = gci $Path
+$Disks = Get-ChildItem $Path
+
+$DiskCounter = 1
 
 foreach ($Disk in $Disks)
 {
-    Write-Host "Processing disk: $($Disk.FullName)"
-    [int]$EpisodeCount = Read-Host "How many episodes on this disk?"
+    DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Processing disk: $($Disk.FullName)"
 
-    while($EpisodeCount -ne 0)
+    $Episodes = $SeasonInfo | Where-Object { $_.Disk -eq $DiskCounter }
+
+    foreach ($Episode in $Episodes)
     {
-        $Title = Read-Host "Title number for episode $EpisodeNumber"
-
         $InputLocation = '"' + $($Disk.FullName) + '" -t'
-
-        $OutputLocation = '-o "\\STORAGE1\Media\TV Shows\' + "$SeriesName\Season $SeasonNumber\$SeriesName - s$SeasonNumber" + "e$EpisodeNumber"
-
-        $BatchFileOutput += "$BeginCommand $InputLocation $Title $OutputLocation$EndCommand`r`n"
-
-        $EpisodeNumber++
-        $EpisodeCount--
+        $OutputLocation = '-o "\\STORAGE1\Media\TV Shows\' + "$SeriesName\Season $SeasonNumber\$SeriesName - s$SeasonNumber" + "e$($Episode.Episode)"
+        $BatchFileOutput += "$BeginCommand $InputLocation $($Episode.Title) $OutputLocation$EndCommand`r`n"
     }
-    Write-Host "Going to next disk..."
+
+    $DiskCounter++
 }
 
-if (!(Test-Path $("G:\Cloud\Dropbox\EpisodeTracker" + "\$SeriesName"))) { New-Item "$("G:\Cloud\Dropbox\EpisodeTracker" + "\$SeriesName")" -ItemType directory }
-$BatchFileOutput | Out-File $("G:\Cloud\Dropbox\EpisodeTracker" + "\$SeriesName\" + "Season $SeasonNumber" + ".bat") -Encoding ascii
+$BatchFileOutput | Out-File $($SeasonFileObject.DirectoryName + "\Season $SeasonNumber" + ".bat") -Encoding ascii
