@@ -49,7 +49,7 @@ $DiskCounter = 1
 
 foreach ($Disk in $Disks)
 {
-    DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Processing disk: $($Disk.FullName)"
+    Write-Host "Processing disk: $($Disk.FullName)"
 
     $Episodes = $SeasonInfo | Where-Object { $_.Disk -eq $DiskCounter }
 
