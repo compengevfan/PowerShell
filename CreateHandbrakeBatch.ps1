@@ -8,7 +8,7 @@ Param(
 #requires -Version 3.0
 
 $ScriptPath = $PSScriptRoot
-cd $ScriptPath
+Set-Location $ScriptPath
   
 $ScriptStarted = Get-Date -Format MM-dd-yyyy_HH-mm-ss
 $ScriptName = $MyInvocation.MyCommand.Name
@@ -36,6 +36,7 @@ switch ($DiskType) {
 
 Set-Location "G:\Cloud\Dropbox\EpisodeTracker"
 $SeasonFile = Get-FileName -Filter "csv"
+Set-Location $ScriptPath
 $SeasonFileObject = Get-Item $SeasonFile
 $SeasonInfo = Import-Csv $SeasonFile
 $SeriesName = $SeasonFileObject.Directory.Name
@@ -49,7 +50,7 @@ $DiskCounter = 1
 
 foreach ($Disk in $Disks)
 {
-    Write-Host "Processing disk: $($Disk.FullName)"
+    DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Processing disk: $($Disk.FullName)"
 
     $Episodes = $SeasonInfo | Where-Object { $_.Disk -eq $DiskCounter }
 
