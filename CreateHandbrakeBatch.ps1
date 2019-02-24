@@ -68,4 +68,4 @@ $BatchFileOutput | Out-File $($SeasonFileObject.DirectoryName + "\Season $Season
 
 if (!(Test-Path "\\storage1\Media\TV Shows\$SeriesName\Season $SeasonNumber\")) { New-Item "\\storage1\Media\TV Shows\$SeriesName\Season $SeasonNumber\" -ItemType Directory } 
 
-Start-Process -FilePath $($SeasonFileObject.DirectoryName + "\Season $SeasonNumber" + ".bat")
+#Start-Process -FilePath $($SeasonFileObject.DirectoryName + "\Season $SeasonNumber" + ".bat")
