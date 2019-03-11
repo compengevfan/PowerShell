@@ -253,7 +253,7 @@ Function Get-FileName
     $OpenFileDialog.filename
 }
 
-Function DoLogging
+Function Invoke-Logging
 {
     Param(
         [Parameter(Mandatory=$true)] [string] $ScriptStarted,

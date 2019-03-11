@@ -39,15 +39,15 @@ if ($CredFile -ne $null)
  
 Connect-vCenter -vCenter $vCenter -vCenterCredential $Credential_To_Use
 
-DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Getting the list of VMs to migrate..."
+Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Getting the list of VMs to migrate..."
 $VMsToMove = Get-Datastore $Source | Get-VM | Sort-Object Name
 
 foreach ($VM in $VMsToMove)
 {
-    DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Migrating VM $($VM.Name)..."
+    Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Migrating VM $($VM.Name)..."
 
     $Task = Move-VM -VM $VM -Datastore $Destination -RunAsync
-    DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Waiting for task completion..."
+    Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Waiting for task completion..."
 
     while($true)
     {
@@ -55,11 +55,11 @@ foreach ($VM in $VMsToMove)
         else { Start-Sleep 5 }
     }
 
-    DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Moving on..."
+    Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Moving on..."
 }
 
-DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Verifying that all VMs were migrated..."
+Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Verifying that all VMs were migrated..."
 $VMsToMove = Get-Datastore $Source | Get-VM | Sort-Object Name
 
-if ($VMsToMove.Count -gt 0) { DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Err -LogString "Some VMs failed to move to the new Datastore!!! Please move manually or correct any issues and run the scrpt again!!!" }
-else { DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Succ -LogString "Source datastore seems to be void of any VMs. Please verify and if confirmed, this datastore can be deleted." }
+if ($VMsToMove.Count -gt 0) { Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Err -LogString "Some VMs failed to move to the new Datastore!!! Please move manually or correct any issues and run the scrpt again!!!" }
+else { Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Succ -LogString "Source datastore seems to be void of any VMs. Please verify and if confirmed, this datastore can be deleted." }

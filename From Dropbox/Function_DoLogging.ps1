@@ -2,7 +2,7 @@
 Param(
 )
 
-Function DoLogging
+Function Invoke-Logging
 {
     Param(
         [Parameter(Mandatory=$true)][ValidateSet("Succ","Info","Warn","Err")] [string] $LogType,
@@ -28,4 +28,4 @@ Function DoLogging
     }
 }
 
-DoLogging -LogType Info -LogString "This is a log entry..."
+Invoke-Logging -LogType Info -LogString "This is a log entry..."

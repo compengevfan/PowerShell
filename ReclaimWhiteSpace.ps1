@@ -6,7 +6,7 @@ $ScriptPath = $PSScriptRoot
 cd $ScriptPath
 
 #Import functions
-. .\Functions\Function_DoLogging.ps1
+. .\Functions\Function_Invoke-Logging.ps1
 . .\Functions\function_Check-PowerCLI.ps1
 . .\Functions\function_Connect-vCenter.ps1
 

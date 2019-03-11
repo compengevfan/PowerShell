@@ -1,4 +1,4 @@
-Function DoLogging
+Function Invoke-Logging
 {
     Param(
         [Parameter(Mandatory=$true)][ValidateSet("Succ","Info","Warn","Err")] [string] $LogType,

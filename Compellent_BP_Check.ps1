@@ -42,29 +42,29 @@ $emailTo = "TEAMEntCompute@fanatics.com"
 $emailSubject = "Windows Servers Improperly Configured!!!"
 
  
-#DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType
+#Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType
 <#
 try { $CurrentJobLog = Get-Content "$GoAnywhereLogs\$($CurrentTime.ToString("yyyy-MM-dd"))\$($ActiveJob.jobNumber).log" }
 catch 
 {
     $String = "Log file could not be read. The error encountered is:`n`r$($Error[0])`n`rScript executed on $($env:computername)."
-    DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Err -LogString $String
+    Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Err -LogString $String
     if ($SendEmail) { Send-MailMessage -smtpserver $emailServer -to $emailTo -from $emailFrom -subject "$ScriptName Encountered an Error" -Body $String }
     exit
 }
 #>
 
-DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Checking to see if PowerShell is running as svcTasks..."
+Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Checking to see if PowerShell is running as svcTasks..."
 if ($(whoami) -notlike "*svcTasks")
 {
-    DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Err -LogString "Please run PowerShell as 'svcTasks' when executing this script!!! Script exiting!!!"
+    Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Err -LogString "Please run PowerShell as 'svcTasks' when executing this script!!! Script exiting!!!"
     exit
 }
 
-DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Checking to see if the SingleServer switch is true and if so, that a server to check is provided..."
+Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Checking to see if the SingleServer switch is true and if so, that a server to check is provided..."
 if ($SingleServer -and $ServertoCheck -eq "")
 {
-    DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Err -LogString "SingleServer is set to true which requires a value for ServertoCheck!!! Please rerun the script and provide a value for the ServertoCheck Parameter!!!`n`rScript exiting!!!"
+    Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Err -LogString "SingleServer is set to true which requires a value for ServertoCheck!!! Please rerun the script and provide a value for the ServertoCheck Parameter!!!`n`rScript exiting!!!"
     exit
 }
 
@@ -153,7 +153,7 @@ Function FindISCSI-Instance
 ###############
 
 #Import securly stored credentials. P10 domain is using svcShavlik. Fanatics.corp and FF.WH domain is using svcNetwrixAD
-DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Importing credential files..."
+Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Importing credential files..."
 switch ($Environment) {
     "Corp"
     {
@@ -169,29 +169,29 @@ switch ($Environment) {
     }
 }
 
-DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Importing regkey information..."
+Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Importing regkey information..."
 $RegKeys = Import-Csv G:\Software\PS_SDK\Compellent_BP_Check-data.csv
 
-DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Setting up variables..."
+Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Setting up variables..."
 $ProblemsFound = $false
 $ServerErrorList = "Attached is a list of servers with incorrect MPIO related registry settings.`nPlease use this file, together with 'Compellent_BP_Set.ps1', to correct these settings.`nBelow is a list of servers that failed DNS lookup, ping test or WMI call test:`n`n"
 $OutputKeyList = @()
 
-DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Obtaining DSM connection creds..."
+Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Obtaining DSM connection creds..."
 $DsmHostName = "localhost"
 $DsmUserName = "svcTasks"
 $DsmPassword = get-content G:\Software\PS_SDK\cred.txt | convertto-securestring
 
-DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Connecting to DSM..."
+Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Connecting to DSM..."
 $Connection = Connect-DellApiConnection -HostName $DsmHostName -User $DsmUserName -Password $DsmPassword
 
-DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Obtaining server list/information from DSM..."
+Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Obtaining server list/information from DSM..."
 if ($SingleServer)
 {
     $Servers = Get-DellScServer -Connection $Connection | ? {$_.OperatingSystem -like "*Windows*MPIO" -and $_.Type -eq "Physical" -and $_.Status -eq "Up" -and $_.Name -eq $ServertoCheck} | select ScName,Name,PortType,OperatingSystem | Sort-Object ScName,Name
     if ($Servers -eq $null)
     {
-        DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Server name provided in ServertoCheck variable not found in DSM!!!`n`rPlease ensure the name provided is exactly as it appears in DSM, the server is up, and the operating system in DSM is set to a Windows MPIO option!!!`n`rScript exiting!!!"
+        Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Server name provided in ServertoCheck variable not found in DSM!!!`n`rPlease ensure the name provided is exactly as it appears in DSM, the server is up, and the operating system in DSM is set to a Windows MPIO option!!!`n`rScript exiting!!!"
         exit
     }
 }
@@ -202,47 +202,47 @@ else
 
 foreach ($Server in $Servers)
 {
-    DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Begin processing server: $($Server.Name)"
+    Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Begin processing server: $($Server.Name)"
 
-    DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Checking to see if connection to server is possible..."
+    Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Checking to see if connection to server is possible..."
     $ConnectionSuccess = $false
 
     if ($Server.Name -like "*ff.p10" -or $Server.Name -like "*fanatics.corp" -or $Server.Name -like "*footballfanatics.wh")
     {
-        DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Server name already has a domain. Checking connection..."
+        Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Server name already has a domain. Checking connection..."
         $FQDN = $Server.Name
-        if (!(Test-Connection $FQDN -Count 1)) { DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Warn -LogString "Ping to $FQDN failed."; $ServerErrorList += "Ping to $FQDN failed.`n";$ProblemsFound = $true }
-        else { DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Succ -LogString "Ping to $FQDN succeeded."; $ConnectionSuccess = $true } 
+        if (!(Test-Connection $FQDN -Count 1)) { Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Warn -LogString "Ping to $FQDN failed."; $ServerErrorList += "Ping to $FQDN failed.`n";$ProblemsFound = $true }
+        else { Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Succ -LogString "Ping to $FQDN succeeded."; $ConnectionSuccess = $true } 
     } else
     {
-        DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Server name does not have a domain. Determining domain..."
+        Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Server name does not have a domain. Determining domain..."
         $Domain = DetermineDomain -ServerName $Server.Name
-        if ($Domain -eq "DNE") { DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Warn -LogString "Domain look up for $($Server.Name) failed..."; $ServerErrorList += "DNS lookup for $($Server.Name) failed.`n";$ProblemsFound = $true }
+        if ($Domain -eq "DNE") { Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Warn -LogString "Domain look up for $($Server.Name) failed..."; $ServerErrorList += "DNS lookup for $($Server.Name) failed.`n";$ProblemsFound = $true }
         else 
         {
-            DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Succ -LogString "Domain lookup successful. Checking connection..."
+            Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Succ -LogString "Domain lookup successful. Checking connection..."
             $FQDN = $Server.Name + $Domain
-            if (!(Test-Connection $FQDN -Count 1)) { DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Warn -LogString "Ping to $FQDN failed."; $ServerErrorList += "Ping to $FQDN failed.`n";$ProblemsFound = $true } 
-            else { DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Succ -LogString "Ping to $FQDN succeeded."; $ConnectionSuccess = $true }
+            if (!(Test-Connection $FQDN -Count 1)) { Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Warn -LogString "Ping to $FQDN failed."; $ServerErrorList += "Ping to $FQDN failed.`n";$ProblemsFound = $true } 
+            else { Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Succ -LogString "Ping to $FQDN succeeded."; $ConnectionSuccess = $true }
         }
     }
     
-    DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Clearing WMI variables..."
+    Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Clearing WMI variables..."
     $WMISuccess = $false
     $WMITest = $null
 
     if ($ConnectionSuccess)
     {
-        DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Checking WMI connection..."
+        Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Checking WMI connection..."
         try
         {
             Get-WmiObject Win32_Computersystem -ComputerName $FQDN -ErrorAction Stop
-            DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Succ -LogString "WMI call to $FQDN succeeded."
+            Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Succ -LogString "WMI call to $FQDN succeeded."
             $WMISuccess = $true
         }
         catch
         {
-            DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Warn -LogString "WMI call to $FQDN failed..."
+            Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Warn -LogString "WMI call to $FQDN failed..."
             $ServerErrorList += "WMI call to $FQDN failed.`n"
             $ProblemsFound = $true
         }
@@ -256,11 +256,11 @@ foreach ($Server in $Servers)
 
         if ($($iSCSICheck.State) -eq "Running") { $InstanceNumber = FindISCSI-Instance -ServerName $FQDN }
 
-        DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "This server has iSCSI. Instance number is $InstanceNumber."
+        Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "This server has iSCSI. Instance number is $InstanceNumber."
 
         foreach ($RegKey in $RegKeys)
         {
-            DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Processing: $($RegKey.Key)..."
+            Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Processing: $($RegKey.Key)..."
             if (($RegKey.OS -eq "All" -or $Server.OperatingSystem.InstanceName -like "*$($RegKey.OS)*") -and ($RegKey.Fabric -eq "All" -or $RegKey.Fabric -eq $Server.PortType -as [string]))
             {
                 if ($($RegKey.Fabric) -eq "iSCSI" -and $($iSCSICheck.State) -eq "Running")
@@ -305,7 +305,7 @@ foreach ($Server in $Servers)
         }
     }
 
-    DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "End processing server: $($Server.Name)."
+    Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "End processing server: $($Server.Name)."
 }
 
 
@@ -321,10 +321,10 @@ if ($ProblemsFound)
     else 
     {
         $OutputKeyList | Select-Object Compellent, Server, Key, IncorrectValue, CorrectValue | Export-Csv -LiteralPath "G:\Software\PS_SDK\Compellent_BP_Set-Data_$($Server.Name).csv" -NoTypeInformation
-        DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Succ -LogString "G:\Software\PS_SDK\Compellent_BP_Set-Data_$($Server.Name) has been created.`n`rPlease use this file, together with 'Compellent_BP_Set.ps1', to correct these settings on the server to be fixed. The data file will need to be renamed to 'Compellent_BP_Set-Data.csv'."
+        Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Succ -LogString "G:\Software\PS_SDK\Compellent_BP_Set-Data_$($Server.Name) has been created.`n`rPlease use this file, together with 'Compellent_BP_Set.ps1', to correct these settings on the server to be fixed. The data file will need to be renamed to 'Compellent_BP_Set-Data.csv'."
     }
 }
 else 
 {
-    DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Succ -LogString "No MPIO issues found!!!" 
+    Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Succ -LogString "No MPIO issues found!!!" 
 }

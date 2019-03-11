@@ -58,8 +58,8 @@ Connect-vCenter -vCenter $vCenter -vCenterCredential $Credential_To_Use
 $Cluster = Read-Host -Prompt ("Please enter the name of the cluster to be balanced")
 #Retrieve hosts from cluster
 $HostsToBalance = Get-Cluster $Cluster | Get-VMHost | ? {$_.ConnectionState -eq "Connected"} | Sort-Object MemoryUsageGB
-if ($HostsToBalance -ne $null) { DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Balancing Cluster $Cluster..." }
-else { DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Err -LogString "$Cluster does not exist!!! Script Exiting!!!"; exit }
+if ($HostsToBalance -ne $null) { Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Balancing Cluster $Cluster..." }
+else { Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Err -LogString "$Cluster does not exist!!! Script Exiting!!!"; exit }
 
 #Find datastore with least and most free space
 $HostLeastUsed = $HostsToBalance | Select-Object -First 1
@@ -86,7 +86,7 @@ while ($RunAgain)
     $VMtoMove = $SourceVMs[$RandomNumber]
 
     Move-VM -VM $VMtoMove -Destination $HostLeastUsed.Name -Confirm:$false | Out-Null
-    DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Migrated $($VMtoMove.Name) from $($HostMostUsed.Name) to $($HostLeastUsed.Name)."
+    Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Migrated $($VMtoMove.Name) from $($HostMostUsed.Name) to $($HostLeastUsed.Name)."
 
     $HostsToBalance = Get-Cluster $Cluster | Get-VMHost | ? {$_.ConnectionState -eq "Connected"} | Sort-Object MemoryUsageGB
 
@@ -100,7 +100,7 @@ while ($RunAgain)
     if ($Diff -lt 64)
     {
         $RunAgain = $false
-        DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Script complete. Cluster is now balanced."
+        Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Script complete. Cluster is now balanced."
         #Write-Host ("Script complete. Cluster is now balanced.")
     }
 }

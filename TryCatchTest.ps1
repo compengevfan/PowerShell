@@ -35,9 +35,9 @@ Check-PowerCLI
 if ($InputFile -eq "" -or $InputFile -eq $null) { cls; Write-Host "Please select a JSON file..."; $InputFile = Get-FileName }
 
 #Check to make sure we have a JSON file location and if so, get the info.
-DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Importing JSON Data File: $InputFile..."
+Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Importing JSON Data File: $InputFile..."
 try { $DataFromFile = ConvertFrom-JSON (Get-Content $InputFile -raw) }
 catch [System.ArgumentException]
-{ DoLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Err -LogString "Error importing JSON file. Please verify proper syntax and file name." }
+{ Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Err -LogString "Error importing JSON file. Please verify proper syntax and file name." }
 
 Write-Host "Blah"
