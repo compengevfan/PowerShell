@@ -30,9 +30,9 @@ if ($CredFile -ne $null)
 #Email Variables
 ##################
 #emailTo is a comma separated list of strings eg. "email1","email2"
-$emailFrom = "GoAnywhereMonitor@fanatics.com"
-$emailTo = "cdupree@fanatics.com"
-$emailServer = "smtp.ff.p10"
+$emailFrom = ""
+$emailTo = ""
+$emailServer = ""
  
 #Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType 
 <#
