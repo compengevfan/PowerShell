@@ -69,7 +69,7 @@ $HostMostUsed = $HostsToBalance | Select-Object -Last 1
 $Space1 = $HostMostUsed.MemoryUsageGB
 $Space2 = $HostLeastUsed.MemoryUsageGB
 $Diff = $Space1 - $Space2
-if ($Diff -gt 64 -and $HostsToBalance.Count -gt 1) { $RunAgain = $true }
+if ($Diff -gt 1 -and $HostsToBalance.Count -gt 1) { $RunAgain = $true }
 else
 {
     $RunAgain = $false
