@@ -1,21 +1,21 @@
-Function Check-PowerCLI
-{
-    Param(
-    )
+# Function Check-PowerCLI
+# {
+#     Param(
+#     )
   
-    if (!(Get-Module -Name VMware.VimAutomation.Core))
-    {
-        write-host ("Adding PowerCLI...")
-        Get-Module -Name VMware* -ListAvailable | Import-Module -Global
-        write-host ("Loaded PowerCLI.")
-    }
-}
+#     if (!(Get-Module -Name VMware.VimAutomation.Core))
+#     {
+#         write-host ("Adding PowerCLI...")
+#         Get-Module -Name VMware* -ListAvailable | Import-Module -Global
+#         write-host ("Loaded PowerCLI.")
+#     }
+# }
   
-if (!(Get-Module -ListAvailable -Name DupreeFunctions)) { Write-Host "'DupreeFunctions' module not available!!! Please check with Dupree!!! Script exiting!!!" -ForegroundColor Red; exit }
-if (!(Get-Module -Name DupreeFunctions)) { Import-Module DupreeFunctions }
-if (!(Test-Path .\~Logs)) { New-Item -Name "~Logs" -ItemType Directory | Out-Null }
+# if (!(Get-Module -ListAvailable -Name DupreeFunctions)) { Write-Host "'DupreeFunctions' module not available!!! Please check with Dupree!!! Script exiting!!!" -ForegroundColor Red; exit }
+# if (!(Get-Module -Name DupreeFunctions)) { Import-Module DupreeFunctions }
+# if (!(Test-Path .\~Logs)) { New-Item -Name "~Logs" -ItemType Directory | Out-Null }
   
-Check-PowerCLI
+# Check-PowerCLI
 
 ################
 #Make it pretty#
