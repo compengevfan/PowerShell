@@ -1,4 +1,4 @@
-﻿<#Function Check-PowerCLI
+﻿Function Import-PowerCLI
 {
     Param(
     )
@@ -9,7 +9,7 @@
         Get-Module -Name VMware* -ListAvailable | Import-Module -Global
         write-host ("Loaded PowerCLI.")
     }
-}#>
+}
 
 function Connect-vCenter
 {
@@ -37,8 +37,8 @@ function Connect-vCenter
 
             #Set-PowerCLIConfiguration -invalidcertificateaction ignore -Confirm:$false | Out-Null
 
-            if ($vCenterCredential -eq $null) { Connect-VIServer -Server $vCenter | Out-Null }
-            else { Connect-VIServer -Server $vCenter -Credential $vCenterCredential | Out-Null }
+            if ($vCenterCredential -eq $null) { Connect-VIServer -Server $vCenter -Force | Out-Null }
+            else { Connect-VIServer -Server $vCenter -Credential $vCenterCredential -Force | Out-Null }
             
             $ConnectedvCenter = $global:DefaultVIServers
 

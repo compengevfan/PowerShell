@@ -15,25 +15,12 @@ $ScriptName = $MyInvocation.MyCommand.Name
   
 #$ErrorActionPreference = "SilentlyContinue"
   
-Function Check-PowerCLI
-{
-    Param(
-    )
-  
-    if (!(Get-Module -Name VMware.VimAutomation.Core))
-    {
-        write-host ("Adding PowerCLI...")
-        Get-Module -Name VMware* -ListAvailable | Import-Module -Global
-        write-host ("Loaded PowerCLI.")
-    }
-}
-  
 if (!(Get-Module -ListAvailable -Name DupreeFunctions)) { Write-Host "'DupreeFunctions' module not available!!! Please check with Dupree!!! Script exiting!!!" -ForegroundColor Red; exit }
 if (!(Get-Module -Name DupreeFunctions)) { Import-Module DupreeFunctions }
 if (!(Test-Path .\~Logs)) { New-Item -Name "~Logs" -ItemType Directory | Out-Null }
 else { Get-ChildItem .\~Logs | Where-Object CreationTime -LT (Get-Date).AddDays(-30) | Remove-Item }
   
-Check-PowerCLI
+Import-PowerCLI
  
 if ($CredFile -ne $null)
 {
