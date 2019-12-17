@@ -1,7 +1,7 @@
 <#
 Script: Create-DVS.ps1
-Author: Joe Titra
-Version: 0.1
+Author: Joe Titra - edited by Christopher Dupree
+Version: 0.2
 Description: Creates DVS in vCenter. Only for 10gb configuration
 .EXAMPLE
   PS> .\Create-DVS -datacenter <datacenter>
@@ -50,5 +50,37 @@ if($response -notlike "y*"){break}
 #Create New Distributed Switch and associated Port Groups
 $newDVS = New-VDSwitch -Name $dvsName -Location $datacenter -Version "6.0.0" -NumUplinkPorts 4 -LinkDiscoveryProtocol "CDP" -LinkDiscoveryProtocolOperation "Both" -Mtu 9000
 foreach($portGroup in $portGroups){
-    New-VDPortgroup -VDSwitch $newDVS -Name $portGroup.PortGroup -VlanId $portGroup.VLAN -NumPorts 128 -PortBinding "Static" -RunAsync
+    $newPortGroup = New-VDPortgroup -VDSwitch $newDVS -Name $portGroup.PortGroup -VlanId $portGroup.VLAN -NumPorts 128 -PortBinding "Static"
+    switch($($portGroup.PortGroup)){
+        "VMkernel_SC"{
+            $newPortGroup | Get-VDUplinkTeamingPolicy | Set-VDUplinkTeamingPolicy `
+            -LoadBalancingPolicy LoadBalanceLoadBased `
+            -FailoverDetectionPolicy BeaconProbing `
+            -EnableFailback $false `
+            -ActiveUplinkPort "dvUplink1", "dvUplink2", "dvUplink3", "dvUplink4"
+        }
+        "VMkernel_vMotion1"{
+            $newPortGroup | Get-VDUplinkTeamingPolicy | Set-VDUplinkTeamingPolicy `
+            -LoadBalancingPolicy ExplicitFailover `
+            -FailoverDetectionPolicy BeaconProbing `
+            -EnableFailback $true `
+            -ActiveUplinkPort "dvUplink2" `
+            -StandbyUplinkPort "dvUplink1", "dvUplink3", "dvUplink4"
+        }
+        "VMkernel_vMotion2"{
+            $newPortGroup | Get-VDUplinkTeamingPolicy | Set-VDUplinkTeamingPolicy `
+            -LoadBalancingPolicy ExplicitFailover `
+            -FailoverDetectionPolicy BeaconProbing `
+            -EnableFailback $true `
+            -ActiveUplinkPort "dvUplink3" `
+            -StandbyUplinkPort "dvUplink4", "dvUplink1", "dvUplink2"
+        }
+        default{
+            $newPortGroup | Get-VDUplinkTeamingPolicy | Set-VDUplinkTeamingPolicy `
+            -LoadBalancingPolicy LoadBalanceLoadBased `
+            -FailoverDetectionPolicy BeaconProbing `
+            -EnableFailback $false `
+            -ActiveUplinkPort "dvUplink1", "dvUplink2", "dvUplink3", "dvUplink4"
+        }
+    }
 }

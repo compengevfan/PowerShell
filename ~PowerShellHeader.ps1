@@ -6,6 +6,7 @@ Param(
 )
 
 #requires -Version 3.0
+$DupreeFunctionsMinVersion = "1.0.2"
 
 $ScriptPath = $PSScriptRoot
 cd $ScriptPath
@@ -19,10 +20,14 @@ $ScriptName = $MyInvocation.MyCommand.Name
 # if (!(Get-Module -Name DupreeFunctions)) { Import-Module DupreeFunctions }
 
 #Check if DupreeFunctions is installed and verify version
-if (!(Get-InstalledModule -Name DupreeFunctions -MinimumVersion 1.0.2 -ErrorAction SilentlyContinue))
+if (!(Get-InstalledModule -Name DupreeFunctions -MinimumVersion $DupreeFunctionsMinVersion -ErrorAction SilentlyContinue))
 {
-    try { Install-Module -Name DupreeFunctions -Scope CurrentUser }
-    catch { Write-Host "Failed to install 'DupreeFunctions' module from PSGallery!!! Error encountered is:`n`r$($Error[0])`n`rScript exiting!!!" ; exit }
+    try 
+    {
+        if (!(Get-Module -ListAvailable -Name DupreeFunctions)) { Install-Module -Name DupreeFunctions -Scope CurrentUser -Force -ErrorAction Stop }
+        else { Update-Module -Name DupreeFunctions -RequiredVersion $DupreeFunctionsMinVersion -Force -ErrorAction Stop }
+    }
+    catch { Write-Host "Failed to install 'DupreeFunctions' module from PSGallery!!! Error encountered is:`n`r`t$($Error[0])`n`rScript exiting!!!" -ForegroundColor Red ; exit }
 }
 
 if (!(Get-Module -Name DupreeFunctions)) { Import-Module DupreeFunctions }
