@@ -86,23 +86,84 @@ foreach($Switch in $Switches)
     foreach($PortGroup in $PortGroups)
     {
         Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Processing portgroup $($PortGroup.Name)..."
+        $PortGroupCheck = $PortGroup | Get-VDUplinkTeamingPolicy
         switch($($PortGroup.Name))
         {
             "VMkernel_SC"
             {
-                if ($PortGroup.)
+                if ($PortGroupCheck.LoadBalancingPolicy -ne "LoadBalanceLoadBased" `
+                    -or $PortGroupCheck.FailoverDetectionPolicy -ne "BeaconProbing" `
+                    -or $PortGroupCheck.EnableFailback -ne $false `
+                    -or $PortGroupCheck.ActiveUplinkPort.Count -ne 4)
+                {
+                    Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "$($PortGroup.Name) has a config problem..."
+                    $PortGroupFails += New-Object PSObject -Property @{
+                        SwitchName = $Switch.Name
+                        PortGroupName = $PortGroup.Name
+                        LBPolicy = $PortGroupCheck.LoadBalancingPolicy
+                        FDPolicy = $PortGroupCheck.FailoverDetectionPolicy
+                        Failback = $PortGroupCheck.EnableFailback
+                        ActiveUplinkCount = $PortGroupCheck.ActiveUplinkPort.Count
+                    }
+                }
             }
             "VMkernel_vMotion1"
             {
-
+                if ($PortGroupCheck.LoadBalancingPolicy -ne "ExplicitFailover" `
+                    -or $PortGroupCheck.FailoverDetectionPolicy -ne "BeaconProbing" `
+                    -or $PortGroupCheck.EnableFailback -ne $true `
+                    -or $PortGroupCheck.ActiveUplinkPort  -ne "dvUplink2" `
+                    -or $PortGroupCheck.StandbyUplinkPort.Count -ne 3)
+                {
+                    Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "$($PortGroup.Name) has a config problem..."
+                    $PortGroupFails += New-Object PSObject -Property @{
+                        SwitchName = $Switch.Name
+                        PortGroupName = $PortGroup.Name
+                        LBPolicy = $PortGroupCheck.LoadBalancingPolicy
+                        FDPolicy = $PortGroupCheck.FailoverDetectionPolicy
+                        Failback = $PortGroupCheck.EnableFailback
+                        ActiveUplinkCount = $PortGroupCheck.ActiveUplinkPort
+                        StandbyUplinkCount = $PortGroupCheck.StandbyUplinkPort.Count
+                    }
+                }
             }
             "VMkernel_vMotion2"
             {
-
+                if ($PortGroupCheck.LoadBalancingPolicy -ne "ExplicitFailover" `
+                    -or $PortGroupCheck.FailoverDetectionPolicy -ne "BeaconProbing" `
+                    -or $PortGroupCheck.EnableFailback -ne $true `
+                    -or $PortGroupCheck.ActiveUplinkPort  -ne "dvUplink3" `
+                    -or $PortGroupCheck.StandbyUplinkPort.Count -ne 3)
+                {
+                    Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "$($PortGroup.Name) has a config problem..."
+                    $PortGroupFails += New-Object PSObject -Property @{
+                        SwitchName = $Switch.Name
+                        PortGroupName = $PortGroup.Name
+                        LBPolicy = $PortGroupCheck.LoadBalancingPolicy
+                        FDPolicy = $PortGroupCheck.FailoverDetectionPolicy
+                        Failback = $PortGroupCheck.EnableFailback
+                        ActiveUplinkCount = $PortGroupCheck.ActiveUplinkPort
+                        StandbyUplinkCount = $PortGroupCheck.StandbyUplinkPort.Count
+                    }
+                }
             }
             default
             {
-
+                if ($PortGroupCheck.LoadBalancingPolicy -ne "LoadBalanceLoadBased" `
+                    -or $PortGroupCheck.FailoverDetectionPolicy -ne "BeaconProbing" `
+                    -or $PortGroupCheck.EnableFailback -ne $false `
+                    -or $PortGroupCheck.ActiveUplinkPort.Count -ne 4)
+                {
+                    Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "$($PortGroup.Name) has a config problem..."
+                    $PortGroupFails += New-Object PSObject -Property @{
+                        SwitchName = $Switch.Name
+                        PortGroupName = $PortGroup.Name
+                        LBPolicy = $PortGroupCheck.LoadBalancingPolicy
+                        FDPolicy = $PortGroupCheck.FailoverDetectionPolicy
+                        Failback = $PortGroupCheck.EnableFailback
+                        ActiveUplinkCount = $PortGroupCheck.ActiveUplinkPort.Count
+                    }
+                }
             }
         }
     }
