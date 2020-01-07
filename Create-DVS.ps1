@@ -48,7 +48,7 @@ $response = (Read-Host "Would you like to continue? yes/no")
 if($response -notlike "y*"){break}
 
 #Create New Distributed Switch and associated Port Groups
-$newDVS = New-VDSwitch -Name $dvsName -Location $datacenter -Version "6.0.0" -NumUplinkPorts 4 -LinkDiscoveryProtocol "CDP" -LinkDiscoveryProtocolOperation "Both" -Mtu 9000
+$newDVS = New-VDSwitch -Name $dvsName -Location $datacenter -Version "6.5.0" -NumUplinkPorts 4 -LinkDiscoveryProtocol "CDP" -LinkDiscoveryProtocolOperation "Both" -Mtu 9000
 foreach($portGroup in $portGroups){
     $newPortGroup = New-VDPortgroup -VDSwitch $newDVS -Name $portGroup.PortGroup -VlanId $portGroup.VLAN -NumPorts 128 -PortBinding "Static"
     switch($($portGroup.PortGroup)){
