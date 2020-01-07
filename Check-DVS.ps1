@@ -1,15 +1,14 @@
 [CmdletBinding()]
 Param(
-    [Parameter()] [string] $InputFile,
-    [Parameter()] $CredFile = $null,
-    [Parameter()] [bool] $SendEmail = $false
+    [Parameter()] [string] $vCenter,
+    [Parameter()] $null = $CredFile
 )
 
 #requires -Version 3.0
 $DupreeFunctionsMinVersion = "1.0.3"
 
 $ScriptPath = $PSScriptRoot
-cd $ScriptPath
+Set-Location $ScriptPath
   
 $ScriptStarted = Get-Date -Format MM-dd-yyyy_HH-mm-ss
 $ScriptName = $MyInvocation.MyCommand.Name
@@ -36,17 +35,11 @@ else { Get-ChildItem .\~Logs | Where-Object CreationTime -LT (Get-Date).AddDays(
   
 Import-PowerCLI
  
-if ($CredFile -ne $null)
+if ($null -ne $CredFile)
 {
     Remove-Variable Credential_To_Use -ErrorAction Ignore
     New-Variable -Name Credential_To_Use -Value $(Import-Clixml $($CredFile))
 }
-
-#Email Variables
-#emailTo is a comma separated list of strings eg. "email1","email2"
-$emailFrom = ""
-$emailTo = ""
-$emailServer = ""
 
 Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Script Started..."
 
@@ -62,11 +55,16 @@ Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType In
 foreach($Switch in $Switches)
 {
     Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Processing switch $($Switch.Name)..."
+    $PortGroups = Get-VDPortgroup -VDSwitch $Switch.Name
+    Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Checking for correct Kernel portgroups..."
+    if ($PortGroups.Name -contains "VMkernel_SC" -and $PortGroups.Name -contains "VMkernel_vMotion1" -and $PortGroups.Name -contains "VMkernel_vMotion2") { Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Kernel portgroup names are correct."; $KernelPortGroups = $true }
+    else { $KernelPortGroups = $false }
     if ($Switch.Version -ne "6.5.0" `
         -or $Switch.NumUplinkPorts -ne 4 `
         -or $switch.LinkDiscoveryProtocol -ne "CDP" `
         -or $switch.LinkDiscoveryProtocolOperation -ne "Both" `
-        -or $switch.Mtu -ne 9000)
+        -or $switch.Mtu -ne 9000 `
+        -or !($KernelPortGroups))
     {
         Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "$($Switch.Name) has a config problem."
         $SwitchFails += New-Object PSObject -Property @{
@@ -75,14 +73,11 @@ foreach($Switch in $Switches)
             LDP = $switch.LinkDiscoveryProtocol
             LDPO = $switch.LinkDiscoveryProtocolOperation
             Mtu = $switch.Mtu
+            KernelPorts = $KernelPortGroups
         }
     }
 
-    $PortGroups = Get-VDPortgroup -VDSwitch $Switch.Name
     Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Processing portgroups on $($Switch.Name)..."
-    Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Checking for correct Kernel portgroups..."
-    if ($PortGroups.Name -contains "VMkernel_SC" -and $PortGroups.Name -contains "VMkernel_vMotion1" -and $PortGroups.Name -contains "VMkernel_vMotion2") { Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Kernel portgroup names are correct."; $KernelPortGroups = $true }
-    else { $KernelPortGroups = $false }
     foreach($PortGroup in $PortGroups)
     {
         Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Processing portgroup $($PortGroup.Name)..."
@@ -167,6 +162,28 @@ foreach($Switch in $Switches)
             }
         }
     }
+}
+
+
+
+if ($SwitchFails.Count -gt 0 -or $PortGroupFails -gt 0)
+{
+    Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Processing improperly configured switches and building the email body..."
+    $OutputString = "The following switches or portgroups are misconfigured in vCenter $vCenter. The incorrect settings are listed with the appropriate setting."
+
+    foreach($SwitchFail in $SwitchFails)
+    {
+        Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Adding $($SwitchFail.SwitchName) to the email..."
+        $OutputString += "Switch: $($SwitchFail.SwitchName)`r`n"
+
+        if ($SwitchFail.UplinkCount -ne 4) { $OutputString += "UpLink Count: $($SwitchFail.UplinkCount)`r`n" }
+        if ($SwitchFail.LDP -ne "CDP") { $OutputString += "LinkDiscoveryProtocol: $($SwitchFail.LDP)`r`n" }
+        if ($SwitchFail.LDPO -ne "Both") { $OutputString += "LinkDiscoveryProtocolOperation: $($SwitchFail.LDPO)`r`n" }
+        if ($SwitchFail.Mtu -ne 9000) { $OutputString += "MTU: $($SwitchFail.Mtu)`r`n" }
+        if ($SwitchFail.KernelPorts -eq $false) { $OutputString += "Kernel portgroups are not named correctly." }
+    }
+
+    Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Logging config problems...`r`n`r`n$OutputString"
 }
 
 Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Succ -LogString "Script Completed Succesfully."
