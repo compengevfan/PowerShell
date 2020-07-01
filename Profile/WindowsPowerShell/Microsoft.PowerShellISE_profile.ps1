@@ -1,16 +1,3 @@
-# Function Check-PowerCLI
-# {
-#     Param(
-#     )
-  
-#     if (!(Get-Module -Name VMware.VimAutomation.Core))
-#     {
-#         write-host ("Adding PowerCLI...")
-#         Get-Module -Name VMware* -ListAvailable | Import-Module -Global
-#         write-host ("Loaded PowerCLI.")
-#     }
-# }
-
 #Check for Github environment variable
 if ($env:githubhome) { $githubhome = $env:githubhome; Write-Host "Github path found." -ForegroundColor Green }
 else { Write-Host "Github path NOT found." -ForegroundColor Yellow}
@@ -36,7 +23,12 @@ else { Write-Host "Git path NOT found." -ForegroundColor Yellow}
 # if (!(Get-Module -Name DupreeFunctions) -and $DupreeFunctionInstallSuccess) { Write-Host "DupreeFunctions Installed and up to date...Importing..." -ForegroundColor Green; Import-Module DupreeFunctions -MinimumVersion $DupreeFunctionsMinVersion }
 
 if (!(Get-Module -ListAvailable -Name DupreeFunctions)) { Write-Host "'DupreeFunctions' module not available." -ForegroundColor Yellow }
-elseif (!(Get-Module -Name DupreeFunctions)) { Import-Module DupreeFunctions }
+elseif (!(Get-Module -Name DupreeFunctions)) {
+	Write-Host "Importing DupreeFunctions..."
+	Import-Module DupreeFunctions
+	Write-Host "Creating Alias for 'Connect-vCenter' function..."
+	Set-Alias -Name cvc -Value Connect-vCenter
+}
 if (!(Test-Path .\~Logs)) { New-Item -Name "~Logs" -ItemType Directory | Out-Null }
   
 ################

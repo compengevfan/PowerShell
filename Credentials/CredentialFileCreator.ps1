@@ -11,7 +11,7 @@ Clear-Host
 foreach ($Domain in $Domains) {
     $i++
     $Domains_In_Array += New-Object -Type PSObject -Property (@{
-            Identifyer = $i
+            Identifier = $i
             CredName   = $Domain
         })
 }
@@ -19,7 +19,7 @@ foreach ($Domain in $Domains) {
 Write-Host "`nList of available domains:"
 
 foreach ($Domain_In_Array in $Domains_In_Array) {
-    Write-Host $("`t" + $Domain_In_Array.Identifyer + ". " + $Domain_In_Array.CredName)
+    Write-Host $("`t" + $Domain_In_Array.Identifier + ". " + $Domain_In_Array.CredName)
 }
 
 $Selection = Read-Host "Please select the domain to create/override a credential. To exit, enter 'e'"
