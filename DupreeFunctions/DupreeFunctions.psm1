@@ -47,7 +47,7 @@ function Connect-vCenter
   }
 }
 
-function Check-vCenterConnection
+function Show-vCenter
 {
   $ConnectedvCenter = $global:DefaultVIServers
 
