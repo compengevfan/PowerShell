@@ -28,8 +28,8 @@ elseif (!(Get-Module -Name DupreeFunctions)) {
 	Import-Module DupreeFunctions
 	Write-Host "Creating Alias for 'Connect-vCenter' function..."
 	Set-Alias -Name cvc -Value Connect-vCenter
-	Write-Host "Creating Alias for 'Show-vCenterConnection' function..."
-	Set-Alias -Name svc -Value Show-vCenterConnection
+	Write-Host "Creating Alias for 'Show-vCenter' function..."
+	Set-Alias -Name svc -Value Show-vCenter
 }
 if (!(Test-Path .\~Logs)) { New-Item -Name "~Logs" -ItemType Directory | Out-Null }
   
