@@ -8,7 +8,7 @@ Remove-Variable Credential-*
 
 $ComputerName = $env:computername
 
-$CredFiles = GCI .\Credential-$ComputerName*.xml
+$CredFiles = GCI .\Credential-*$ComputerName.xml
 
 if($CredFiles)
 {
@@ -20,14 +20,14 @@ if($CredFiles)
 if ($CredAnswer -eq 'c' -or !($CredFiles))
 {
     .\CredentialFileCreator-V2.ps1
-    $CredFiles = GCI .\Credential-$ComputerName*.xml
+    $CredFiles = GCI .\Credential-*$ComputerName.xml
 }
 
 if ($CredFiles.Count -gt 0)
 {
     foreach ($CredFile in $CredFiles)
     {
-        New-Variable -Name $($CredFile.BaseName) -Value $(Import-Clixml $CredFile.Name)
+        New-Variable -Name $($CredFile.BaseName) -Value $(Import-Clixml $CredFile)
     }
     
 	Write-Host "Creds Imported."
