@@ -1,62 +1,13 @@
-﻿$Domains = Get-Content .\CredentialFileCreator-Data.txt
+﻿$ComputerName = $env:computername
+$UserName = $env:USERDOMAIN + "\" + $env:USERNAME
 
-$Domains_In_Array = @()
+#Obtain credentials. If credential file exists remove it and recreate. If not, create new.
+$Creds = Get-Credential -Message "Please provide your $UserName password." -UserName $UserName
 
-$i = 0
+$UserNameFile = $UserName.Replace("\", "_")
 
-$ComputerName = $env:computername
+if (Test-Path .\"Credential-$UserNameFile-$ComputerName.xml") { Remove-Item .\"Credential-$UserNameFile-$ComputerName.xml" }
 
-Clear-Host
+$Creds | Export-Clixml -Path ".\Credential-$UserNameFile-$ComputerName.xml"
 
-foreach ($Domain in $Domains) {
-    $i++
-    $Domains_In_Array += New-Object -Type PSObject -Property (@{
-            Identifier = $i
-            CredName   = $Domain
-        })
-}
-
-Write-Host "`nList of available domains:"
-
-foreach ($Domain_In_Array in $Domains_In_Array) {
-    Write-Host $("`t" + $Domain_In_Array.Identifier + ". " + $Domain_In_Array.CredName)
-}
-
-$Selection = Read-Host "Please select the domain to create/override a credential. To exit, enter 'e'"
-
-if ($Selection -le $i) {
-    do {
-        $Selection -= 1
-        $Cred_To_Update = $Domains_In_Array[$Selection].CredName
-
-        if ($Cred_To_Update -eq $null) { Write-Host "Invalid selection. Please try again." -ForegroundColor Red; exit }
-
-        #Obtain credentials. If credential file exists remove it and recreate. If not, create new.
-        $Creds = Get-Credential -Message "Please Enter your $Cred_To_Update creds."
-
-        $UserName = $Creds.Username; $UserName = $UserName.Replace("\", "_")
-
-        if (Test-Path .\"Credential-$UserName-$Cred_To_Update-$ComputerName.xml") { Remove-Item .\"Credential-$UserName-$Cred_To_Update-$ComputerName.xml" }
-
-        $Creds | Export-Clixml -Path ".\Credential-$UserName-$Cred_To_Update-$ComputerName.xml"
-
-        Write-Host "$Cred_To_Update credential created/overwritten." -ForegroundColor Green
-
-        $Selection = Read-Host "Please select the domain to create/override a credential. To exit, enter 'e'"
-    }
-    while ($Selection -ne 'e')
-}
-
-<#if ($Selection -eq 'a')
-{
-    Remove-Item .\Credential-$UserName-*.xml
-
-    foreach ($Domain in $Domains)
-    {
-        $Creds = Get-Credential -Message "Please Enter your $Domain creds."
-
-        $UserName = $Creds.Username; $UserName = $UserName.Replace("$Domain\","")
-
-        $Creds | Export-Clixml -Path ".\Credential-$UserName-$Domain-$ComputerName.xml"
-    }
-}#>
+Write-Host "$UserName credential created/overwritten." -ForegroundColor Green

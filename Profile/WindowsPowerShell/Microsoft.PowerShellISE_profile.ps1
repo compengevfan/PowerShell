@@ -31,7 +31,6 @@ elseif (!(Get-Module -Name DupreeFunctions)) {
 	Write-Host "Creating Alias for 'Show-vCenter' function..."
 	Set-Alias -Name svc -Value Show-vCenter
 }
-if (!(Test-Path .\~Logs)) { New-Item -Name "~Logs" -ItemType Directory | Out-Null }
   
 ################
 #Make it pretty#
