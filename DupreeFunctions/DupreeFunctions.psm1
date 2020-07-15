@@ -30,20 +30,27 @@ function Connect-vCenter
   
   if ($ConnectedvCenter.Count -eq 0)
   {
-      if ($vCenter -eq $null -or $vCenter -eq "") { $vCenter = Read-Host "Please provide the name of a vCenter server..." }
-      do
-      {
-          if ($ConnectedvCenter.Count -eq 0 -or $ConnectedvCenter -eq $null) { Write-Host "Attempting to connect to vCenter server $vCenter" }
+    if (Test-Path "$githome\PowerShell\etc\vCenterDict.csv")
+    {
+      $vCenters = Import-Csv "$githome\PowerShell\etc\vCenterDict.csv"
 
-          #Set-PowerCLIConfiguration -invalidcertificateaction ignore -Confirm:$false | Out-Null
+      $vCenter = (DriveMenu -Objects $vCenters -MenuColumn VCName -SelectionText "Pick a vCenter" -ClearScreen $false).VCName
+    }
 
-          if ($vCenterCredential -eq $null) { Connect-VIServer -Server $vCenter -Force | Out-Null }
-          else { Connect-VIServer -Server $vCenter -Credential $vCenterCredential -Force | Out-Null }
-          
-          $ConnectedvCenter = $global:DefaultVIServers
+    if ($vCenter -eq $null -or $vCenter -eq "") { $vCenter = Read-Host "Please provide the name of a vCenter server..." }
+    do
+    {
+      if ($ConnectedvCenter.Count -eq 0 -or $ConnectedvCenter -eq $null) { Write-Host "Attempting to connect to vCenter server $vCenter" }
 
-          if ($ConnectedvCenter.Count -eq 0 -or $ConnectedvCenter -eq $null) { Write-Host "vCenter Connection Failed. Please try again or press Control-C to exit..."; Start-Sleep -Seconds 2 }
-      } while ($ConnectedvCenter.Count -eq 0)
+      #Set-PowerCLIConfiguration -invalidcertificateaction ignore -Confirm:$false | Out-Null
+
+      if ($vCenterCredential -eq $null) { Connect-VIServer -Server $vCenter -Force | Out-Null }
+      else { Connect-VIServer -Server $vCenter -Credential $vCenterCredential -Force | Out-Null }
+      
+      $ConnectedvCenter = $global:DefaultVIServers
+
+      if ($ConnectedvCenter.Count -eq 0 -or $ConnectedvCenter -eq $null) { Write-Host "vCenter Connection Failed. Please try again or press Control-C to exit..."; Start-Sleep -Seconds 2 }
+    } while ($ConnectedvCenter.Count -eq 0)
   }
 }
 
