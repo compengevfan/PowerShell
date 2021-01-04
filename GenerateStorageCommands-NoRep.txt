@@ -1,0 +1,11 @@
+#Create LUNs on VMAX3
+symdev -sid 1968 create -tdev -emulation fba -cap 200 -captype gb -N 2 -v -nop
+#Assign LUNs to storage group [StorageGroup]
+symaccess -sid 2517 -name [StorageGroup] -type storage add dev [R1 Dev] -lun b
+symaccess -sid 2517 -name [StorageGroup] -type storage add dev [R1 Dev] -lun c
+symaccess -sid 2517 -name [StorageGroup] -type storage add dev [R1 Dev] -lun d
+#Get LunID's
+symaccess -sid 2517 show view [MaskingView] -detail
+
+symdev -sid [local sid] list -wwn -dev [R1 dev]
+ALU			HLU		WWN

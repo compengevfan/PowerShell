@@ -32,9 +32,9 @@ function Connect-vCenter
   {
     if (Test-Path "$githome\PowerShell\etc\vCenterDict.csv")
     {
-      $vCenters = Import-Csv "$githome\PowerShell\etc\vCenterDict.csv"
+      $vCenters = Import-Csv "$githome\PowerShell\etc\vCenterDict.csv" | Sort-Object FriendlyName
 
-      $vCenter = (DriveMenu -Objects $vCenters -MenuColumn VCName -SelectionText "Pick a vCenter" -ClearScreen $false).VCName
+      $vCenter = (DriveMenu -Objects $vCenters -MenuColumn FriendlyName -SelectionText "Pick a vCenter" -ClearScreen $false).VCName
     }
 
     if ($vCenter -eq $null -or $vCenter -eq "") { $vCenter = Read-Host "Please provide the name of a vCenter server..." }

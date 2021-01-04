@@ -7,7 +7,7 @@ if ($SnapinCheck -eq $NULL)
 	write-host ("Complete")
 }
 
-connect-viserver togetheragain.evorigin.com
+connect-viserver blah.blah.blah
 
 $VMHosts = Get-VMHost
 

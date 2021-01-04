@@ -43,9 +43,9 @@ Connect-vCenter -vCenter $vCenter -vCenterCredential $Credential_To_Use
 #Email Variables
 ##################
 #emailTo is a comma separated list of strings eg. "email1","email2"
-$emailFrom = "VirtualComplianceCheck@fanatics.com"
-$emailTo = "fanatics+IEC@service-now.com"
-$emailServer = "smtp.ff.p10"
+$emailFrom = "blah@blah.com"
+$emailTo = "blah@blah.com"
+$emailServer = "blah.blah.blah"
 
 ##################
 #Global Variables
