@@ -30,7 +30,7 @@ function Connect-vCenter
   
   if ($ConnectedvCenter.Count -eq 0)
   {
-    if (Test-Path "$githome\PowerShell\etc\vCenterDict.csv")
+    if ((Test-Path "$githome\PowerShell\etc\vCenterDict.csv") -and ($vCenter -eq $null -or $vCenter -eq ""))
     {
       $vCenters = Import-Csv "$githome\PowerShell\etc\vCenterDict.csv" | Sort-Object FriendlyName
 
