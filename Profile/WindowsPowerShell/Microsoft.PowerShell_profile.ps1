@@ -20,7 +20,11 @@ else { Write-Host "Git path NOT found." -ForegroundColor Yellow}
 # }
 # else { $DupreeFunctionInstallSuccess = $true }
 
-# if (!(Get-Module -Name DupreeFunctions) -and $DupreeFunctionInstallSuccess) { Write-Host "DupreeFunctions Installed and up to date...Importing..." -ForegroundColor Green; Import-Module DupreeFunctions -MinimumVersion $DupreeFunctionsMinVersion }
+# if (!(Get-Module -Name DupreeFunctions) -and $DupreeFunctionInstallSuccess)
+# {
+# 	Write-Host "DupreeFunctions Installed and up to date...Importing..." -ForegroundColor Green
+# 	Import-Module DupreeFunctions -MinimumVersion $DupreeFunctionsMinVersion
+# }
 
 if (!(Get-Module -ListAvailable -Name DupreeFunctions)) { Write-Host "'DupreeFunctions' module not available." -ForegroundColor Yellow }
 elseif (!(Get-Module -Name DupreeFunctions)) {
