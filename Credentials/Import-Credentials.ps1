@@ -5,8 +5,10 @@
 Remove-Variable Credential-*
 
 $ComputerName = $env:computername
-$UserName = $env:USERDOMAIN + "_" + $env:USERNAME
+#$UserName = $env:USERDOMAIN + "_" + $env:USERNAME
 
-$CredFile = Get-ChildItem .\Credential-$UserName-$ComputerName.xml
+$CredFiles = Get-ChildItem .\Credential-*.xml
 
-New-Variable -Name $($CredFile.BaseName) -Value $(Import-Clixml $CredFile) -Scope Global
+foreach ($CredFile in $CredFiles) {
+    New-Variable -Name $CredFile.BaseName -Value $(Import-Clixml $CredFile) -Scope Global
+}
