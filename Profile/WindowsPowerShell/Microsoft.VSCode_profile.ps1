@@ -27,6 +27,10 @@ else { Write-Host "`nGithub path NOT found." -ForegroundColor Yellow}
 if ($env:githome) { $githome = $env:githome; Write-Host "Git path found." -ForegroundColor Green }
 else { Write-Host "Git path NOT found." -ForegroundColor Yellow}
 
+#Check for Dropbox environment variable
+if ($env:dropboxhome) { $dropboxhome = $env:dropboxhome; Write-Host "Dropbox path found." -ForegroundColor Green }
+else { Write-Host "Dropbox path NOT found." -ForegroundColor Yellow}
+
 # Write-Host "Checking DupreeFunctions module available and latest version..."
 # $DupreeFunctionsMinVersion = (Find-Module DupreeFunctions).Version
 # if (!(Get-InstalledModule -Name DupreeFunctions -MinimumVersion $DupreeFunctionsMinVersion -ErrorAction SilentlyContinue))

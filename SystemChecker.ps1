@@ -79,3 +79,15 @@ if ($GitInstalled -eq "y"){
         [System.Environment]::SetEnvironmentVariable('githome',$GitPath,[System.EnvironmentVariableTarget]::User)
     }
 }
+
+$DropboxInstalled = Read-Host "Is Dropbox installed (y/n)"
+if ($DropboxInstalled -eq "y"){
+    Write-Host "Checking for Dropbox Environment Variable..."
+    if ($env:githome) { Write-Host "Dropbox path found." -ForegroundColor Green }
+    else { 
+        Write-Host "Dropbox path NOT found." -ForegroundColor Yellow
+        $GitPath = Read-Host "Please provide the path."
+        Write-Host "Creating Dropbox environment variable."
+        [System.Environment]::SetEnvironmentVariable('dropboxhome',$GitPath,[System.EnvironmentVariableTarget]::User)
+    }
+}
