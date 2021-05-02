@@ -25,17 +25,17 @@ $PSVersionTable.PSVersion
 
 #Check for NuGet and PowerShellGet
 $NuGetCheck = Get-PackageProvider | Where-Object {$_.Name -eq "NuGet"}
-if ($NuGetCheck -ne $null) {Write-Host "`nNuGet Version $($NuGetCheck.Version) installed." -ForegroundColor green; $NuGetGood = $true}
+if ($null -ne $NuGetCheck) {Write-Host "`nNuGet Version $($NuGetCheck.Version) installed." -ForegroundColor green; $NuGetGood = $true}
 else {Write-Host "`nNuGet is not installed."-ForegroundColor red; $NuGetGood = $false}
 
 $PowerShellGetCheck = Get-PackageProvider | Where-Object {$_.Name -eq "PowerShellGet"}
-if ($NuGetCheck -ne $null) {Write-Host "`nPowerShellGet Version $($PowerShellGetCheck.Version) installed." -ForegroundColor green; $PowerShellGetGood = $true}
+if ($null -ne $NuGetCheck) {Write-Host "`nPowerShellGet Version $($PowerShellGetCheck.Version) installed." -ForegroundColor green; $PowerShellGetGood = $true}
 else {Write-Host "`nPowerShellGet is not installed." -ForegroundColor red; $PowerShellGetGood = $false}
 
 if ($NuGetGood -and $PowerShellGetGood) {
     #Check for DupreeFunctions
     $DupreeFunctionsCheck = Get-Module DupreeFunctions
-    if ($DupreeFunctionsCheck -ne $null){
+    if ($null -ne $DupreeFunctionsCheck){
         Write-Host "DupreeFunctions is installed. Checking Version..." -ForegroundColor green
 
         $DupreeFunctionsCurrentVersion = $($DupreeFunctionsCheck.Version.Major).ToString() + "." + $($DupreeFunctionsCheck.Version.Minor).ToString() + "." + $($DupreeFunctionsCheck.Version.Build).ToString()
@@ -52,7 +52,7 @@ if ($NuGetGood -and $PowerShellGetGood) {
 
 #Check for PowerCLI and version
 $PowerCLICheck = Get-Module -ListAvailable VMware.Vim
-if ($PowerCLICheck -ne $null){ Write-Host "`nPowerCLI $($PowerCLICheck.Version.Major).$($PowerCLICheck.Version.Minor) is installed." -ForegroundColor green}
+if ($null -ne $PowerCLICheck){ Write-Host "`nPowerCLI $($PowerCLICheck.Version.Major).$($PowerCLICheck.Version.Minor) is installed." -ForegroundColor green}
 else { Write-Host "`nPowerCLI not found." -ForegroundColor red}
 
 #Check for GitHub environment variable, if not exists, create it if Github is installed
