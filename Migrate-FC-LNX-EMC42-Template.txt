@@ -1,0 +1,111 @@
+<Variables>
+[Server Name1]
+[Server Name2]
+[Server Name2 Fragment]
+[Server1WWN-A-Side]
+[Server1WWN-A-Side no :]
+[Server1WWN-B-Side]
+[Server1WWN-B-Side no :]
+[Server2WWN-A-Side]
+[Server2WWN-A-Side no :]
+[Server2WWN-B-Side]
+[Server2WWN-B-Side no :]
+[Port1A]
+[Port2A]
+[Port1B]
+[Port2B]
+[device capacity]
+[cap type]
+[device count]
+</End Variables>
+
+Brocade
+
+##Setup zones for new server on test brocades
+G630DEVA
+
+alicreate [Server Name1]_3,"[Server1WWN-A-Side]"
+alicreate [Server Name2]_3,"[Server2WWN-A-Side]"
+
+zonecreate z_[Server Name1]_3_EMC42_[Port1A],"[Server Name1]_3;EMC42_[Port1A]"
+zonecreate z_[Server Name1]_3_EMC42_[Port2A],"[Server Name1]_3;EMC42_[Port2A]"
+zonecreate z_[Server Name2]_3_EMC42_[Port1A],"[Server Name2]_3;EMC42_[Port1A]"
+zonecreate z_[Server Name2]_3_EMC42_[Port2A],"[Server Name2]_3;EMC42_[Port2A]"
+
+cfgadd zs_CSXT_TEST_G630A,"z_[Server Name1]_3_EMC42_[Port1A];z_[Server Name1]_3_EMC42_[Port2A]"
+cfgadd zs_CSXT_TEST_G630A,"z_[Server Name2]_3_EMC42_[Port1A];z_[Server Name2]_3_EMC42_[Port2A]"
+cfgenable zs_CSXT_TEST_G630A
+
+G630DEVB
+
+alicreate [Server Name1]_2,"21:00:34:80:0d:76:e2:e3"
+alicreate [Server Name2]_2,"21:00:34:80:0d:76:e3:af"
+
+zonecreate z_[Server Name1]_2_EMC42_[Port1B],"[Server Name1]_2;EMC42_[Port1B]"
+zonecreate z_[Server Name1]_2_EMC42_[Port2B],"[Server Name1]_2;EMC42_[Port2B]"
+zonecreate z_[Server Name2]_2_EMC42_[Port1B],"[Server Name2]_2;EMC42_[Port1B]"
+zonecreate z_[Server Name2]_2_EMC42_[Port2B],"[Server Name2]_2;EMC42_[Port2B]"
+
+cfgadd zs_CSXT_TEST_G630B,"z_[Server Name1]_2_EMC42_[Port1B];z_[Server Name1]_2_EMC42_[Port2B]"
+cfgadd zs_CSXT_TEST_G630B,"z_[Server Name2]_2_EMC42_[Port1B];z_[Server Name2]_2_EMC42_[Port2B]"
+cfgenable zs_CSXT_TEST_G630B
+
+##VMAX
+#create devices/luns
+symdev -sid 2028 create -tdev -emulation fba -cap [device capacity] -captype [cap type] -N [device count] -v -nop
+[  ]
+
+#set initiator aliases
+symaccess -sid 2028 -wwn [Server1WWN-A-Side no :] rename -alias [Server Name1]/3
+symaccess -sid 2028 -wwn [Server2WWN-A-Side no :] rename -alias [Server Name2]/3
+symaccess -sid 2028 -wwn [Server1WWN-B-Side no :] rename -alias [Server Name1]/2
+symaccess -sid 2028 -wwn [Server2WWN-B-Side no :] rename -alias [Server Name2]/2
+
+#create storage group
+symsg -sid 2028 create [Server Name1]_[Server Name2 Fragment]_SG -srp SRP_1 -compression -sl Optimized
+
+#create port group
+symaccess -sid 2028 create -name [Server Name1]_[Server Name2 Fragment]_PG -type port -dirport [1d:8,2d:11,3d:8,4d:25]
+
+#create parent initiator group
+symaccess -sid 2028 -type initiator -name [Server Name1]_[Server Name2 Fragment]_IG create -consistent_lun
+
+#create child initiator groups
+symaccess -sid 2028 -type initiator -name [Server Name1]_IG create -consistent_lun
+symaccess -sid 2028 -type initiator -name [Server Name2]_IG create -consistent_lun
+
+#add child IGs to parent
+symaccess -sid 2028 -type initiator -name [Server Name1]_[Server Name2 Fragment]_IG add -ig [Server Name1]_IG
+symaccess -sid 2028 -type initiator -name [Server Name1]_[Server Name2 Fragment]_IG add -ig [Server Name2]_IG
+
+#add WWNs to IG
+symaccess -sid 2028 -name [Server Name1]_IG -type init add -wwn [Server1WWN-A-Side no :]
+symaccess -sid 2028 -name [Server Name2]_IG -type init add -wwn [Server2WWN-A-Side no :]
+symaccess -sid 2028 -name [Server Name1]_IG -type init add -wwn [Server1WWN-B-Side no :]
+symaccess -sid 2028 -name [Server Name2]_IG -type init add -wwn [Server2WWN-B-Side no :]
+
+#Add LUNs to storage group
+symaccess -sid 2028 -name [Server Name1]_[Server Name2 Fragment]_SG -type storage add dev [dev]
+symaccess -sid 2028 -name [Server Name1]_[Server Name2 Fragment]_SG -type storage add dev [devs]
+
+#create masking view
+symaccess -sid 2028 create view -name [Server Name1]_[Server Name2 Fragment]_MV -sg [Server Name1]_[Server Name2 Fragment]_SG -pg [Server Name1]_[Server Name2 Fragment]_PG -ig [Server Name1]_[Server Name2 Fragment]_IG -lun 1
+
+#Get the HEX LUN ID's for the HLU column below. needs to be converted to decimal
+symaccess -sid 2028 show view [Server Name1]_[Server Name2 Fragment]_MV -detail
+
+#Get info so new LUNs can be used
+symdev -sid 2028 list -wwn -dev [devs]
+ALU			HLU		WWN
+
+
+##Backout
+A side
+cfgremove zs_CSXT_TEST_G630A,"z_[Server Name1]_3_EMC42_[Port1A];z_[Server Name1]_3_EMC42_[Port2A]"
+cfgremove zs_CSXT_TEST_G630A,"z_[Server Name2]_3_EMC42_[Port1A];z_[Server Name2]_3_EMC42_[Port2A]"
+cfgenable zs_CSXT_TEST_G630A
+
+B Side
+cfgremove zs_CSXT_TEST_G630B,"z_[Server Name1]_2_EMC42_[Port1B];z_[Server Name1]_2_EMC42_[Port2B]"
+cfgremove zs_CSXT_TEST_G630B,"z_[Server Name2]_2_EMC42_[Port1B];z_[Server Name2]_2_EMC42_[Port2B]"
+cfgenable zs_CSXT_TEST_G630B
