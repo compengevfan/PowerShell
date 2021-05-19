@@ -1,22 +1,22 @@
 <Variables>
-[Server Name1]
-[Server Name2]
-[Server Name2 Fragment]
-[Server1WWN-A-Side]
-[Server1WWN-A-Side no :]
-[Server1WWN-B-Side]
-[Server1WWN-B-Side no :]
-[Server2WWN-A-Side]
-[Server2WWN-A-Side no :]
-[Server2WWN-B-Side]
-[Server2WWN-B-Side no :]
-[Port1A]
-[Port2A]
-[Port1B]
-[Port2B]
-[device capacity]
-[cap type]
-[device count]
+ServerName1
+ServerName2
+ServerName_2Fragment
+Server1WWNASide
+Server1WWNA_SideNoColon
+Server1WWNBSide
+Server1WWNB_SideNoColon
+Server2WWNASide
+Server2WWNA_SideNoColon
+Server2WWNBSide
+Server2WWNB_SideNoColon
+Port1A
+Port2A
+Port1B
+Port2B
+DeviceCapacity
+CapacityType
+DeviceCount
 </End Variables>
 
 Brocade
@@ -24,75 +24,75 @@ Brocade
 ##Setup zones for new server on test brocades
 G630DEVA
 
-alicreate [Server Name1]_3,"[Server1WWN-A-Side]"
-alicreate [Server Name2]_3,"[Server2WWN-A-Side]"
+alicreate ServerName1_3,"Server1WWNASide"
+alicreate ServerName2_3,"Server2WWNASide"
 
-zonecreate z_[Server Name1]_3_EMC42_[Port1A],"[Server Name1]_3;EMC42_[Port1A]"
-zonecreate z_[Server Name1]_3_EMC42_[Port2A],"[Server Name1]_3;EMC42_[Port2A]"
-zonecreate z_[Server Name2]_3_EMC42_[Port1A],"[Server Name2]_3;EMC42_[Port1A]"
-zonecreate z_[Server Name2]_3_EMC42_[Port2A],"[Server Name2]_3;EMC42_[Port2A]"
+zonecreate z_ServerName1_3_EMC42_Port1A,"ServerName1_3;EMC42_Port1A"
+zonecreate z_ServerName1_3_EMC42_Port2A,"ServerName1_3;EMC42_Port2A"
+zonecreate z_ServerName2_3_EMC42_Port1A,"ServerName2_3;EMC42_Port1A"
+zonecreate z_ServerName2_3_EMC42_Port2A,"ServerName2_3;EMC42_Port2A"
 
-cfgadd zs_CSXT_TEST_G630A,"z_[Server Name1]_3_EMC42_[Port1A];z_[Server Name1]_3_EMC42_[Port2A]"
-cfgadd zs_CSXT_TEST_G630A,"z_[Server Name2]_3_EMC42_[Port1A];z_[Server Name2]_3_EMC42_[Port2A]"
+cfgadd zs_CSXT_TEST_G630A,"z_ServerName1_3_EMC42_Port1A;z_ServerName1_3_EMC42_Port2A"
+cfgadd zs_CSXT_TEST_G630A,"z_ServerName2_3_EMC42_Port1A;z_ServerName2_3_EMC42_Port2A"
 cfgenable zs_CSXT_TEST_G630A
 
 G630DEVB
 
-alicreate [Server Name1]_2,"21:00:34:80:0d:76:e2:e3"
-alicreate [Server Name2]_2,"21:00:34:80:0d:76:e3:af"
+alicreate ServerName1_2,"21:00:34:80:0d:76:e2:e3"
+alicreate ServerName2_2,"21:00:34:80:0d:76:e3:af"
 
-zonecreate z_[Server Name1]_2_EMC42_[Port1B],"[Server Name1]_2;EMC42_[Port1B]"
-zonecreate z_[Server Name1]_2_EMC42_[Port2B],"[Server Name1]_2;EMC42_[Port2B]"
-zonecreate z_[Server Name2]_2_EMC42_[Port1B],"[Server Name2]_2;EMC42_[Port1B]"
-zonecreate z_[Server Name2]_2_EMC42_[Port2B],"[Server Name2]_2;EMC42_[Port2B]"
+zonecreate z_ServerName1_2_EMC42_Port1B,"ServerName1_2;EMC42_Port1B"
+zonecreate z_ServerName1_2_EMC42_Port2B,"ServerName1_2;EMC42_Port2B"
+zonecreate z_ServerName2_2_EMC42_Port1B,"ServerName2_2;EMC42_Port1B"
+zonecreate z_ServerName2_2_EMC42_Port2B,"ServerName2_2;EMC42_Port2B"
 
-cfgadd zs_CSXT_TEST_G630B,"z_[Server Name1]_2_EMC42_[Port1B];z_[Server Name1]_2_EMC42_[Port2B]"
-cfgadd zs_CSXT_TEST_G630B,"z_[Server Name2]_2_EMC42_[Port1B];z_[Server Name2]_2_EMC42_[Port2B]"
+cfgadd zs_CSXT_TEST_G630B,"z_ServerName1_2_EMC42_Port1B;z_ServerName1_2_EMC42_Port2B"
+cfgadd zs_CSXT_TEST_G630B,"z_ServerName2_2_EMC42_Port1B;z_ServerName2_2_EMC42_Port2B"
 cfgenable zs_CSXT_TEST_G630B
 
 ##VMAX
 #create devices/luns
-symdev -sid 2028 create -tdev -emulation fba -cap [device capacity] -captype [cap type] -N [device count] -v -nop
+symdev -sid 2028 create -tdev -emulation fba -cap DeviceCapacity -captype CapacityType -N DeviceCount -v -nop
 [  ]
 
 #set initiator aliases
-symaccess -sid 2028 -wwn [Server1WWN-A-Side no :] rename -alias [Server Name1]/3
-symaccess -sid 2028 -wwn [Server2WWN-A-Side no :] rename -alias [Server Name2]/3
-symaccess -sid 2028 -wwn [Server1WWN-B-Side no :] rename -alias [Server Name1]/2
-symaccess -sid 2028 -wwn [Server2WWN-B-Side no :] rename -alias [Server Name2]/2
+symaccess -sid 2028 -wwn Server1WWNA_SideNoColon rename -alias ServerName1/3
+symaccess -sid 2028 -wwn Server2WWNA_SideNoColon rename -alias ServerName2/3
+symaccess -sid 2028 -wwn Server1WWNB_SideNoColon rename -alias ServerName1/2
+symaccess -sid 2028 -wwn Server2WWNB_SideNoColon rename -alias ServerName2/2
 
 #create storage group
-symsg -sid 2028 create [Server Name1]_[Server Name2 Fragment]_SG -srp SRP_1 -compression -sl Optimized
+symsg -sid 2028 create ServerName1_ServerName_2Fragment_SG -srp SRP_1 -compression -sl Optimized
 
 #create port group
-symaccess -sid 2028 create -name [Server Name1]_[Server Name2 Fragment]_PG -type port -dirport [1d:8,2d:11,3d:8,4d:25]
+symaccess -sid 2028 create -name ServerName1_ServerName_2Fragment_PG -type port -dirport [1d:8,2d:11,3d:8,4d:25]
 
 #create parent initiator group
-symaccess -sid 2028 -type initiator -name [Server Name1]_[Server Name2 Fragment]_IG create -consistent_lun
+symaccess -sid 2028 -type initiator -name ServerName1_ServerName_2Fragment_IG create -consistent_lun
 
 #create child initiator groups
-symaccess -sid 2028 -type initiator -name [Server Name1]_IG create -consistent_lun
-symaccess -sid 2028 -type initiator -name [Server Name2]_IG create -consistent_lun
+symaccess -sid 2028 -type initiator -name ServerName1_IG create -consistent_lun
+symaccess -sid 2028 -type initiator -name ServerName2_IG create -consistent_lun
 
 #add child IGs to parent
-symaccess -sid 2028 -type initiator -name [Server Name1]_[Server Name2 Fragment]_IG add -ig [Server Name1]_IG
-symaccess -sid 2028 -type initiator -name [Server Name1]_[Server Name2 Fragment]_IG add -ig [Server Name2]_IG
+symaccess -sid 2028 -type initiator -name ServerName1_ServerName_2Fragment_IG add -ig ServerName1_IG
+symaccess -sid 2028 -type initiator -name ServerName1_ServerName_2Fragment_IG add -ig ServerName2_IG
 
 #add WWNs to IG
-symaccess -sid 2028 -name [Server Name1]_IG -type init add -wwn [Server1WWN-A-Side no :]
-symaccess -sid 2028 -name [Server Name2]_IG -type init add -wwn [Server2WWN-A-Side no :]
-symaccess -sid 2028 -name [Server Name1]_IG -type init add -wwn [Server1WWN-B-Side no :]
-symaccess -sid 2028 -name [Server Name2]_IG -type init add -wwn [Server2WWN-B-Side no :]
+symaccess -sid 2028 -name ServerName1_IG -type init add -wwn Server1WWNA_SideNoColon
+symaccess -sid 2028 -name ServerName2_IG -type init add -wwn Server2WWNA_SideNoColon
+symaccess -sid 2028 -name ServerName1_IG -type init add -wwn Server1WWNB_SideNoColon
+symaccess -sid 2028 -name ServerName2_IG -type init add -wwn Server2WWNB_SideNoColon
 
 #Add LUNs to storage group
-symaccess -sid 2028 -name [Server Name1]_[Server Name2 Fragment]_SG -type storage add dev [dev]
-symaccess -sid 2028 -name [Server Name1]_[Server Name2 Fragment]_SG -type storage add dev [devs]
+symaccess -sid 2028 -name ServerName1_ServerName_2Fragment_SG -type storage add dev [dev]
+symaccess -sid 2028 -name ServerName1_ServerName_2Fragment_SG -type storage add dev [devs]
 
 #create masking view
-symaccess -sid 2028 create view -name [Server Name1]_[Server Name2 Fragment]_MV -sg [Server Name1]_[Server Name2 Fragment]_SG -pg [Server Name1]_[Server Name2 Fragment]_PG -ig [Server Name1]_[Server Name2 Fragment]_IG -lun 1
+symaccess -sid 2028 create view -name ServerName1_ServerName_2Fragment_MV -sg ServerName1_ServerName_2Fragment_SG -pg ServerName1_ServerName_2Fragment_PG -ig ServerName1_ServerName_2Fragment_IG -lun 1
 
 #Get the HEX LUN ID's for the HLU column below. needs to be converted to decimal
-symaccess -sid 2028 show view [Server Name1]_[Server Name2 Fragment]_MV -detail
+symaccess -sid 2028 show view ServerName1_ServerName_2Fragment_MV -detail
 
 #Get info so new LUNs can be used
 symdev -sid 2028 list -wwn -dev [devs]
@@ -101,11 +101,11 @@ ALU			HLU		WWN
 
 ##Backout
 A side
-cfgremove zs_CSXT_TEST_G630A,"z_[Server Name1]_3_EMC42_[Port1A];z_[Server Name1]_3_EMC42_[Port2A]"
-cfgremove zs_CSXT_TEST_G630A,"z_[Server Name2]_3_EMC42_[Port1A];z_[Server Name2]_3_EMC42_[Port2A]"
+cfgremove zs_CSXT_TEST_G630A,"z_ServerName1_3_EMC42_Port1A;z_ServerName1_3_EMC42_Port2A"
+cfgremove zs_CSXT_TEST_G630A,"z_ServerName2_3_EMC42_Port1A;z_ServerName2_3_EMC42_Port2A"
 cfgenable zs_CSXT_TEST_G630A
 
 B Side
-cfgremove zs_CSXT_TEST_G630B,"z_[Server Name1]_2_EMC42_[Port1B];z_[Server Name1]_2_EMC42_[Port2B]"
-cfgremove zs_CSXT_TEST_G630B,"z_[Server Name2]_2_EMC42_[Port1B];z_[Server Name2]_2_EMC42_[Port2B]"
+cfgremove zs_CSXT_TEST_G630B,"z_ServerName1_2_EMC42_Port1B;z_ServerName1_2_EMC42_Port2B"
+cfgremove zs_CSXT_TEST_G630B,"z_ServerName2_2_EMC42_Port1B;z_ServerName2_2_EMC42_Port2B"
 cfgenable zs_CSXT_TEST_G630B

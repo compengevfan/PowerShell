@@ -35,21 +35,21 @@ Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType In
 
 $ServerName1 = Read-Host "First Server Name?"
 $ServerName2 = Read-Host "Second Server Name?"
-$ServerName2Fragment = $ServerName2.Substring($ServerName2.Length -2)
+$ServerName_2Fragment = $ServerName2.Substring($ServerName2.Length -2)
 $Server1WWNASide = Read-Host "Server 1 A-side WWN?"
-$Server1WWNASideNoColon = $Server1WWNASide.Replace(":","")
+$Server1WWNA_SideNoColon = $Server1WWNASide.Replace(":","")
 $Server1WWNBSide = Read-Host "Server 1 B-side WWN?"
-$Server1WWNBSideNoColon = $Server1WWNBSide.Replace(":","")
+$Server1WWNB_SideNoColon = $Server1WWNBSide.Replace(":","")
 $Server2WWNASide = Read-Host "Server 2 A-side WWN?"
-$Server2WWNASideNoColon = $Server2WWNASide.Replace(":","")
+$Server2WWNA_SideNoColon = $Server2WWNASide.Replace(":","")
 $Server2WWNBSide = Read-Host "Server 2 B-side WWN?"
-$Server2WWNBSideNoColon = $Server2WWNBSide.Replace(":","")
+$Server2WWNB_SideNoColon = $Server2WWNBSide.Replace(":","")
 $Port1A = Read-Host "First A-side Array Port?"
 $Port2A = Read-Host "Second A-side Array Port?"
 $Port1B = Read-Host "First B-side Array Port?"
 $Port2B = Read-Host "Second B-side Array Port?"
 $DeviceCapacity = Read-Host "Device Size"
-$CapType = Read-Host "Capacity Type? (gb or tb)"
+$CapacityType = Read-Host "Capacity Type? (gb or tb)"
 $DeviceCount = Read-Host "How Many Devices?"
 $ChangeNumber = Read-Host "What is the CC?"
 Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Saving Variable Information..."
@@ -58,27 +58,27 @@ Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType In
 $TemplateText = Get-Content -path .\Migrate-FC-LNX-EMC42-Template.txt -Raw
 
 Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Performing text replacement..."
-$TemplateText.Replace("[Server Name1]",$ServerName1)
-$TemplateText.Replace("[Server Name2]",$ServerName2)
-$TemplateText.Replace("[Server Name2 Fragment]",$ServerName2Fragment)
-$TemplateText.Replace("[Server1WWN-A-Side]",$Server1WWNASide)
-$TemplateText.Replace("[Server1WWN-A-Side no :]",$Server1WWNASideNoColon)
-$TemplateText.Replace("[Server1WWN-B-Side]",$Server1WWNBSide)
-$TemplateText.Replace("[Server1WWN-B-Side no :]",$Server1WWNBSideNoColon)
-$TemplateText.Replace("[Server2WWN-A-Side]",$Server2WWNASide)
-$TemplateText.Replace("[Server2WWN-A-Side no :]",$Server2WWNASideNoColon)
-$TemplateText.Replace("[Server2WWN-B-Side]",$Server2WWNBSide)
-$TemplateText.Replace("[Server2WWN-B-Side no :]",$Server2WWNBSideNoColon)
-$TemplateText.Replace("[Port1A]",$Port1A)
-$TemplateText.Replace("[Port2A]",$Port2A)
-$TemplateText.Replace("[Port1B]",$Port1B)
-$TemplateText.Replace("[Port2B]",$Port2B)
-$TemplateText.Replace("[device capacity]",$DeviceCapacity)
-$TemplateText.Replace("[cap type]",$CapType)
-$TemplateText.Replace("[device count]",$DeviceCount)
+$TemplateText = $TemplateText -Replace 'ServerName1',$ServerName1
+$TemplateText = $TemplateText -Replace 'ServerName2',$ServerName2
+$TemplateText = $TemplateText -Replace 'ServerName_2Fragment',$ServerName_2Fragment
+$TemplateText = $TemplateText -Replace 'Server1WWNASide',$Server1WWNASide
+$TemplateText = $TemplateText -Replace 'Server1WWNA_SideNoColon',$Server1WWNA_SideNoColon
+$TemplateText = $TemplateText -Replace 'Server1WWNBSide',$Server1WWNBSide
+$TemplateText = $TemplateText -Replace 'Server1WWNB_SideNoColon',$Server1WWNB_SideNoColon
+$TemplateText = $TemplateText -Replace 'Server2WWNASide',$Server2WWNASide
+$TemplateText = $TemplateText -Replace 'Server2WWNA_SideNoColon',$Server2WWNA_SideNoColon
+$TemplateText = $TemplateText -Replace 'Server2WWNBSide',$Server2WWNBSide
+$TemplateText = $TemplateText -Replace 'Server2WWNB_SideNoColon',$Server2WWNB_SideNoColon
+$TemplateText = $TemplateText -Replace 'Port1A',$Port1A
+$TemplateText = $TemplateText -Replace 'Port2A',$Port2A
+$TemplateText = $TemplateText -Replace 'Port1B',$Port1B
+$TemplateText = $TemplateText -Replace 'Port2B',$Port2B
+$TemplateText = $TemplateText -Replace 'DeviceCapacity',$DeviceCapacity
+$TemplateText = $TemplateText -Replace 'CapacityType',$CapacityType
+$TemplateText = $TemplateText -Replace 'DeviceCount',$DeviceCount
 
 Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Writing Command file..."
-$FileName = $ChangeNumber + "-EMC42-" + $ServerName1 + "Zone and create storage"
-Set-Content "C:\Users\y7537\OneDrive - CSX\Documents\CLI\WorkingDir\EMC42 Migration\$FileName.txt"
+$FileName = $ChangeNumber + "-EMC42-" + $ServerName1 + "-Zone and create storage"
+Set-Content -Path "C:\Users\y7537\OneDrive - CSX\Documents\CLI\WorkingDir\EMC42 Migration\$FileName.txt" -Value $TemplateText
 
 Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Succ -LogString "Script Completed Succesfully."
