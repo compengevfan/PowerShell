@@ -19,6 +19,10 @@ CapacityType
 DeviceCount
 </End Variables>
 
+Zone and Create Storage for ServerName1/ServerName2 Migration
+
+Zone and create storage to migrate ServerName1/ServerName2 to EMC42.
+
 Brocade
 
 ##Setup zones for new server on test brocades
