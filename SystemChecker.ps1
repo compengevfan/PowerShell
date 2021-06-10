@@ -53,7 +53,7 @@ if ($NuGetGood -and $PowerShellGetGood)
             $ProfileScriptVersion = (Test-ScriptFileInfo $ProfileScript).Version
             if ($ProfileScriptVersion -ne $LatestProfileScriptVersion) 
             {
-                Save-Script -Name $ProfileScript.BaseName -Path "$HOME\Documents\WindowsPowerShell" -Force
+                Save-Script -Name $($ProfileScript.BaseName) -Path "$HOME\Documents\WindowsPowerShell" -Force
                 $ProfileScriptUpdated = $true
             }
         }
