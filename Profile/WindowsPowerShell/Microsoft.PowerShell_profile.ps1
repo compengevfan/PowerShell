@@ -31,6 +31,11 @@ else { Write-Host "Git path NOT found." -ForegroundColor Yellow}
 if ($env:dropboxhome) { $dropboxhome = $env:dropboxhome; Write-Host "Dropbox path found." -ForegroundColor Green }
 else { Write-Host "Dropbox path NOT found." -ForegroundColor Yellow}
 
+#Check for PowerCLI and version
+$PowerCLICheck = Get-Module -ListAvailable VMware.Vim
+if ($null -ne $PowerCLICheck){ Write-Host "`nPowerCLI $($PowerCLICheck.Version.Major).$($PowerCLICheck.Version.Minor) is installed." -ForegroundColor green}
+else { Write-Host "`nPowerCLI not found." -ForegroundColor red}
+
 Write-Host "Checking DupreeFunctions module available and latest version..."
 $DupreeFunctionsMinVersion = (Find-Module DupreeFunctions).Version
 if (!(Get-InstalledModule -Name DupreeFunctions -MinimumVersion $DupreeFunctionsMinVersion -ErrorAction SilentlyContinue))
