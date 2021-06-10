@@ -1,3 +1,44 @@
+<#PSScriptInfo
+
+.VERSION 2.0.0
+
+.GUID 3b7cd6d4-4082-45b8-9e1f-eb8e37d65ecb
+
+.AUTHOR cdupree
+
+.COMPANYNAME
+
+.COPYRIGHT
+
+.TAGS
+
+.LICENSEURI
+
+.PROJECTURI
+
+.ICONURI
+
+.EXTERNALMODULEDEPENDENCIES 
+
+.REQUIREDSCRIPTS
+
+.EXTERNALSCRIPTDEPENDENCIES
+
+.RELEASENOTES
+
+
+.PRIVATEDATA
+
+#>
+
+<# 
+
+.DESCRIPTION 
+ PowerShell ISE Profile 
+
+#> 
+Param()
+
 #Display .NET Versions Installed
 Write-Host ".NET version installed: " -NoNewline
 $dotNetVersion = (Get-ItemProperty "HKLM:\SOFTWARE\Microsoft\NET Framework Setup\NDP\v4\Full").Release
