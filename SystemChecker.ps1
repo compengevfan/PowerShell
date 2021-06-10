@@ -32,7 +32,34 @@ $PowerShellGetCheck = Get-PackageProvider | Where-Object {$_.Name -eq "PowerShel
 if ($null -ne $NuGetCheck) {Write-Host "`nPowerShellGet Version $($PowerShellGetCheck.Version) installed." -ForegroundColor green; $PowerShellGetGood = $true}
 else {Write-Host "`nPowerShellGet is not installed." -ForegroundColor red; $PowerShellGetGood = $false}
 
-if ($NuGetGood -and $PowerShellGetGood) {
+if ($NuGetGood -and $PowerShellGetGood)
+{
+    #Check for Profile scripts
+    if ($null -eq (Test-Path -Path $HOME\Documents\WindowsPowerShell)) 
+    {
+        New-Item -Path "$HOME\Documents" -Name "WindowsPowerShell" -ItemType "directory"
+        Install-Script -Name Microsoft.PowerShell_profile
+        Install-Script -Name Microsoft.PowerShellISE_profile
+        Install-Script -Name Microsoft.VSCode_profile
+        Write-Host "PowerShell Profile Scripts installed. Restart PowerShell for change to take effect." -ForegroundColor Yellow
+    }
+    else
+    {
+        #Get Latest Profile Script Version
+        $ProfileScriptUpdated = $false
+        $LatestProfileScriptVersion = (Find-Script -Name "Microsoft.PowerShell_profile").Version
+        $ProfileScripts = Get-ChildItem $HOME\Documents\WindowsPowerShell\* -Include *.ps1
+        foreach ($ProfileScript in $ProfileScripts) {
+            $ProfileScriptVersion = (Test-ScriptFileInfo $ProfileScript).Version
+            if ($ProfileScriptVersion -ne $LatestProfileScriptVersion) 
+            {
+                Save-Script -Name $ProfileScript.BaseName -Path "$HOME\Documents\WindowsPowerShell" -Force
+                $ProfileScriptUpdated = $true
+            }
+        }
+        if ($ProfileScriptUpdated) { Write-Host "PowerShell Profile Script(s) updated. Restart PowerShell for change to take effect." -ForegroundColor Yellow }
+        else { Write-Host "PowerShell Profile Scripts are the correct version." -ForegroundColor Green }
+    }
     #Check for DupreeFunctions
     $DupreeFunctionsCheck = Get-Module DupreeFunctions
     if ($null -ne $DupreeFunctionsCheck){
@@ -83,7 +110,7 @@ if ($GitInstalled -eq "y"){
 $DropboxInstalled = Read-Host "Is Dropbox installed (y/n)"
 if ($DropboxInstalled -eq "y"){
     Write-Host "Checking for Dropbox Environment Variable..."
-    if ($env:githome) { Write-Host "Dropbox path found." -ForegroundColor Green }
+    if ($env:dropboxhome) { Write-Host "Dropbox path found." -ForegroundColor Green }
     else { 
         Write-Host "Dropbox path NOT found." -ForegroundColor Yellow
         $GitPath = Read-Host "Please provide the path."

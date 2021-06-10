@@ -34,7 +34,7 @@
 <# 
 
 .DESCRIPTION 
- PowerShell ISE Profile 
+ PowerShell VS Code Profile 
 
 #> 
 Param()
