@@ -31,31 +31,44 @@ else { Write-Host "Git path NOT found." -ForegroundColor Yellow}
 if ($env:dropboxhome) { $dropboxhome = $env:dropboxhome; Write-Host "Dropbox path found." -ForegroundColor Green }
 else { Write-Host "Dropbox path NOT found." -ForegroundColor Yellow}
 
-# Write-Host "Checking DupreeFunctions module available and latest version..."
-# $DupreeFunctionsMinVersion = (Find-Module DupreeFunctions).Version
-# if (!(Get-InstalledModule -Name DupreeFunctions -MinimumVersion $DupreeFunctionsMinVersion -ErrorAction SilentlyContinue))
-# {
-# 	try 
-# 	{
-# 		if (!(Get-Module -ListAvailable -Name DupreeFunctions)) { Install-Module -Name DupreeFunctions -Scope CurrentUser -Force -ErrorAction Stop }
-# 		else { Update-Module -Name DupreeFunctions -RequiredVersion $DupreeFunctionsMinVersion -Force -ErrorAction Stop }
-# 		$DupreeFunctionInstallSuccess = $true
-# 	}
-# 	catch { Write-Host "Failed to install 'DupreeFunctions' module from PSGallery!!! Error encountered is:`n`r`t$($Error[0])" -ForegroundColor Red ; $DupreeFunctionInstallSuccess = $false}
-# }
-# else { $DupreeFunctionInstallSuccess = $true }
+#Check for PowerCLI and version
+$PowerCLICheck = Get-Module -ListAvailable VMware.Vim
+if ($null -ne $PowerCLICheck){ Write-Host "`nPowerCLI $($PowerCLICheck.Version.Major).$($PowerCLICheck.Version.Minor) is installed." -ForegroundColor green}
+else { Write-Host "`nPowerCLI not found." -ForegroundColor red}
 
-# if (!(Get-Module -Name DupreeFunctions) -and $DupreeFunctionInstallSuccess) { Write-Host "DupreeFunctions Installed and up to date...Importing..." -ForegroundColor Green; Import-Module DupreeFunctions -MinimumVersion $DupreeFunctionsMinVersion }
+Write-Host "Checking DupreeFunctions module available and latest version..."
+$DupreeFunctionsMinVersion = (Find-Module DupreeFunctions).Version
+if (!(Get-InstalledModule -Name DupreeFunctions -MinimumVersion $DupreeFunctionsMinVersion -ErrorAction SilentlyContinue))
+{
+	try 
+	{
+		if (!(Get-Module -ListAvailable -Name DupreeFunctions)) { Install-Module -Name DupreeFunctions -Scope CurrentUser -Force -ErrorAction Stop }
+		else { Update-Module -Name DupreeFunctions -RequiredVersion $DupreeFunctionsMinVersion -Force -ErrorAction Stop }
+		$DupreeFunctionInstallSuccess = $true
+	}
+	catch { Write-Host "Failed to install 'DupreeFunctions' module from PSGallery!!! Error encountered is:`n`r`t$($Error[0])" -ForegroundColor Red ; $DupreeFunctionInstallSuccess = $false}
+}
+else { $DupreeFunctionInstallSuccess = $true }
 
-if (!(Get-Module -ListAvailable -Name DupreeFunctions)) { Write-Host "'DupreeFunctions' module not available." -ForegroundColor Yellow }
-elseif (!(Get-Module -Name DupreeFunctions)) {
-	Write-Host "Importing DupreeFunctions..."
-	Import-Module DupreeFunctions
+if (!(Get-Module -Name DupreeFunctions) -and $DupreeFunctionInstallSuccess)
+{
+	Write-Host "DupreeFunctions Installed and up to date...Importing..." -ForegroundColor Green
+	Import-Module DupreeFunctions -MinimumVersion $DupreeFunctionsMinVersion
 	Write-Host "Creating Alias for 'Connect-vCenter' function..."
 	Set-Alias -Name cvc -Value Connect-vCenter
 	Write-Host "Creating Alias for 'Show-vCenter' function..."
 	Set-Alias -Name svc -Value Show-vCenter
 }
+
+# if (!(Get-Module -ListAvailable -Name DupreeFunctions)) { Write-Host "'DupreeFunctions' module not available." -ForegroundColor Yellow }
+# elseif (!(Get-Module -Name DupreeFunctions)) {
+# 	Write-Host "Importing DupreeFunctions..."
+# 	Import-Module DupreeFunctions
+# 	Write-Host "Creating Alias for 'Connect-vCenter' function..."
+# 	Set-Alias -Name cvc -Value Connect-vCenter
+# 	Write-Host "Creating Alias for 'Show-vCenter' function..."
+# 	Set-Alias -Name svc -Value Show-vCenter
+# }
   
 ################
 #Make it pretty#
