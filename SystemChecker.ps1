@@ -35,7 +35,7 @@ else {Write-Host "`nPowerShellGet is not installed." -ForegroundColor red; $Powe
 if ($NuGetGood -and $PowerShellGetGood)
 {
     #Check for Profile scripts
-    if ($null -eq (Test-Path -Path Test-Path -Path "$([Environment]::GetFolderPath("MyDocuments"))\WindowsPowerShell")) 
+    if ($null -eq (Test-Path -Path "$([Environment]::GetFolderPath("MyDocuments"))\WindowsPowerShell")) 
     {
         New-Item -Path "$([Environment]::GetFolderPath("MyDocuments"))" -Name "WindowsPowerShell" -ItemType "directory"
         Install-Script -Name Microsoft.PowerShell_profile
@@ -49,7 +49,8 @@ if ($NuGetGood -and $PowerShellGetGood)
         $ProfileScriptUpdated = $false
         $LatestProfileScriptVersion = (Find-Script -Name "Microsoft.PowerShell_profile").Version
         $ProfileScripts = Get-ChildItem "$([Environment]::GetFolderPath("MyDocuments"))\WindowsPowerShell\*" -Include *.ps1
-        foreach ($ProfileScript in $ProfileScripts) {
+        foreach ($ProfileScript in $ProfileScripts) 
+        {
             $ProfileScriptInfo = Test-ScriptFileInfo $ProfileScript -ErrorAction SilentlyContinue
             $ProfileScriptVersion = $ProfileScriptInfo.Version
             if ($ProfileScriptVersion -ne $LatestProfileScriptVersion) 
