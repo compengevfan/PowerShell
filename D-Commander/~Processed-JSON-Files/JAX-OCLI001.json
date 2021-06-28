@@ -2,11 +2,11 @@
 	"VMInfo": [
 		{
 			"vCenter": "discography.evorigin.com",
-			"Template": "TPL-Win2K19",
+			"Template": "TPL-Win10",
 			"Datacenter": "DataCenter1",
 			"Cluster": "Cluster1",
 			"FolderPath": "Datacenter1/Origin-Local",
-			"VMName": "JAX-OSVR002",
+			"VMName": "JAX-OCLI001",
 			"Datastore": "iSCSI-Storage2-LowSpeed",
 		  	"PortGroup": "JAX-Origin",
 			"ApplicationTeam": "Dupree",
@@ -17,10 +17,10 @@
   
   	"GuestInfo": [
 		{
-			"CustomizationSpec": "Win2K19-Spec",
+			"CustomizationSpec": "Win10-Spec",
 			"vCPUs": "2",
 			"RAM": "6",
-			"IPAddress": "172.16.10.11",
+			"IPAddress": "172.16.10.20",
 			"SubnetMask": "255.255.255.0",
 			"Gateway": "172.16.10.254",
 			"Domain": "origin.local",

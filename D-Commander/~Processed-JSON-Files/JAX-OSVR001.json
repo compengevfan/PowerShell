@@ -2,24 +2,25 @@
 	"VMInfo": [
 		{
 			"vCenter": "discography.evorigin.com",
-			"Datacenter": "DC1",
-			"Cluster": "C1",
-			"FolderPath": "DC1/Discovered virtual machine",
+			"Template": "TPL-Win2K19",
+			"Datacenter": "DataCenter1",
+			"Cluster": "Cluster1",
+			"FolderPath": "Datacenter1/Origin-Local",
 			"VMName": "JAX-OSVR001",
-			"Datastore": "Storage",
+			"Datastore": "iSCSI-Storage2-LowSpeed",
 		  	"PortGroup": "JAX-Origin",
-			"Owner": "Dupree",
-			"Purpose" : "Test"
+			"ApplicationTeam": "Dupree",
+			"Application": "Test",
+			"Compliance" : "Non-PCI"
 		}
 	],
   
   	"GuestInfo": [
 		{
-			"OS": "2K12R2",
-			"CustomizationSpec": "Windows-2012-R2",
+			"CustomizationSpec": "Win2K19-Spec",
 			"vCPUs": "2",
-			"RAM": "8",
-			"IPAddress": "172.16.10.50",
+			"RAM": "6",
+			"IPAddress": "172.16.10.10",
 			"SubnetMask": "255.255.255.0",
 			"Gateway": "172.16.10.254",
 			"Domain": "origin.local",
