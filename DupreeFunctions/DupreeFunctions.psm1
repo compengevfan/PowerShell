@@ -30,9 +30,9 @@ function Connect-vCenter
   
   if ($ConnectedvCenter.Count -eq 0)
   {
-    if ((Test-Path "$githome\etc\vCenterDict.csv") -and ($vCenter -eq $null -or $vCenter -eq ""))
+    if ((Test-Path "$githome\powershell\etc\vCenterDict.csv") -and ($vCenter -eq $null -or $vCenter -eq ""))
     {
-      $vCenters = Import-Csv "$githome\etc\vCenterDict.csv" | Sort-Object FriendlyName
+      $vCenters = Import-Csv "$githome\powershell\etc\vCenterDict.csv" | Sort-Object FriendlyName
 
       $vCenter = (DriveMenu -Objects $vCenters -MenuColumn FriendlyName -SelectionText "Pick a vCenter" -ClearScreen $false).VCName
     }
