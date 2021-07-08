@@ -3,12 +3,12 @@
 		{
 			"vCenter": "discography.evorigin.com",
 			"Template": "TPL-Win2K19",
-			"Datacenter": "DataCenter1",
+			"Datacenter": "Datacenter1",
 			"Cluster": "Cluster1",
-			"FolderPath": "Datacenter1/Origin-Local",
-			"VMName": "JAX-OSVR002",
+			"FolderPath": "Datacenter1/Extra1-Local",
+			"VMName": "JAX-E1SVR002",
 			"Datastore": "iSCSI-Storage2-LowSpeed",
-		  	"PortGroup": "JAX-Origin",
+		  	"PortGroup": "JAX-Extra1",
 			"ApplicationTeam": "Dupree",
 			"Application": "Test",
 			"Compliance" : "Non-PCI"
@@ -20,12 +20,12 @@
 			"CustomizationSpec": "Win2K19-Spec",
 			"vCPUs": "2",
 			"RAM": "6",
-			"IPAddress": "172.16.10.11",
+			"IPAddress": "10.140.10.11",
 			"SubnetMask": "255.255.255.0",
-			"Gateway": "172.16.10.254",
-			"Domain": "origin.local",
-			"DNS1": "172.16.10.101",
-			"DNS2": "172.16.10.100",
+			"Gateway": "10.140.10.254",
+			"Domain": "extra1.local",
+			"DNS1": "10.140.10.101",
+			"DNS2": "10.140.10.100",
 			"OU": "Servers"
 		}
 	]
