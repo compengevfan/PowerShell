@@ -1,6 +1,6 @@
 <#PSScriptInfo
 
-.VERSION 2.0.0
+.VERSION 2.0.1
 
 .GUID b53cae85-1769-4697-ba24-a6fd87efb453
 
@@ -61,7 +61,12 @@ Write-Host "`nPowerShell Version Installed:"
 $PSVersionTable.PSVersion
 
 #Check for Github environment variable
-if ($env:githubhome) { $githubhome = $env:githubhome; Write-Host "`nGithub path found." -ForegroundColor Green }
+if ($env:githubhome) { 
+	$githubhome = $env:githubhome
+	Write-Host "`nGithub path found." -ForegroundColor Green 
+	Write-Host "Importing credentials..." -ForegroundColor Gray
+	& $githubhome\Credentials\Import-Credentials.ps1
+}
 else { Write-Host "`nGithub path NOT found." -ForegroundColor Yellow}
 
 #Check for Git environment variable
