@@ -15,7 +15,7 @@ function Connect-vCenter
 {
   Param(
       [Parameter()] [string] $vCenter,
-      [Parameter()] $vCenterCredential
+      [Parameter()] $Credential
   )
 
   $ConnectedvCenter = $global:DefaultVIServers
@@ -44,8 +44,8 @@ function Connect-vCenter
 
       #Set-PowerCLIConfiguration -invalidcertificateaction ignore -Confirm:$false | Out-Null
 
-      if ($vCenterCredential -eq $null) { Connect-VIServer -Server $vCenter -Force | Out-Null }
-      else { Connect-VIServer -Server $vCenter -Credential $vCenterCredential -Force | Out-Null }
+      if ($Credential -eq $null) { Connect-VIServer -Server $vCenter -Force | Out-Null }
+      else { Connect-VIServer -Server $vCenter -Credential $Credential -Force | Out-Null }
       
       $ConnectedvCenter = $global:DefaultVIServers
 
