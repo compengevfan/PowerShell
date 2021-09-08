@@ -1,6 +1,6 @@
 <#PSScriptInfo
 
-.VERSION 2.0.1
+.VERSION 2.0.2
 
 .GUID b53cae85-1769-4697-ba24-a6fd87efb453
 
@@ -120,14 +120,17 @@ if (!(Get-Module -Name DupreeFunctions) -and $DupreeFunctionInstallSuccess)
 #Make it pretty#
 ################
 function prompt {
-	$path = ""
-	$pathbits = ([string]$pwd).split("\", [System.StringSplitOptions]::RemoveEmptyEntries)
-	if($pathbits.length -eq 1) {
-		$path = $pathbits[0] + "\"
-	} else {
-		$path = $pathbits[$pathbits.length - 1]
-	}
-	$userLocation = $env:username + '@' + [System.Environment]::UserDomainName + ' ' + $path
+	$path = (Get-Location).Path
+	$vCenter = $global:DefaultVIServers.Name
+	if (($vCenter -eq "") -or ($null -eq $vCenter)) { $vCenter = "NotConnected" }
+	# $path = ""
+	# $pathbits = ([string]$pwd).split("\", [System.StringSplitOptions]::RemoveEmptyEntries)
+	# if($pathbits.length -eq 1) {
+	# 	$path = $pathbits[0] + "\"
+	# } else {
+	# 	$path = $pathbits[$pathbits.length - 1]
+	# }
+	$userLocation = $env:username + '@' + [System.Environment]::UserDomainName + ' ' + $path + ' ' + $vCenter
 	$host.UI.RawUi.WindowTitle = $userLocation
     Write-Host($userLocation) -nonewline -foregroundcolor Green 
 

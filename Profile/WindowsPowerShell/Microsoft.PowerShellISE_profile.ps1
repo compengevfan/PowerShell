@@ -1,8 +1,8 @@
 <#PSScriptInfo
 
-.VERSION 2.0.0
+.VERSION 2.0.2
 
-.GUID 3b7cd6d4-4082-45b8-9e1f-eb8e37d65ecb
+.GUID b53cae85-1769-4697-ba24-a6fd87efb453
 
 .AUTHOR cdupree
 
@@ -34,7 +34,7 @@
 <# 
 
 .DESCRIPTION 
- PowerShell ISE Profile 
+ PowerShell Profile 
 
 #> 
 Param()
@@ -61,7 +61,12 @@ Write-Host "`nPowerShell Version Installed:"
 $PSVersionTable.PSVersion
 
 #Check for Github environment variable
-if ($env:githubhome) { $githubhome = $env:githubhome; Write-Host "`nGithub path found." -ForegroundColor Green }
+if ($env:githubhome) { 
+	$githubhome = $env:githubhome
+	Write-Host "`nGithub path found." -ForegroundColor Green 
+	Write-Host "Importing credentials..." -ForegroundColor Gray
+	& $githubhome\Credentials\Import-Credentials.ps1
+}
 else { Write-Host "`nGithub path NOT found." -ForegroundColor Yellow}
 
 #Check for Git environment variable
@@ -115,14 +120,17 @@ if (!(Get-Module -Name DupreeFunctions) -and $DupreeFunctionInstallSuccess)
 #Make it pretty#
 ################
 function prompt {
-	$path = ""
-	$pathbits = ([string]$pwd).split("\", [System.StringSplitOptions]::RemoveEmptyEntries)
-	if($pathbits.length -eq 1) {
-		$path = $pathbits[0] + "\"
-	} else {
-		$path = $pathbits[$pathbits.length - 1]
-	}
-	$userLocation = $env:username + '@' + [System.Environment]::UserDomainName + ' ' + $path
+	$path = (Get-Location).Path
+	$vCenter = $global:DefaultVIServers.Name
+	if (($vCenter -eq "") -or ($null -eq $vCenter)) { $vCenter = "NotConnected" }
+	# $path = ""
+	# $pathbits = ([string]$pwd).split("\", [System.StringSplitOptions]::RemoveEmptyEntries)
+	# if($pathbits.length -eq 1) {
+	# 	$path = $pathbits[0] + "\"
+	# } else {
+	# 	$path = $pathbits[$pathbits.length - 1]
+	# }
+	$userLocation = $env:username + '@' + [System.Environment]::UserDomainName + ' ' + $path + ' ' + $vCenter
 	$host.UI.RawUi.WindowTitle = $userLocation
     Write-Host($userLocation) -nonewline -foregroundcolor Green 
 
