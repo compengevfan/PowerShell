@@ -1,0 +1,32 @@
+{
+	"VMInfo": [
+		{
+			"vCenter": "discography.evorigin.com",
+			"Template": "TPL-Win2K19",
+			"Datacenter": "Datacenter1",
+			"Cluster": "Cluster1",
+			"FolderPath": "Datacenter1/EvOrigin",
+			"VMName": "JAX-BIT001",
+			"Datastore": "iSCSI-Storage2-LowSpeed",
+		  	"PortGroup": "JAX-EvOrigin",
+			"ApplicationTeam": "Dupree",
+			"Application": "Test",
+			"Compliance" : "Non-PCI"
+		}
+	],
+  
+  	"GuestInfo": [
+		{
+			"CustomizationSpec": "Win2K19-Spec",
+			"vCPUs": "2",
+			"RAM": "6",
+			"IPAddress": "192.168.1.147",
+			"SubnetMask": "255.255.255.0",
+			"Gateway": "192.168.1.254",
+			"Domain": "evorigin.com",
+			"DNS1": "192.168.1.129",
+			"DNS2": "192.168.1.130",
+			"OU": "Servers"
+		}
+	]
+}
