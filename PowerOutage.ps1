@@ -102,11 +102,13 @@ Start-Sleep 120
 
 Invoke-LoggingPO -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Shutting down storage servers..."
 Invoke-LoggingPO -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Sending command to shut down Storage1..."
-$headers = @{Authorization = "Bearer 1-LL1LtA4eQiPXleQvHIyPm10xyE2XTWPHfGEOzoHTdPFCkYUxdfZYM2RRWiCPLnnE"}
+$Storage1ApiToken = ${Credential-Storage1-API-Token-THEOPENDOOR}
+$headers = @{Authorization = "Bearer $Storage1ApiToken"}.GetNetworkCredential().Password
 Invoke-RestMethod -Uri "http://Storage1/api/v2.0/system/shutdown" -Method "Post" -Headers $headers | Out-Null
 
 Invoke-LoggingPO -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Sending command to shut down Storage2..."
-$headers = @{Authorization = "Bearer 1-strmj0XrlTVK4aansrqzBgCKNoapGRH2agkG66LeXHYDhAjxbSUbZq5jjT1X3K7q"}
+$Storage2ApiToken = ${Credential-Storage2-API-Token-THEOPENDOOR}
+$headers = @{Authorization = "Bearer $Storage2ApiToken"}.GetNetworkCredential().Password
 Invoke-RestMethod -Uri "http://Storage2/api/v2.0/system/shutdown" -Method "Post" -Headers $headers | Out-Null
 
 Invoke-LoggingPO -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Shutting down vCenter and local DC..."
