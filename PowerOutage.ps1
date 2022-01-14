@@ -72,7 +72,7 @@ Invoke-LoggingPO -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType 
 $WaitTimer = 0
 $VMCount = $VMs.Count
 while ($VMCount -ne 0) {
-    Start-Sleep 30
+    Start-Sleep 15
     $VMs = Get-VM | Where-Object {$_.PowerState -eq "PoweredOn"}
     $VMCount = $VMs.Count
     $WaitTimer++
@@ -97,18 +97,18 @@ foreach ($VMHost in $VMHosts) {
     Stop-VMHost $VMHost -Confirm:$false
 }
 
-Invoke-LoggingPO -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Waiting 2 minutes for ESX hosts to shutdown..."
-Start-Sleep 120
+#Invoke-LoggingPO -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Waiting 2 minutes for ESX hosts to shutdown..."
+#Start-Sleep 120
 
 Invoke-LoggingPO -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Shutting down storage servers..."
 Invoke-LoggingPO -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Sending command to shut down Storage1..."
-$Storage1ApiToken = ${Credential-Storage1-API-Token-THEOPENDOOR}
-$headers = @{Authorization = "Bearer $Storage1ApiToken"}.GetNetworkCredential().Password
+$Storage1ApiToken = ${Credential-Storage1-API-Token-THEOPENDOOR}.GetNetworkCredential().Password
+$headers = @{Authorization = "Bearer $Storage1ApiToken"}
 Invoke-RestMethod -Uri "http://Storage1/api/v2.0/system/shutdown" -Method "Post" -Headers $headers | Out-Null
 
 Invoke-LoggingPO -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Sending command to shut down Storage2..."
-$Storage2ApiToken = ${Credential-Storage2-API-Token-THEOPENDOOR}
-$headers = @{Authorization = "Bearer $Storage2ApiToken"}.GetNetworkCredential().Password
+$Storage2ApiToken = ${Credential-Storage2-API-Token-THEOPENDOOR}.GetNetworkCredential().Password
+$headers = @{Authorization = "Bearer $Storage2ApiToken"}
 Invoke-RestMethod -Uri "http://Storage2/api/v2.0/system/shutdown" -Method "Post" -Headers $headers | Out-Null
 
 Invoke-LoggingPO -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Shutting down vCenter and local DC..."
@@ -124,12 +124,12 @@ $Params = "-T ws stop V:\VMwareVMs\JAX-EVODC003\JAX-EVODC003.vmx"
 $Param = $Params.Split(" ")
 & "$VMWWCommand" $Param
 
-Invoke-LoggingPO -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Waiting for shut down to complete..."
-do {
-    Start-Sleep 10
-    $vCenter = Test-Connection discography -count 1 -Quiet
-    $LocalDC = Test-Connection JAX-EVODC003 -count 1 -Quiet
-} while ($vCenter -and $LocalDC)
+# Invoke-LoggingPO -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Waiting for shut down to complete..."
+# do {
+#     Start-Sleep 10
+#     $vCenter = Test-Connection discography -count 1 -Quiet
+#     $LocalDC = Test-Connection JAX-EVODC003 -count 1 -Quiet
+# } while ($vCenter -and $LocalDC)
 
 Invoke-LoggingPO -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Issuing command to shut down local PC..."
 $LocalPCCommand = "shutdown"
