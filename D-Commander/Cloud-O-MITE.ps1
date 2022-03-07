@@ -42,9 +42,9 @@ if ($InputFile -eq "" -or $InputFile -eq $null) { cls; Write-Host "Please select
 #Email Variables
 ##################
 #emailTo is a comma separated list of strings eg. "email1","email2"
-$emailFrom = "Cloud-O-MITE@fanatics.com"
-$emailTo = "cdupree@fanatics.com"
-$emailServer = "smtp.ff.p10"
+$emailFrom = "Cloud-O-MITE@evorigin.com"
+$emailTo = "chris.dupree@gmail.com"
+$emailServer = "smtp.gmail.com"
 
 if (!(Test-Path .\~Logs)) { New-Item -Name "~Logs" -ItemType Directory | Out-Null }
 if (!(Test-Path .\~Processed-JSON-Files)) { New-Item -Name "~Processed-JSON-Files" -ItemType Directory | Out-Null }
