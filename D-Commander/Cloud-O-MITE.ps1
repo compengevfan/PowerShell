@@ -2,7 +2,7 @@
 Param(
     [Parameter()] [string] $InputFile,
     [Parameter()] $DomainCredentials = $null,
-    [Parameter()] $SendEmail = $true
+    [Parameter()] $SendEmail = $false
 )
 
 $ScriptPath = $PSScriptRoot
@@ -40,7 +40,8 @@ if ($InputFile -eq "" -or $InputFile -eq $null) { cls; Write-Host "Please select
 
 ##################
 #Email Variables
-###################emailTo is a comma separated list of strings eg. "email1","email2"
+##################
+#emailTo is a comma separated list of strings eg. "email1","email2"
 $emailFrom = "Cloud-O-MITE@fanatics.com"
 $emailTo = "cdupree@fanatics.com"
 $emailServer = "smtp.ff.p10"
@@ -178,12 +179,12 @@ else
     Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Updating VM Specs..."
     $Notes = "Deployed by " + (whoami) + " via Dupree's Script: " + (Get-Date -Format g)
     Get-VM $($DataFromFile.VMInfo.VMName) | Set-VM -MemoryGB $($DataFromFile.GuestInfo.RAM) -NumCpu $($DataFromFile.GuestInfo.vCPUs) -Description $Notes -Confirm:$false | Out-Null
-    Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Updating VM ApplicationTeam attribute... "
-    Get-VM $($DataFromFile.VMInfo.VMName) | Set-Annotation -CustomAttribute "ApplicationTeam" -Value "$($DataFromFile.VMInfo.ApplicationTeam)" | Out-Null
-    Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Updating VM Application attribute... "
-    Get-VM $($DataFromFile.VMInfo.VMName) | Set-Annotation -CustomAttribute "Application" -Value "$($DataFromFile.VMInfo.Application)" | Out-Null
-    Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Updating VM Compliance attribute... "
-    Get-VM $($DataFromFile.VMInfo.VMName) | Set-Annotation -CustomAttribute "Compliance" -Value "$($DataFromFile.VMInfo.Compliance)" | Out-Null
+    # Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Updating VM ApplicationTeam attribute... "
+    # Get-VM $($DataFromFile.VMInfo.VMName) | Set-Annotation -CustomAttribute "ApplicationTeam" -Value "$($DataFromFile.VMInfo.ApplicationTeam)" | Out-Null
+    # Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Updating VM Application attribute... "
+    # Get-VM $($DataFromFile.VMInfo.VMName) | Set-Annotation -CustomAttribute "Application" -Value "$($DataFromFile.VMInfo.Application)" | Out-Null
+    # Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Updating VM Compliance attribute... "
+    # Get-VM $($DataFromFile.VMInfo.VMName) | Set-Annotation -CustomAttribute "Compliance" -Value "$($DataFromFile.VMInfo.Compliance)" | Out-Null
     switch ($PortType) 
     {
         vds { Get-NetworkAdapter -VM $($DataFromFile.VMInfo.VMName) | where Name -eq "Network adapter 1" | Set-NetworkAdapter -PortGroup $PortGroup -Confirm:$false | Set-NetworkAdapter -StartConnected:$true -Confirm:$false | Out-Null }

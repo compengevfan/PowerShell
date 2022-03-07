@@ -1,14 +1,14 @@
 {
 	"VMInfo": [
 		{
-			"vCenter": "discography.evorigin.com",
+			"vCenter": "anthology.evorigin.com",
 			"Template": "TPL-Win2K19",
-			"Datacenter": "DataCenter1",
-			"Cluster": "Cluster1",
-			"FolderPath": "Datacenter1/Origin-Local",
+			"Datacenter": "DC1",
+			"Cluster": "C1",
+			"FolderPath": "DC1/Origin/JAX/Workers",
 			"VMName": "JAX-OSVR001",
-			"Datastore": "iSCSI-Storage2-LowSpeed",
-		  	"PortGroup": "JAX-Origin",
+			"Datastore": "iSCSI-Storage",
+		  	"PortGroup": "JAX-Origin-vDS",
 			"ApplicationTeam": "Dupree",
 			"Application": "Test",
 			"Compliance" : "Non-PCI"
@@ -24,8 +24,8 @@
 			"SubnetMask": "255.255.255.0",
 			"Gateway": "172.16.10.254",
 			"Domain": "origin.local",
-			"DNS1": "172.16.10.101",
-			"DNS2": "172.16.10.100",
+			"DNS1": "172.16.10.129",
+			"DNS2": "172.16.10.130",
 			"OU": "Servers"
 		}
 	]
