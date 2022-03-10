@@ -2,7 +2,7 @@
 Param(
     [Parameter()] [string] $InputFile,
     [Parameter()] $DomainCredentials = $null,
-    [Parameter()] $SendEmail = $false
+    [Parameter()] $SendEmail = $True
 )
 
 $ScriptPath = $PSScriptRoot
@@ -263,4 +263,4 @@ $FileToMove = Get-Item $InputFile
 Move-Item -Path $FileToMove -Destination .\~Processed-JSON-Files -Force
 
 Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Succ -LogString "Your VM has been successfully deployed!!!"
-if ($SendEmail) { $EmailBody = Get-Content .\~Logs\"$ScriptName $ScriptStarted.log" | Out-String; Send-MailMessage -smtpserver $emailServer -to $emailTo -from $emailFrom -subject "Cloud-O-Mite Deployed a VM" -body $EmailBody }
+if ($SendEmail) { $EmailBody = Get-Content .\~Logs\"$ScriptName $ScriptStarted.log" | Out-String; Send-MailMessage -smtpserver $emailServer -to $emailTo -from $emailFrom -subject "Cloud-O-Mite Deployed a VM" -body $EmailBody -Credential ${Credential-GmailCred-THEOPENDOOR} -UseSsl -port 587 }
