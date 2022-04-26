@@ -63,26 +63,168 @@ if ($i -le 2){
 
 "Initiating system shut down!!!" | Out-File .\~Logs\PowerOutage-MinuteChecker.txt -Append
 Invoke-LoggingPO -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Err -LogString "Initiating system shut down!!!"
-Invoke-LoggingPO -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Connecting to ESX hosts and shutting down all VMs..."
+Invoke-LoggingPO -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Connecting to vCenter..."
+cvc anthology.evorigin.com
 
-Invoke-LoggingPO -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Creating ESX1 runspace..."
-$ScriptblockESX1 = {
-    cvc esx1.evorigin.com -Credential ${Credential-ESX-Root-THEOPENDOOR}
-    $VMs = Get-VM | Where-Object {$_.Name -notlike "vCLS*"}
-    foreach ($VM in $VMs) { Shutdown-VMGuest $VM }
-    $NotReady = $true
-    do {
-        Start-Sleep 10
-        $VMCheck = Get-VM | Where-Object {($_.PowerState -eq "PoweredOn") -and ($_.Name -notlike "vCLS*")}
-        if ($VMCheck -eq 0) { $NotReady = -Confirm:$false }
-    } while ($NotReady)
-    Set-VMHost -VMhost esx1.evorigin.com -State Maintenance
-    Stop-VMHost esx1.evorigin.com -Confirm:$false
+Invoke-LoggingPO -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Disabling vCLS..."
+$advName = "config.vcls.clusters.domain-c17.enabled"
+$advSetting = Get-AdvancedSetting -Entity $global:DefaultVIServer -Name $advName
+Set-AdvancedSetting -AdvancedSetting $advSetting -Value $false -Confirm:$false
+
+Invoke-LoggingPO -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Issuing power down commands for 'kill' VMs..."
+$VMs = Get-VM
+
+$WorkGroup = @()
+foreach ($VM in $VMs)
+{
+    $CustomFields = $VM.CustomFields | Select-Object Key, Value
+    $CustomField = $CustomFields | Where-Object {$_.Key -eq "Outage"}
+    if ($CustomField.Value -eq "Kill")
+    {
+        $WorkGroup += $VM.Name
+    }
 }
 
-Invoke-LoggingPO -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Creating ESX2 runspace..."
+if ($WorkGroup.count -gt 0)
+{
+    Invoke-LoggingPO -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Shutting down 'kill' VMs..."
+    
+    ForEach ($VM in $WorkGroup) {Stop-VM -VM $VM -Confirm:$false}
+    
+    $NotOffYet = "true"
 
-Invoke-LoggingPO -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Creating ESX3 runspace..."
+    while ($NotOffYet -eq "true") 
+    {
+        start-sleep -s 2
+        $NotOffYet = "false"
+        ForEach ($VM in $WorkGroup)
+        {
+            $Check = (Get-VM -Name $VM | Select-Object PowerState)
+            if ($Check.PowerState -eq "PoweredOn")
+                {
+                    $NotOffYet = "true"
+                }
+        }
+        Invoke-LoggingPO -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Warn -LogString "VM kill not complete..."
+    }
+    Invoke-LoggingPO -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "VM kill complete."
+}
+
+Invoke-LoggingPO -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Shutting down remaining VMs except vCenter..."
+$VMs = Get-VM | Where-Object {$_.PowerState -eq "PoweredOn" -and $_.Name -ne "anthology"}
+Invoke-LoggingPO -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Issuing VM shutdown commands..."
+$VMs | Shutdown-VMGuest -Confirm:$false
+Invoke-LoggingPO -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Waiting for all VMs to shutdown..."
+$VMCount = $VMs.Count
+while ($VMCount -ne 0) {
+    Start-Sleep 15
+    $VMs = Get-VM | Where-Object {$_.PowerState -eq "PoweredOn" -and $_.Name -ne "anthology" -and $_.Name -notlike "*vCLS*"}
+    $VMCount = $VMs.Count
+}
+
+Invoke-LoggingPO -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Disconnecting from vCenter..."
+Disconnect-VIServer * -Confirm:$false
+
+Invoke-LoggingPO -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Shutting down ESX hosts and vCenter..."
+$LocalHosts = "esx1.evorigin.com","esx2.evorigin.com","esx3.evorigin.com"
+foreach ($LocalHost in $LocalHosts) {
+    Invoke-LoggingPO -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Shutting down $LocalHost..."
+    Connect-VIServer $LocalHost -Credential ${Credential-ESX-Root-THEOPENDOOR} -Force
+    $FindvCenter = Get-VM anthology
+    if ($null -ne $FindvCenter -or $FindvCenter -ne "" -and $FindvCenter.PowerState -eq "PoweredOn")
+    {
+        Invoke-LoggingPO -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Found vCenter, shutting down..."
+        $FindvCenter | Shutdown-VMGuest -Confirm:$false
+        while ($FindvCenter.PowerState -eq "PoweredOn")
+        {
+            Start-Sleep 5
+            $FindvCenter = Get-VM anthology
+        }
+    }
+    Invoke-LoggingPO -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Setting $LocalHost to MM..."
+    Set-VMHost -State Maintenance
+    Invoke-LoggingPO -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Initiating $LocalHost shutdown..."
+    Stop-VMHost -Confirm:$false
+    Disconnect-VIServer * -Confirm:$false
+    while (Test-Connection $LocalHost -Count 1 -Quiet) { start-sleep 5 }
+    Invoke-LoggingPO -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "$LocalHost shutdown..."
+}
+
+<# $CredUse = ${Credential-ESX-Root-THEOPENDOOR}
+Invoke-LoggingPO -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Shutting down ESX hosts and vCenter..."
+Invoke-LoggingPO -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Creating ESX1 script block..."
+$ScriptblockESX1 = {
+    $LocalHost = "esx1.evorigin.com"
+    Connect-VIServer $LocalHost -Credential $using:CredUse -Force
+    $FindvCenter = Get-VM anthology
+    if ($FindvCenter -ne $null -or $FindvCenter -ne "")
+    {
+        $FindvCenter | Shutdown-VMGuest -Confirm:$false
+        while ($FindvCenter.PowerState -eq "PoweredOn")
+        {
+            Start-Sleep 15
+            $FindvCenter = Get-VM anthology
+        }
+    }
+    Set-VMHost -State Maintenance
+    Stop-VMHost -Confirm:$false
+    while (Test-Connection $LocalHost -Count 1 -Quiet) { start-sleep 15 }
+}
+
+Invoke-LoggingPO -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Creating ESX2 script block..."
+$ScriptblockESX2 = {
+    $LocalHost = "esx2.evorigin.com"
+    Connect-VIServer $LocalHost -Credential $using:CredUse -Force
+    $FindvCenter = Get-VM anthology
+    if ($FindvCenter -ne $null -or $FindvCenter -ne "")
+    {
+        $FindvCenter | Shutdown-VMGuest -Confirm:$false
+        while ($FindvCenter.PowerState -eq "PoweredOn")
+        {
+            Start-Sleep 15
+            $FindvCenter = Get-VM anthology
+        }
+    }
+    Set-VMHost -State Maintenance
+    Stop-VMHost -Confirm:$false
+    while (Test-Connection $LocalHost -Count 1 -Quiet) { start-sleep 15 }
+}
+
+Invoke-LoggingPO -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Creating ESX3 script block..."
+$ScriptblockESX3 = {
+    $LocalHost = "esx3.evorigin.com"
+    Connect-VIServer $LocalHost -Credential $using:CredUse -Force
+    $FindvCenter = Get-VM anthology
+    if ($FindvCenter -ne $null -or $FindvCenter -ne "")
+    {
+        $FindvCenter | Shutdown-VMGuest -Confirm:$false
+        while ($FindvCenter.PowerState -eq "PoweredOn")
+        {
+            Start-Sleep 15
+            $FindvCenter = Get-VM anthology
+        }
+    }
+    Set-VMHost -State Maintenance
+    Stop-VMHost -Confirm:$false
+    while (Test-Connection $LocalHost -Count 1 -Quiet) { start-sleep 15 }
+}
+
+Invoke-LoggingPO -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Running ESX1 job..."
+Start-Job -Name "ESX1" -ScriptBlock $ScriptblockESX1
+
+Invoke-LoggingPO -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Running ESX2 job..."
+Start-Job -Name "ESX2" -ScriptBlock $ScriptblockESX2
+
+Invoke-LoggingPO -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Running ESX3 job..."
+Start-Job -Name "ESX3" -ScriptBlock $ScriptblockESX3
+
+$count = (Get-Job | Where-Object { $_.State -like "Running" }).Count
+while ($count -gt 0) {
+    Invoke-LoggingPO -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "$count jobs still running, waiting for all jobs to complete"
+    Get-Job | Where-Object { $_.State -like "Running" } | Select-Object Name
+    Start-Sleep 15
+    $count = (Get-Job | Where-Object { $_.State -like "Running" }).Count
+} #>
 
 Invoke-LoggingPO -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Shutting down storage servers..."
 Invoke-LoggingPO -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Sending command to shut down Storage1..."
@@ -95,8 +237,11 @@ $Storage2ApiToken = ${Credential-Storage2-API-Token-THEOPENDOOR}.GetNetworkCrede
 $headers = @{Authorization = "Bearer $Storage2ApiToken"}
 Invoke-RestMethod -Uri "http://Storage2/api/v2.0/system/shutdown" -Method "Post" -Headers $headers | Out-Null
 
-Invoke-LoggingPO -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Shutting down local DC..."
+Invoke-LoggingPO -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Sending command to shut down Storage3..."
+New-SSHSession -ComputerName Storage3 -Credential ${Credential-Storage3Root-THEOPENDOOR}
+Invoke-SSHCommand -SessionId 0 -Command "poweroff"
 
+Invoke-LoggingPO -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Shutting down local DC..."
 Invoke-LoggingPO -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Issuing command to shut down DC..."
 $VMWWCommand = "C:\Program Files (x86)\VMware\VMware Workstation\vmrun.exe"
 $Params = "-T ws stop V:\VMwareVMs\JAX-EVODC003\JAX-EVODC003.vmx"

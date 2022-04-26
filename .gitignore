@@ -1,3 +1,4 @@
 *.log
 *.xml
 *.debug
+*.json
