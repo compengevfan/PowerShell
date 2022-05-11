@@ -1,5 +1,6 @@
 [CmdletBinding()]
 Param(
+    [Parameter()][bool] $Testing = $False
 )
 
 $ScriptPath = $PSScriptRoot
@@ -41,7 +42,15 @@ Get-Date -Format 'yyyy-MM-dd HH:mm:ss' | Out-File .\~Logs\PowerOutage-MinuteChec
 #Invoke-LoggingPO -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Checking PC power state..."
 "Checking PC power state..." | Out-File .\~Logs\PowerOutage-MinuteChecker.txt -Append
 $PowerStatusCheck = $(Get-WmiObject win32_battery).BatteryStatus
-if ($PowerStatusCheck -eq 2) {
+if ($PowerStatusCheck -eq 2 -and !($Testing)) {
+    #Invoke-LoggingPO -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "PC found to be on utility power. Setting counter to 0 and script exiting."
+    "PC found to be on utility power. Setting counter to 0 and script exiting." | Out-File .\~Logs\PowerOutage-MinuteChecker.txt -Append
+    $i = 0 ; $i | Out-File .\PowerOutage-Data.txt -Force
+    Get-Date -Format 'yyyy-MM-dd HH:mm:ss' | Out-File .\~Logs\PowerOutage-MinuteChecker.txt -Append
+    exit
+}
+
+if ($PowerStatusCheck -ne 2 -and $Testing) {
     #Invoke-LoggingPO -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "PC found to be on utility power. Setting counter to 0 and script exiting."
     "PC found to be on utility power. Setting counter to 0 and script exiting." | Out-File .\~Logs\PowerOutage-MinuteChecker.txt -Append
     $i = 0 ; $i | Out-File .\PowerOutage-Data.txt -Force

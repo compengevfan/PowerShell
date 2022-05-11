@@ -68,7 +68,7 @@ $DSmostFree = $DatastoresToBalance | Select-Object -Last 1
 $Space1 = $DSmostFree.FreeSpaceGB
 $Space2 = $DSleastFree.FreeSpaceGB
 $Diff = $Space1 - $Space2
-if ($Diff -gt 200 -and $DatastoresToBalance.Count -gt 1) { $RunAgain = $true }
+if ($Diff -gt 30 -and $DatastoresToBalance.Count -gt 1) { $RunAgain = $true }
 else
 {
     $RunAgain = $false
@@ -98,7 +98,7 @@ while ($RunAgain)
     $Space1 = $DSmostFree.FreeSpaceGB
     $Space2 = $DSleastFree.FreeSpaceGB
     $Diff = $Space1 - $Space2
-    if ($Diff -lt 200)
+    if ($Diff -lt 30)
     {
         $RunAgain = $false
         Write-Host ("Script complete. Cluster is now balanced.")
