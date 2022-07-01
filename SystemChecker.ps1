@@ -2,6 +2,8 @@
 Param(
 )
 
+#Requires -Version 7.2
+
 #Display .NET Versions Installed
 Write-Host ".NET version installed: " -NoNewline
 $dotNetVersion = (Get-ItemProperty "HKLM:\SOFTWARE\Microsoft\NET Framework Setup\NDP\v4\Full").Release
