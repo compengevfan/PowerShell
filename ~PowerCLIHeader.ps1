@@ -1,15 +1,14 @@
 [CmdletBinding()]
 Param(
     [Parameter()] [string] $InputFile,
-    [Parameter()] $CredFile = $null,
     [Parameter()] [bool] $SendEmail = $false
 )
 
-#requires -Version 3.0
+#Requires -Version 7.2
 $DupreeFunctionsMinVersion = "1.0.2"
 
 $ScriptPath = $PSScriptRoot
-cd $ScriptPath
+Set-Location $ScriptPath
   
 $ScriptStarted = Get-Date -Format MM-dd-yyyy_HH-mm-ss
 $ScriptName = $MyInvocation.MyCommand.Name
@@ -36,7 +35,7 @@ else { Get-ChildItem .\~Logs | Where-Object CreationTime -LT (Get-Date).AddDays(
   
 Import-PowerCLI
  
-if ($CredFile -ne $null)
+if ($null -ne $CredFile)
 {
     Remove-Variable Credential_To_Use -ErrorAction Ignore
     New-Variable -Name Credential_To_Use -Value $(Import-Clixml $($CredFile))
@@ -44,9 +43,9 @@ if ($CredFile -ne $null)
 
 #Email Variables
 #emailTo is a comma separated list of strings eg. "email1","email2"
-$emailFrom = ""
-$emailTo = ""
-$emailServer = ""
+# $emailFrom = ""
+# $emailTo = ""
+# $emailServer = ""
 
 Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Script Started..."
 
