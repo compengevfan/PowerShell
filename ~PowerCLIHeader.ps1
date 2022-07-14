@@ -4,8 +4,13 @@ Param(
     [Parameter()] [bool] $SendEmail = $false
 )
 
+<<<<<<< Updated upstream
 #Requires -Version 7.2
 $DupreeFunctionsMinVersion = "1.0.2"
+=======
+#requires -Version 7.2
+#requires -Modules DupreeFunctions
+>>>>>>> Stashed changes
 
 $ScriptPath = $PSScriptRoot
 Set-Location $ScriptPath
@@ -14,22 +19,8 @@ $ScriptStarted = Get-Date -Format MM-dd-yyyy_HH-mm-ss
 $ScriptName = $MyInvocation.MyCommand.Name
   
 #$ErrorActionPreference = "SilentlyContinue"
-  
-# if (!(Get-Module -ListAvailable -Name DupreeFunctions)) { Write-Host "'DupreeFunctions' module not available!!! Please check with Dupree!!! Script exiting!!!" -ForegroundColor Red; exit }
-# if (!(Get-Module -Name DupreeFunctions)) { Import-Module DupreeFunctions }
 
-#Check if DupreeFunctions is installed and verify version
-if (!(Get-InstalledModule -Name DupreeFunctions -MinimumVersion $DupreeFunctionsMinVersion -ErrorAction SilentlyContinue))
-{
-    try 
-    {
-        if (!(Get-Module -ListAvailable -Name DupreeFunctions)) { Install-Module -Name DupreeFunctions -Scope CurrentUser -Force -ErrorAction Stop }
-        else { Update-Module -Name DupreeFunctions -RequiredVersion $DupreeFunctionsMinVersion -Force -ErrorAction Stop }
-    }
-    catch { Write-Host "Failed to install 'DupreeFunctions' module from PSGallery!!! Error encountered is:`n`r`t$($Error[0])`n`rScript exiting!!!" -ForegroundColor Red ; exit }
-}
-
-if (!(Get-Module -Name DupreeFunctions)) { Import-Module DupreeFunctions -MinimumVersion $DupreeFunctionsMinVersion }
+if (!(Get-Module -Name DupreeFunctions)) { Import-Module DupreeFunctions }
 if (!(Test-Path .\~Logs)) { New-Item -Name "~Logs" -ItemType Directory | Out-Null }
 else { Get-ChildItem .\~Logs | Where-Object CreationTime -LT (Get-Date).AddDays(-30) | Remove-Item }
   
