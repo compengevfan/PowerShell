@@ -50,14 +50,14 @@ if ($NuGetGood -and $PowerShellGetGood)
         #Get Latest Profile Script Version
         $ProfileScriptUpdated = $false
         $LatestProfileScriptVersion = (Find-Script -Name "Microsoft.PowerShell_profile").Version
-        $ProfileScripts = Get-ChildItem "$([Environment]::GetFolderPath("MyDocuments"))\WindowsPowerShell\*" -Include *.ps1
+        $ProfileScripts = Get-ChildItem "$([Environment]::GetFolderPath("MyDocuments"))\PowerShell\*" -Include *.ps1
         foreach ($ProfileScript in $ProfileScripts) 
         {
             $ProfileScriptInfo = Test-ScriptFileInfo $ProfileScript -ErrorAction SilentlyContinue
             $ProfileScriptVersion = $ProfileScriptInfo.Version
             if ($ProfileScriptVersion -ne $LatestProfileScriptVersion) 
             {
-                Save-Script -Name $($ProfileScript.BaseName) -Path "$([Environment]::GetFolderPath("MyDocuments"))\WindowsPowerShell\" -Force
+                Save-Script -Name $($ProfileScript.BaseName) -Path "$([Environment]::GetFolderPath("MyDocuments"))\PowerShell\" -Force
                 $ProfileScriptUpdated = $true
             }
         }
