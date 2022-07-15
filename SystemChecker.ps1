@@ -37,9 +37,9 @@ else {Write-Host "`nPowerShellGet is not installed." -ForegroundColor red; $Powe
 if ($NuGetGood -and $PowerShellGetGood)
 {
     #Check for Profile scripts
-    if ($null -eq (Test-Path -Path "$([Environment]::GetFolderPath("MyDocuments"))\WindowsPowerShell")) 
+    if ($null -eq (Test-Path -Path "$([Environment]::GetFolderPath("MyDocuments"))\PowerShell")) 
     {
-        New-Item -Path "$([Environment]::GetFolderPath("MyDocuments"))" -Name "WindowsPowerShell" -ItemType "directory"
+        New-Item -Path "$([Environment]::GetFolderPath("MyDocuments"))" -Name "PowerShell" -ItemType "directory"
         Install-Script -Name Microsoft.PowerShell_profile
         Install-Script -Name Microsoft.PowerShellISE_profile
         Install-Script -Name Microsoft.VSCode_profile
