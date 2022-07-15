@@ -52,7 +52,7 @@ switch ($dotNetVersion) {
     {($_ -eq 460798) -or ($_ -eq 460805)} { Write-Host "4.7" }
     {($_ -eq 461308) -or ($_ -eq 461310)} { Write-Host "4.7.1" }
     {($_ -eq 461808) -or ($_ -eq 461814)} { Write-Host "4.7.2" }
-    {($_ -eq 528040) -or ($_ -eq 528372) -or ($_ -eq 528049)} { Write-Host "4.8" }
+    {($_ -eq 528040) -or ($_ -eq 528372) -or ($_ -eq 528049) -or ($_ -eq 528449)} { Write-Host "4.8" }
     Default { Write-Host "Unknown build $dotNetVersion found."}
 }
 
