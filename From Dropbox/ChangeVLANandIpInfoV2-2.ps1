@@ -7,7 +7,7 @@ if ($SnapinCheck -eq $NULL)
  write-host ("Complete")
 }
 
-connect-viserver CRIFVC.myappro.com -user aspchrisd -password L1thiumCmwys5%
+connect-viserver CRIFVC.myappro.com -user [username] -password [password]
 
 $NewVLAN = "VLAN628"
 $GuestUsername = "Administrator"
