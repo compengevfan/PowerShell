@@ -1,6 +1,6 @@
 <#PSScriptInfo
 
-.VERSION 2.0.2
+.VERSION 2.0.3
 
 .GUID b53cae85-1769-4697-ba24-a6fd87efb453
 
@@ -60,29 +60,37 @@ switch ($dotNetVersion) {
 Write-Host "`nPowerShell Version Installed:"
 $PSVersionTable.PSVersion
 
-#Check for Github environment variable
-if ($env:githubhome) { 
-	$githubhome = $env:githubhome
-	Write-Host "`nGithub path found." -ForegroundColor Green 
-	Write-Host "Importing credentials..." -ForegroundColor Gray
-	& $githubhome\Credentials\Import-Credentials.ps1
-}
-else { Write-Host "`nGithub path NOT found." -ForegroundColor Yellow}
-
-#Check for Git environment variable
-if ($env:githome) { $githome = $env:githome; Write-Host "Git path found." -ForegroundColor Green }
-else { Write-Host "Git path NOT found." -ForegroundColor Yellow}
-
-#Check for Dropbox environment variable
-if ($env:dropboxhome) { $dropboxhome = $env:dropboxhome; Write-Host "Dropbox path found." -ForegroundColor Green }
-else { Write-Host "Dropbox path NOT found." -ForegroundColor Yellow}
-
 #Check for PowerCLI and version
 $PowerCLICheck = Get-Module -ListAvailable VMware.Vim
 if ($null -ne $PowerCLICheck){ Write-Host "`nPowerCLI $($PowerCLICheck.Version.Major).$($PowerCLICheck.Version.Minor) is installed." -ForegroundColor green}
 else { Write-Host "`nPowerCLI not found." -ForegroundColor red}
 
-Write-Host "Checking DupreeFunctions module available and latest version..."
+# #Check for Github environment variable
+# if ($env:githubhome) { 
+# 	$githubhome = $env:githubhome
+# 	Write-Host "`nGithub path found." -ForegroundColor Green 
+# 	Write-Host "Importing credentials..." -ForegroundColor Gray
+# 	& $githubhome\Credentials\Import-Credentials.ps1
+# }
+# else { Write-Host "`nGithub path NOT found." -ForegroundColor Yellow}
+
+#Check for Git environment variable
+if ($env:githome) { $githome = $env:githome; Write-Host "Git path found." -ForegroundColor Green }
+else { Write-Host "Git path NOT found." -ForegroundColor Yellow}
+
+try {
+	Write-Host "Importing DC.Automation..." -ForegroundColor Green
+	Import-Module DC.Automation -Force
+}
+catch {
+	Write-Host "DC.Automation NOT found." -ForegroundColor Yellow
+}
+
+# #Check for Dropbox environment variable
+# if ($env:dropboxhome) { $dropboxhome = $env:dropboxhome; Write-Host "Dropbox path found." -ForegroundColor Green }
+# else { Write-Host "Dropbox path NOT found." -ForegroundColor Yellow}
+
+<# Write-Host "Checking DupreeFunctions module available and latest version..."
 $DupreeFunctionsMinVersion = (Find-Module DupreeFunctions).Version
 if (!(Get-InstalledModule -Name DupreeFunctions -MinimumVersion $DupreeFunctionsMinVersion -ErrorAction SilentlyContinue))
 {
@@ -104,21 +112,9 @@ if (!(Get-Module -Name DupreeFunctions) -and $DupreeFunctionInstallSuccess)
 	Set-Alias -Name cvc -Value Connect-vCenter
 	Write-Host "Creating Alias for 'Show-vCenter' function..."
 	Set-Alias -Name svc -Value Show-vCenter
-}
+} #>
 
-# if (!(Get-Module -ListAvailable -Name DupreeFunctions)) { Write-Host "'DupreeFunctions' module not available." -ForegroundColor Yellow }
-# elseif (!(Get-Module -Name DupreeFunctions)) {
-# 	Write-Host "Importing DupreeFunctions..."
-# 	Import-Module DupreeFunctions
-# 	Write-Host "Creating Alias for 'Connect-vCenter' function..."
-# 	Set-Alias -Name cvc -Value Connect-vCenter
-# 	Write-Host "Creating Alias for 'Show-vCenter' function..."
-# 	Set-Alias -Name svc -Value Show-vCenter
-# }
-  
-################
-#Make it pretty#
-################
+#Make it pretty
 function prompt {
 	$path = (Get-Location).Path
 	$vCenter = $global:DefaultVIServers.Name
