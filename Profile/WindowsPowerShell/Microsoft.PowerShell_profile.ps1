@@ -80,7 +80,7 @@ else { Write-Host "Git path NOT found." -ForegroundColor Yellow}
 
 try {
 	Write-Host "Importing DC.Automation..." -ForegroundColor Green
-	Import-Module DC.Automation -Force
+	Import-Module DC.Automation -Force -ErrorAction Stop
 }
 catch {
 	Write-Host "DC.Automation NOT found." -ForegroundColor Yellow
