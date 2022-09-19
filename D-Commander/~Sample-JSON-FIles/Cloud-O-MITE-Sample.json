@@ -1,31 +1,29 @@
 {
 	"VMInfo": [
 		{
-			"vCenter": "iad-vc001.fanatics.corp",
-			"Template": "TPL_C1_2K16D1607",
-			"Datacenter": "TAFQ",
-			"Cluster": "TAFQ",
-			"FolderPath": "TAFQ/Discovered virtual machine",
-			"VMName": "TAFQ-BLAH101",
-			"Datastore": "TAFQ-VS",
-		  	"PortGroup": "vlan980-Servers",
-			"ApplicationTeam": "Dupree",
-			"Application": "Test",
-			"Compliance" : "Non-PCI"
+			"vCenter": "anthology.evorigin.com",
+			"Template": "TPL-Win10",
+			"Datacenter": "DC1",
+			"Cluster": "C1",
+			"FolderPath": "DC1/EvOrigin/Media Servers",
+			"VMName": "JAX-PLMS001",
+			"Datastore": "iSCSI-Storage",
+		  	"PortGroup": "JAX-EvOrigin-vDS",
+			"Outage" : "Shutdown"
 		}
 	],
   
   	"GuestInfo": [
 		{
-			"CustomizationSpec": "Windows-Corp-KMS",
+			"CustomizationSpec": "Win10-Spec",
 			"vCPUs": "4",
-			"RAM": "12",
+			"RAM": "6",
 			"IPAddress": "10.142.98.30",
-			"SubnetMask": "255.255.255.0",
-			"Gateway": "10.142.98.1",
-			"Domain": "fanatics.corp",
-			"DNS1": "10.142.98.21",
-			"DNS2": "10.142.98.22",
+			"SubnetMask": "255.255.254.0",
+			"Gateway": "192.168.1.254",
+			"Domain": "evorigin.com",
+			"DNS1": "192.168.1.129",
+			"DNS2": "192.168.1.130",
 			"OU": "Terminal Server Users/FROW/Consolidation"
 		}
 	]
