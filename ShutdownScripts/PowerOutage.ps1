@@ -158,13 +158,13 @@ foreach ($LocalHost in $LocalHosts) {
     if ($null -ne $FindvCenter -or $FindvCenter -ne "")
     {
         Invoke-LoggingPO -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Found vCenter on $LocalHost..."
-        Invoke-LoggingPO -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Setting vCenter to auto start..."
-        Get-PCLI_VMStartPolicy -VM $FindvCenter | Set-PCLI_VMStartPolicy -StartAction PowerOn
-        $FindvCenter | Shutdown-PCLI_VMGuest -Confirm:$false
+        #Invoke-LoggingPO -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Setting vCenter to auto start..."
+        #Get-PCLI_VMStartPolicy -VM $FindvCenter | Set-PCLI_VMStartPolicy -StartAction PowerOn
+        $FindvCenter | Shutdown-VMGuest -Confirm:$false
     }
     Invoke-LoggingPO -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Shutting down VMs on $LocalHost..."
     $VMs = Get-PCLI_VM | Where-Object {$_.PowerState -eq "PoweredOn" -and $_.Name -notlike "*vCLS*"}
-    $VMs | Shutdown-PCLI_VMGuest -Confirm:$false
+    $VMs | Shutdown-VMGuest -Confirm:$false
     Invoke-LoggingPO -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Waiting for all VMs to shutdown..."
     $VMCount = $VMs.Count
     while ($VMCount -ne 0) {
