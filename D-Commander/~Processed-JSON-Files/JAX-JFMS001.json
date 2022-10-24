@@ -1,0 +1,30 @@
+{
+	"VMInfo": [
+		{
+			"vCenter": "anthology.evorigin.com",
+			"Template": "TPL-Win10",
+			"Datacenter": "DC1",
+			"Cluster": "C1",
+			"FolderPath": "DC1/EvOrigin/Media Servers",
+			"VMName": "JAX-JFMS001",
+			"Datastore": "iSCSI-Storage",
+		  	"PortGroup": "JAX-EvOrigin-vDS",
+			"Outage" : "Shutdown"
+		}
+	],
+  
+  	"GuestInfo": [
+		{
+			"CustomizationSpec": "Win10-Spec",
+			"vCPUs": "4",
+			"RAM": "6",
+			"IPAddress": "192.168.1.157",
+			"SubnetMask": "255.255.254.0",
+			"Gateway": "192.168.1.254",
+			"Domain": "evorigin.com",
+			"DNS1": "192.168.1.129",
+			"DNS2": "192.168.1.130",
+			"OU": "Media Server"
+		}
+	]
+}
