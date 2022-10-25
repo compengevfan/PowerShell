@@ -13,7 +13,7 @@ Import-Module DupreeFunctions
 
 [System.Net.ServicePointManager]::ServerCertificateValidationCallback = {$true}
 
-$Header = Invoke-NetboxGetHeader -Credential ${Cred-NetboxAPI}
+$Header = Invoke-NetboxGetHeader -Credential $Credential
 
 $ReturnJSON = Invoke-NetboxAddVm -VMName $VMName -vCPUs $vCPUs -RAM $RAM -Disk $Disk -header $Header
 $Return = $ReturnJSON | ConvertFrom-Json

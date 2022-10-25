@@ -9,6 +9,8 @@ Function Invoke-NetboxGetHeader {
     $headers.Add("Accept", "application/json")
     $headers.Add("Authorization", "Token $NetboxApiToken")
     $headers.Add("Content-Type", "application/json")
+
+    $headers
 }
 
 Function Invoke-NetboxAddVm {
