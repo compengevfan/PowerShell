@@ -20,7 +20,7 @@ Function Invoke-NetboxAddVm {
         [Parameter(Mandatory = $true)] [int16] $vCPUs,
         [Parameter(Mandatory = $true)] [int16] $RAM,
         [Parameter(Mandatory = $true)] [int16] $Disk,
-        [Parameter(Mandatory = $true)] [string] $header
+        [Parameter(Mandatory = $true)] $header
     )
 
     # [System.Net.ServicePointManager]::ServerCertificateValidationCallback = {$true}
@@ -37,7 +37,7 @@ Function Invoke-NetboxAddVmInterface {
         [Parameter(Mandatory = $true)] [int16] $VmId,
         [Parameter()] [string] $Name = "FrontEnd",
         [Parameter()] [string] $enabled = "true",
-        [Parameter(Mandatory = $true)] [string] $header
+        [Parameter(Mandatory = $true)] $header
     )
 
     # [System.Net.ServicePointManager]::ServerCertificateValidationCallback = {$true}
@@ -57,7 +57,7 @@ Function Invoke-NetboxAddIp {
         [Parameter()] [string] $AssignedObjectType = "virtualization.vminterface",
         [Parameter(Mandatory = $true)] [int16] $AssignedObjectId,
         [Parameter(Mandatory = $true)] [string] $DnsName,
-        [Parameter(Mandatory = $true)] [string] $header
+        [Parameter(Mandatory = $true)] $header
     )
 
     # [System.Net.ServicePointManager]::ServerCertificateValidationCallback = {$true}
@@ -74,7 +74,7 @@ Function Invoke-NetboxAddIpToVM {
     Param(
         [Parameter(Mandatory = $true)] [string] $VmId,
         [Parameter(Mandatory = $true)] [int16] $IpId,
-        [Parameter(Mandatory = $true)] [string] $header
+        [Parameter(Mandatory = $true)] $header
     )
 
     # [System.Net.ServicePointManager]::ServerCertificateValidationCallback = {$true}

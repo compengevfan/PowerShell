@@ -2,6 +2,8 @@
 #Import Credentials#
 ####################
 
+Remove-Variable Cred-* -Scope Global
+
 $UserName = $env:USERNAME
 
 if (Test-Path $githome\Credentials\$UserName) {
