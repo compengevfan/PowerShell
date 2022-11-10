@@ -20,8 +20,6 @@ What does this script need to function properly?
 Param(
 )
 
-#Requires -Version 7.2
-
 $ScriptPath = $PSScriptRoot
 cd $ScriptPath
   

@@ -97,24 +97,13 @@ $advSetting = Get-PCLI_AdvancedSetting -Entity $global:DefaultVIServer -Name $ad
 Set-PCLI_AdvancedSetting -AdvancedSetting $advSetting -Value $false -Confirm:$false
 
 Invoke-LoggingPO -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Issuing power down commands for 'kill' VMs..."
-$VMs = Get-PCLI_VM
+$VMs = Get-PCLI_VM | Where-Object {$_.Name -notlike "*EVODC*" -and $_.Name -ne "anthology" -and $_.PowerState -eq "PoweredOn"}
 
-$WorkGroup = @()
-foreach ($VM in $VMs)
-{
-    $CustomFields = $VM.CustomFields | Select-Object Key, Value
-    $CustomField = $CustomFields | Where-Object {$_.Key -eq "Outage"}
-    if ($CustomField.Value -eq "Kill")
-    {
-        $WorkGroup += $VM.Name
-    }
-}
-
-if ($WorkGroup.count -gt 0)
+if ($VMs.count -gt 0)
 {
     Invoke-LoggingPO -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Shutting down 'kill' VMs..."
     
-    ForEach ($VM in $WorkGroup) {Stop-PCLI_VM -VM $VM -Confirm:$false}
+    ForEach ($VM in $VMs) {Stop-PCLI_VM -VM $VM -Confirm:$false}
     
     $NotOffYet = "true"
 
@@ -122,7 +111,7 @@ if ($WorkGroup.count -gt 0)
     {
         start-sleep -s 2
         $NotOffYet = "false"
-        ForEach ($VM in $WorkGroup)
+        ForEach ($VM in $VMs)
         {
             $Check = (Get-PCLI_VM -Name $VM | Select-Object PowerState)
             if ($Check.PowerState -eq "PoweredOn")
@@ -134,18 +123,6 @@ if ($WorkGroup.count -gt 0)
     }
     Invoke-LoggingPO -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "VM kill complete."
 }
-
-# Invoke-LoggingPO -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Shutting down remaining VMs except vCenter..."
-# $VMs = Get-PCLI_VM | Where-Object {$_.PowerState -eq "PoweredOn" -and $_.Name -ne "anthology"}
-# Invoke-LoggingPO -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Issuing VM shutdown commands..."
-# $VMs | Shutdown-PCLI_VMGuest -Confirm:$false
-# Invoke-LoggingPO -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Waiting for all VMs to shutdown..."
-# $VMCount = $VMs.Count
-# while ($VMCount -ne 0) {
-#     Start-Sleep 15
-#     $VMs = Get-PCLI_VM | Where-Object {$_.PowerState -eq "PoweredOn" -and $_.Name -ne "anthology" -and $_.Name -notlike "*vCLS*"}
-#     $VMCount = $VMs.Count
-# }
 
 Invoke-LoggingPO -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Disconnecting from vCenter..."
 Disconnect-PCLI_VIServer * -Confirm:$false
@@ -269,7 +246,7 @@ $headers = @{Authorization = "Bearer $Storage2ApiToken"}
 Invoke-RestMethod -Uri "http://Storage2/api/v2.0/system/shutdown" -Method "Post" -Headers $headers | Out-Null
 
 Invoke-LoggingPO -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Sending command to shut down Storage3..."
-New-SSHSession -ComputerName Storage3 -Credential ${Credential-Storage3Admin-JAX-HPV001}
+New-SSHSession -ComputerName Storage3 -Credential ${Credential-Storage3Root-JAX-HPV001}
 Invoke-SSHCommand -SessionId 0 -Command "poweroff"
 
 Invoke-LoggingPO -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Issuing command to shut down JAX-PC001..."
