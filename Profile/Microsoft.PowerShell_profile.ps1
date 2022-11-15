@@ -1,6 +1,6 @@
 <#PSScriptInfo
 
-.VERSION 2.0.4
+.VERSION 2.0.5
 
 .GUID b53cae85-1769-4697-ba24-a6fd87efb453
 
@@ -66,7 +66,7 @@ if ($null -ne $PowerCLICheck) { Write-Host "`nPowerCLI $($PowerCLICheck.Version.
 else { Write-Host "`nPowerCLI not found." -ForegroundColor red }
 
 #Check for Git environment variable
-if ($env:githome) { $githome = $env:githome; Write-Host "`nGit path found." -ForegroundColor Green }
+if ($env:githome) { $githome = $env:githome; Write-Host "`nGit path found." -ForegroundColor Green; Set-Location $githome }
 else { Write-Host "`nGit path NOT found." -ForegroundColor Red }
 
 if ([System.Net.Dns]::GetHostByName($env:computerName).HostName -like "*.evorigin.com") {
