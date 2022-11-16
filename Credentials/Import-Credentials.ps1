@@ -1,14 +1,19 @@
-﻿####################
+####################
 #Import Credentials#
 ####################
 
-Remove-Variable Credential-*
+Remove-Variable Cred-* -Scope Global
 
-$ComputerName = $env:computername
-#$UserName = $env:USERDOMAIN + "_" + $env:USERNAME
+$UserName = $env:USERNAME
 
-$CredFiles = Get-ChildItem $githome\Credentials\Credential-*.xml
+if (Test-Path $githome\Credentials\$UserName) {
+    $CredFiles = Get-ChildItem $githome\Credentials\$UserName\Cred-*.xml
 
-foreach ($CredFile in $CredFiles) {
-    New-Variable -Name $CredFile.BaseName -Value $(Import-Clixml $CredFile) -Scope Global
+    foreach ($CredFile in $CredFiles) {
+        New-Variable -Name $CredFile.BaseName -Value $(Import-Clixml $CredFile) -Scope Global
+    }
+    Write-Host "Credentials Imported."
+}
+else {
+    Write-Host "Credential Folder not found. No Creds to import."
 }
