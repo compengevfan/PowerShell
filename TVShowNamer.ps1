@@ -4,21 +4,21 @@ param (
     [Parameter()] $ShowName,
     [Parameter()] $Season
 )
-#Requires -Version 7.2
 
-if ($ShowType -eq "TV1") { $Path = "\\storage1\Media\TV Shows\$ShowName\Season $Season" }
-if ($ShowType -eq "TV2") { $Path = "\\storage2\Media\TV Shows\$ShowName\Season $Season" }
-if ($ShowType -eq "Cartoon") { $Path = "\\storage1\Media\Cartoons\$ShowName\Season $Season" }
+switch ($ShowType) {
+    "TV1" { $Path = "\\storage1\Media\TV Shows\$ShowName\Season $Season" }
+    "TV2" { $Path = "\\storage2\Media\TV Shows\$ShowName\Season $Season" }
+    "Cartoon" { $Path = "\\storage1\Media\Cartoons\$ShowName\Season $Season" }
+    Default {}
+}
 
 $i = 1
 
-$ToNatural = { [regex]::Replace($_, '\d+', { $args[0].Value.PadLeft(20) }) }
-
-$Files = Get-ChildItem $Path | Sort-Object $ToNatural
+$Files = Get-ChildItem $Path | Sort-Object Name
 
 foreach ($File in $Files)
 {
-    $Extension = (Get-Item -LiteralPath $File).Extension
+    $Extension = (Get-Item -LiteralPath $Path\$File).Extension
     $NewName = $ShowName + " - " + "s" + $Season + "e" + $i + $Extension
     Rename-Item -LiteralPath $File.FullName -NewName $NewName
     $i += 1
