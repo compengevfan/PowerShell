@@ -2,8 +2,6 @@
 Param(
 )
 
-#Requires -Version 7.2
-
 #Display .NET Versions Installed
 Write-Host ".NET version installed: " -NoNewline
 $dotNetVersion = (Get-ItemProperty "HKLM:\SOFTWARE\Microsoft\NET Framework Setup\NDP\v4\Full").Release
@@ -22,7 +20,7 @@ switch ($dotNetVersion) {
 }
 
 #Display PowerShell Version
-Write-Host "`nPowerShell Version Installed:"
+Write-Host "`nPowerShell Version:"
 $PSVersionTable.PSVersion
 
 #Check for NuGet and PowerShellGet
@@ -85,19 +83,6 @@ if ($NuGetGood -and $PowerShellGetGood)
 $PowerCLICheck = Get-Module -ListAvailable VMware.Vim
 if ($null -ne $PowerCLICheck){ Write-Host "`nPowerCLI $($PowerCLICheck.Version.Major).$($PowerCLICheck.Version.Minor) is installed." -ForegroundColor green}
 else { Write-Host "`nPowerCLI not found." -ForegroundColor red}
-
-#Check for GitHub environment variable, if not exists, create it if Github is installed
-$GitHubInstalled = Read-Host "Is GitHub installed? (y/n)"
-if ($GitHubInstalled -eq "y"){
-    Write-Host "Checking for GitHub Environment Variable..."
-    if ($env:githubhome) { Write-Host "Github path found." -ForegroundColor Green }
-    else { 
-        Write-Host "Github path NOT found." -ForegroundColor Yellow
-        $GitHubPath = Read-Host "Please provide the path."
-        Write-Host "Creating GitHub environment variable."
-        [System.Environment]::SetEnvironmentVariable('githubhome',$GitHubPath,[System.EnvironmentVariableTarget]::User)
-    }
-}
 
 $GitInstalled = Read-Host "Is Git installed? (y/n)"
 if ($GitInstalled -eq "y"){

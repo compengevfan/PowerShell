@@ -20,6 +20,109 @@ Function Invoke-Logging {
     }
 }
 
+Function Invoke-SystemSetup {
+    #Check for PowerCLI and version
+    $PowerCLICheck = Get-Module -ListAvailable VMware.Vim
+    if ($null -ne $PowerCLICheck) { Write-Host "`nPowerCLI $($PowerCLICheck.Version.Major).$($PowerCLICheck.Version.Minor) is installed." -ForegroundColor green }
+    else { 
+        Write-Host "`nPowerCLI not found. Installing..." -ForegroundColor red
+        Install-Module VMware.PowerCLI -Scope CurrentUser -Force
+    }
+
+    try {
+        git | Out-Null
+        Write-Host "Git is installed" -ForegroundColor Green
+        if ($env:githome) { 
+            Write-Host "Git environment variable found." -ForegroundColor Green
+            $githome = $env:githome
+            Write-Host "Copying primary profile script using environment variable." -ForegroundColor Green
+            Copy-Item -Path $githome\Profile\Microsoft.PowerShell_profile.ps1 -Destination $PROFILE -Force
+        }
+        else { 
+            Write-Host "Git environment variable NOT found." -ForegroundColor Yellow
+            if (Test-Path C:\git\PowerShell) { $GitPath = "C:\git\PowerShell" } 
+            else { $GitPath = Read-Host "Please provide the git path." -ForegroundColor Yellow }
+            Write-Host "Creating Git environment variable." -ForegroundColor Green
+            [System.Environment]::SetEnvironmentVariable('githome', $GitPath, [System.EnvironmentVariableTarget]::User)
+            Write-Host "Copying primary profile script using temporary variable." -ForegroundColor Green
+            Copy-Item -Path $GitPath\Profile\Microsoft.PowerShell_profile.ps1 -Destination $PROFILE -Force
+        }
+        Write-Host "Creating ISE profile script." -ForegroundColor Green
+        Copy-Item -Path $PROFILE -Destination $PROFILE.Replace("Microsoft.PowerShell_profile.ps1", "Microsoft.PowerShellISE_profile.ps1")
+        Write-Host "Copying VS Code profile script." -ForegroundColor Green
+        Copy-Item -Path $PROFILE -Destination $PROFILE.Replace("Microsoft.PowerShell_profile.ps1", "Microsoft.VSCode_profile")
+    }
+    catch [System.Management.Automation.CommandNotFoundException] {
+        Write-Host "Git install not found" -ForegroundColor red
+    }
+    catch {
+        Write-Host "An error occurred:"
+        Write-Host $_
+    }
+
+    $DropboxProcess = Get-Process -Name Dropbox
+    if ($($DropboxProcess).Count -gt 0) {
+        Write-Host "Dropbox is installed and running." -ForegroundColor Green
+        Write-Host "Checking for Dropbox environment variable..." -ForegroundColor Green
+        if ($env:dropboxhome) { Write-Host "Dropbox environment variable found." -ForegroundColor Green }
+        else {
+            Write-Host "Dropbox environment variable NOT found." -ForegroundColor Yellow
+            if (Test-Path "C:\Cloud\Dropbox") { $GitPath = "C:\Cloud\Dropbox" }
+            else { $GitPath = Read-Host "Please provide the Dropbox path." -ForegroundColor Yellow }
+            Write-Host "Creating Dropbox environment variable." -ForegroundColor Green
+            [System.Environment]::SetEnvironmentVariable('dropboxhome', $GitPath, [System.EnvironmentVariableTarget]::User)
+        }
+    }
+
+    Write-Host "System setup complete. Close this window and open a new one."
+}
+
+Function Save-Credential {
+    Param(
+        [Parameter()] [string] $Name
+    )
+
+    if (!(Test-Path $env:LOCALAPPDATA\DupreeFunctions)) {
+        New-Item -Path $env:LOCALAPPDATA\DupreeFunctions -ItemType Directory
+    }
+
+    $Name = $Name.Replace(" ", "")
+
+    $Credential = Get-Credential -Message "Provide the $Name Credential."
+    $CredName = "Cred" + $Name + ".xml"
+    if (Test-Path $env:LOCALAPPDATA\DupreeFunctions\$CredName) { Remove-Item $env:LOCALAPPDATA\DupreeFunctions\$CredName }
+    $Credential | Export-Clixml -Path $env:LOCALAPPDATA\DupreeFunctions\$CredName
+    Write-Host "$Name credential created/overwritten." -ForegroundColor Green
+
+    Import-Credentials
+}
+
+Function Update-Credential {
+    $CredFiles = Get-ChildItem $env:LOCALAPPDATA\DupreeFunctions\Cred*.xml
+
+    $CredToUpdate = Invoke-Menu -Objects $CredFiles -MenuColumn Name -SelectionText "Please select a credential to update." -ClearScreen:$true
+
+    $CredName = $($CredToUpdate.Name).Replace("Cred","").Replace(".xml","")
+
+    Save-Credential -Name $CredName
+}
+
+Function Import-Credentials {
+    Remove-Variable Cred* -Scope Global
+
+    if (Test-Path $env:LOCALAPPDATA\DupreeFunctions) {
+        $CredCount = 0
+        $CredFiles = Get-ChildItem $env:LOCALAPPDATA\DupreeFunctions\Cred*.xml
+        foreach ($CredFile in $CredFiles) {
+            $CredImport = Import-Clixml $CredFile
+            New-Variable -Name $CredFile.BaseName -Value $CredImport -Scope Global
+            $CredCount += 1
+        }
+
+        Write-Host "$CredCount Credential(s) Imported."
+    } else { Write-Host "DupreeFunctions AppData folder not found."}
+}
+
 Function ConvertToDN {
     Param(
         [Parameter(Mandatory = $true)] [string] $Domain,
@@ -121,7 +224,7 @@ Function Get-FileName {
     $OpenFileDialog.filename
 }
 
-Function DriveMenu {
+Function Invoke-Menu {
     Param(
         [Parameter(Mandatory = $true)] $Objects,
         [Parameter(Mandatory = $true)] [string] $MenuColumn,
