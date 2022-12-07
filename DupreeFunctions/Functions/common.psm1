@@ -99,12 +99,16 @@ Function Save-Credential {
 
 Function Update-Credential {
     $CredFiles = Get-ChildItem $env:LOCALAPPDATA\DupreeFunctions\Cred*.xml
-
     $CredToUpdate = Invoke-Menu -Objects $CredFiles -MenuColumn Name -SelectionText "Please select a credential to update." -ClearScreen:$true
-
     $CredName = $($CredToUpdate.Name).Replace("Cred","").Replace(".xml","")
-
     Save-Credential -Name $CredName
+}
+
+Function Remove-Credential {
+    $CredFiles = Get-ChildItem $env:LOCALAPPDATA\DupreeFunctions\Cred*.xml
+    $CredToDelete = Invoke-Menu -Objects $CredFiles -MenuColumn Name -SelectionText "Please select a credential to delete." -ClearScreen:$true
+    Remove-Item $CredToDelete
+    Import-Credentials
 }
 
 Function Import-Credentials {
