@@ -36,7 +36,7 @@ Function Invoke-SystemSetup {
             Write-Host "Git environment variable found." -ForegroundColor Green
             $githome = $env:githome
             Write-Host "Copying primary profile script using environment variable." -ForegroundColor Green
-            Copy-Item -Path $githome\Profile\Microsoft.PowerShell_profile.ps1 -Destination $PROFILE -Force
+            Copy-Item -Path $githome\PowerShell\Profile\Microsoft.PowerShell_profile.ps1 -Destination $PROFILE -Force
         }
         else { 
             Write-Host "Git environment variable NOT found." -ForegroundColor Yellow

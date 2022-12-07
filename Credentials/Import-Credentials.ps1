@@ -6,8 +6,8 @@ Remove-Variable Cred-* -Scope Global
 
 $UserName = $env:USERNAME
 
-if (Test-Path $githome\Credentials\$UserName) {
-    $CredFiles = Get-ChildItem $githome\Credentials\$UserName\Cred-*.xml
+if (Test-Path $githome\PowerShell\Credentials\$UserName) {
+    $CredFiles = Get-ChildItem $githome\PowerShell\Credentials\$UserName\Cred-*.xml
 
     foreach ($CredFile in $CredFiles) {
         New-Variable -Name $CredFile.BaseName -Value $(Import-Clixml $CredFile) -Scope Global
