@@ -86,7 +86,7 @@ if ([System.Net.Dns]::GetHostByName($env:computerName).HostName -like "*.evorigi
 
 	if ($githome) { 
 		Write-Host "Importing credentials..." -ForegroundColor Gray
-		& $githome\Credentials\Import-Credentials.ps1
+		& $githome\PowerShell\Credentials\Import-Credentials.ps1
 	}
 
 	#Check for Dropbox environment variable
