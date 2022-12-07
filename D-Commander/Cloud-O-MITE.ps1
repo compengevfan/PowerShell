@@ -2,6 +2,7 @@
 Param(
     [Parameter(Mandatory=$true)] [string] $InputFile,
     [Parameter()] [PSCredential] $DomainCredentials = $null,
+    [Parameter(Mandatory=$true)] [PSCredential] $GmailCredentials,
     [Parameter()] $SendEmail = $True
 )
 
@@ -237,4 +238,4 @@ catch {
 }
 
 Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Succ -LogString "Your VM has been successfully deployed!!!"
-if ($SendEmail) { $EmailBody = Get-Content .\~Logs\"$ScriptName $ScriptStarted.log" | Out-String; Send-MailMessage -smtpserver $emailServer -to $emailTo -from $emailFrom -subject "Cloud-O-Mite Deployed a VM" -body $EmailBody -Credential $CredGmailCred -UseSsl -port 587 }
+if ($SendEmail) { $EmailBody = Get-Content .\~Logs\"$ScriptName $ScriptStarted.log" | Out-String; Send-MailMessage -smtpserver $emailServer -to $emailTo -from $emailFrom -subject "Cloud-O-Mite Deployed a VM" -body $EmailBody -Credential $GmailCredentials -UseSsl -port 587 }
