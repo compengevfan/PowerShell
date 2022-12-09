@@ -1,6 +1,6 @@
 ﻿[CmdletBinding()]
 Param(
-    [Parameter(Mandatory=$true)] [string] $InputFile,
+    [Parameter(Mandatory = $true)] [string] $InputFile,
     [Parameter()] [PSCredential] $DomainCredentials = $null,
     [Parameter()] $SendEmail = $True
 )
@@ -64,10 +64,12 @@ Connect-vCenter $($DataFromFile.VMInfo.vCenter)
 #Obtain credentials needed to modify guest OS, add to domain and change OU.
 ##################
 
-if ($DomainCredentials -eq $null) {
+if ($($DataFromFile.GuestInfo.Domain) -ne "none") {
     while ($true) {
-        Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Warn -LogString "Obtaining Domain Credentials. Note: Username MUST be in 'user principle name' format. For example: me@domain.com"
-        $DomainCredentials = Get-Credential -Message "READ ME!!! Please provide the username and password for joining the $($DataFromFile.GuestInfo.Domain) domain. Username MUST be in 'user principle name' format. For example: me@domain.com"
+        if ($null -eq $DomainCredentials) {
+            Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Warn -LogString "Obtaining Domain Credentials. Note: Username MUST be in 'user principle name' format. For example: me@domain.com"
+            $DomainCredentials = Get-Credential -Message "READ ME!!! Please provide the username and password for joining the $($DataFromFile.GuestInfo.Domain) domain. Username MUST be in 'user principle name' format. For example: me@domain.com"
+        }
         Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Testing domain credentials..."
         #Verify Domain Credentials
         $username = $DomainCredentials.username
@@ -127,8 +129,10 @@ else { Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -Log
 #Perform Sanity Checks (Name not in use, IP not in use, etc)
 ##################
 
+$VmName = $InputFile.Replace(".json", "").ToUpper()
+
 #Verify that VM name does not exist
-$CheckName = Get-VM $($DataFromFile.VMInfo.VMName) -ErrorAction Ignore
+$CheckName = Get-VM $VmName -ErrorAction Ignore
 if ($null -eq $CheckName) { Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Succ -LogString "New VM name not found..." }
 else { Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Err -LogString "New VM name found!!! Script Exiting!!!"; return 66 }
 
@@ -154,39 +158,43 @@ else { Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -Log
 
 #Create a temporary Customization Spec with appropriate network settings and domain information
 Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Creating temporary customization spec..."
-if ($null -ne (Get-OSCustomizationSpec -Name $($DataFromFile.VMInfo.VMName) -ErrorAction Ignore)) { Remove-OSCustomizationSpec -OSCustomizationSpec $($DataFromFile.VMInfo.VMName) -Confirm:$false }
-$TempCustomizationSpec = New-OSCustomizationSpec -Name $($DataFromFile.VMInfo.VMName) -Spec ( Get-OSCustomizationSpec -Name $OSCustSpec )
-Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Configuring domain settings in temporary customization spec..."
-$TempCustomizationSpec | Set-OSCustomizationSpec -Domain $($DataFromFile.GuestInfo.Domain) -DomainCredentials $DomainCredentials -AutoLogonCount 0 | Out-Null
+if ($null -ne (Get-OSCustomizationSpec -Name $VmName -ErrorAction Ignore)) { Remove-OSCustomizationSpec -OSCustomizationSpec $VmName -Confirm:$false }
+$TempCustomizationSpec = New-OSCustomizationSpec -Name $VmName -Spec ( Get-OSCustomizationSpec -Name $OSCustSpec )
+
+if ($($DataFromFile.GuestInfo.Domain) -ne "none") {
+    Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Configuring domain settings in temporary customization spec..."
+    $TempCustomizationSpec | Set-OSCustomizationSpec -Domain $($DataFromFile.GuestInfo.Domain) -DomainCredentials $DomainCredentials -AutoLogonCount 0 | Out-Null
+}
+
 Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Configuring network settings in temporary customization spec..."
 $TempCustomizationSpec | Get-OSCustomizationNicMapping | Set-OSCustomizationNicMapping -IpMode UseStaticIP -IpAddress ($($DataFromFile.GuestInfo.IPAddress)) -SubnetMask ($($DataFromFile.GuestInfo.SubnetMask)) -DefaultGateway ($($DataFromFile.GuestInfo.Gateway)) -Dns ($($DataFromFile.GuestInfo.DNS1)), ($($DataFromFile.GuestInfo.DNS2)) | Out-Null
 
 #Create the VM
 Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Deploying VM..."
-New-VM -Name $($DataFromFile.VMInfo.VMName) -Template $TemplateToUse -ResourcePool $($DataFromFile.VMInfo.Cluster) -Datastore $DataStore -Location $Folder -OSCustomizationSpec $TempCustomizationSpec -ErrorAction SilentlyContinue -ErrorVariable NewVMFail | Out-Null
+New-VM -Name $VmName -Template $TemplateToUse -ResourcePool $($DataFromFile.VMInfo.Cluster) -Datastore $DataStore -Location $Folder -OSCustomizationSpec $TempCustomizationSpec -ErrorAction SilentlyContinue -ErrorVariable NewVMFail | Out-Null
 
 Start-Sleep 5
 
 #Verify VM Deployed, update specs, power on and wait for customization to complete.
-if ($null -eq (Get-VM $($DataFromFile.VMInfo.VMName) -ErrorAction SilentlyContinue)) { Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Err -LogString "VM Deploy failed!!! Script exiting!!!"; Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Err -LogString $NewVMFail; return 66 }
+if ($null -eq (Get-VM $VmName -ErrorAction SilentlyContinue)) { Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Err -LogString "VM Deploy failed!!! Script exiting!!!"; Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Err -LogString $NewVMFail; return 66 }
 else {
     Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Updating VM Specs..."
     $Notes = "Deployed by " + (whoami) + " via Dupree's Script: " + (Get-Date -Format g)
-    Get-VM $($DataFromFile.VMInfo.VMName) | Set-VM -MemoryGB $($DataFromFile.GuestInfo.RAM) -NumCpu $($DataFromFile.GuestInfo.vCPUs) -Description $Notes -Confirm:$false | Out-Null
+    Get-VM $VmName | Set-VM -MemoryGB $($DataFromFile.GuestInfo.RAM) -NumCpu $($DataFromFile.GuestInfo.vCPUs) -Description $Notes -Confirm:$false | Out-Null
     switch ($PortType) {
-        vds { Get-NetworkAdapter -VM $($DataFromFile.VMInfo.VMName) | Where-Object Name -eq "Network adapter 1" | Set-NetworkAdapter -PortGroup $PortGroup -Confirm:$false | Set-NetworkAdapter -StartConnected:$true -Confirm:$false | Out-Null }
-        std { $PortGroup = (Get-VM $($DataFromFile.VMInfo.VMName)).VMHost | Get-VirtualPortGroup | Where-Object name -eq ($PortGroup.Name | Select-Object -First 1); Get-NetworkAdapter -VM $($DataFromFile.VMInfo.VMName) | Where-Object Name -eq "Network adapter 1" | Set-NetworkAdapter -PortGroup $PortGroup -Confirm:$false | Set-NetworkAdapter -StartConnected:$true -Confirm:$false | Out-Null }
+        vds { Get-NetworkAdapter -VM $VmName | Where-Object Name -eq "Network adapter 1" | Set-NetworkAdapter -PortGroup $PortGroup -Confirm:$false | Set-NetworkAdapter -StartConnected:$true -Confirm:$false | Out-Null }
+        std { $PortGroup = (Get-VM $VmName).VMHost | Get-VirtualPortGroup | Where-Object name -eq ($PortGroup.Name | Select-Object -First 1); Get-NetworkAdapter -VM $VmName | Where-Object Name -eq "Network adapter 1" | Set-NetworkAdapter -PortGroup $PortGroup -Confirm:$false | Set-NetworkAdapter -StartConnected:$true -Confirm:$false | Out-Null }
     }
     Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Checking for an optical drive..."
-    if (!(Get-CDDrive -VM $($DataFromFile.VMInfo.VMName))) { Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Adding optical drive..."; New-CDDrive -VM $($DataFromFile.VMInfo.VMName) -Confirm:$false | Out-Null }
+    if (!(Get-CDDrive -VM $VmName)) { Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Adding optical drive..."; New-CDDrive -VM $VmName -Confirm:$false | Out-Null }
     else { Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "VM already has an optical drive..." }
     Start-Sleep 5
 
     Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Powering on VM..."
-    Start-VM $($DataFromFile.VMInfo.VMName) | Out-Null
+    Start-VM $VmName | Out-Null
     Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Waiting for customization to start..."
     while ($True) {
-        $vmEvents = Get-VIEvent -Entity $($DataFromFile.VMInfo.VMName)
+        $vmEvents = Get-VIEvent -Entity $VmName
         $startedEvent = $vmEvents | Where-Object { $_.GetType().Name -eq "CustomizationStartedEvent" }
  
         if ($startedEvent) {
@@ -200,7 +208,7 @@ else {
  
     Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Customization has started. Waiting for it to complete..."
     while ($True) {
-        $vmEvents = Get-VIEvent -Entity $($DataFromFile.VMInfo.VMName)
+        $vmEvents = Get-VIEvent -Entity $VmName
         $SucceededEvent = $vmEvents | Where-Object { $_.GetType().Name -eq "CustomizationSucceeded" }
         $FailureEvent = $vmEvents | Where-Object { $_.GetType().Name -eq "CustomizationFailed" }
  
@@ -217,24 +225,26 @@ else {
 }
 
 Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Removing temporary customization spec..."
-Remove-OSCustomizationSpec -OSCustomizationSpec $($DataFromFile.VMInfo.VMName) -Confirm:$false
+Remove-OSCustomizationSpec -OSCustomizationSpec $VmName -Confirm:$false
 
 Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Waiting a while after customization for Windows to stabilize..."
 Start-Sleep 60
 
-#Move server to appropriate OU, if OU in the JSON does not exist, the server gets moved to the "Servers" OU.
-Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Verifying OU '$($DataFromFile.GuestInfo.OU)' exists..."
-$DN = ConvertToDN -OUPath $($DataFromFile.GuestInfo.OU) -Domain $($DataFromFile.GuestInfo.Domain)
-try {
-    $OUCheck = Get-ADOrganizationalUnit -Identity $DN -Server $($DataFromFile.GuestInfo.DNS1) -Credential $DomainCredentials
-    Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Moving server to OU '$($DataFromFile.GuestInfo.OU)'..."
-    Get-ADComputer -Identity $($DataFromFile.VMInfo.VMName) -Server $($DataFromFile.GuestInfo.DNS1) -Credential $DomainCredentials | Move-ADObject -TargetPath $DN -Server $($DataFromFile.GuestInfo.DNS1) -Credential $DomainCredentials
-}
-catch {
-    Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Warn -LogString "OU '$($DataFromFile.GuestInfo.OU)' does not exist!!! Moving server to 'servers' OU..."
-    $DN = ConvertToDN -OUPath "Servers" -Domain $($DataFromFile.GuestInfo.Domain)
-    Get-ADComputer -Identity $($DataFromFile.VMInfo.VMName) -Server $($DataFromFile.GuestInfo.DNS1) -Credential $DomainCredentials | Move-ADObject -TargetPath $DN -Server $($DataFromFile.GuestInfo.DNS1) -Credential $DomainCredentials
+if ($($DataFromFile.GuestInfo.Domain) -ne "none") {
+    #Move server to appropriate OU, if OU in the JSON does not exist, the server gets moved to the "Servers" OU.
+    Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Verifying OU '$($DataFromFile.GuestInfo.OU)' exists..."
+    $DN = ConvertToDN -OUPath $($DataFromFile.GuestInfo.OU) -Domain $($DataFromFile.GuestInfo.Domain)
+    try {
+        $OUCheck = Get-ADOrganizationalUnit -Identity $DN -Server $($DataFromFile.GuestInfo.DNS1) -Credential $DomainCredentials
+        Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Moving server to OU '$($DataFromFile.GuestInfo.OU)'..."
+        Get-ADComputer -Identity $VmName -Server $($DataFromFile.GuestInfo.DNS1) -Credential $DomainCredentials | Move-ADObject -TargetPath $DN -Server $($DataFromFile.GuestInfo.DNS1) -Credential $DomainCredentials
+    }
+    catch {
+        Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Warn -LogString "OU '$($DataFromFile.GuestInfo.OU)' does not exist!!! Moving server to 'servers' OU..."
+        $DN = ConvertToDN -OUPath "Servers" -Domain $($DataFromFile.GuestInfo.Domain)
+        Get-ADComputer -Identity $VmName -Server $($DataFromFile.GuestInfo.DNS1) -Credential $DomainCredentials | Move-ADObject -TargetPath $DN -Server $($DataFromFile.GuestInfo.DNS1) -Credential $DomainCredentials
+    }
 }
 
 Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Succ -LogString "Your VM has been successfully deployed!!!"
-if ($SendEmail) { $EmailBody = Get-Content .\~Logs\"$ScriptName $ScriptStarted.log" | Out-String; Send-MailMessage -smtpserver $emailServer -to $emailTo -from $emailFrom -subject "Cloud-O-Mite Deployed a VM" -body $EmailBody -Credential ${Credential-GmailCred-THEOPENDOOR} -UseSsl -port 587 }
+if ($SendEmail) { $EmailBody = Get-Content .\~Logs\"$ScriptName $ScriptStarted.log" | Out-String; Send-MailMessage -smtpserver $emailServer -to $emailTo -from $emailFrom -subject "Cloud-O-Mite Deployed a VM" -body $EmailBody -Credential $CredGmail -UseSsl -port 587 }
