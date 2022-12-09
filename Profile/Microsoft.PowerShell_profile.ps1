@@ -66,7 +66,7 @@ if ($null -ne $PowerCLICheck) { Write-Host "`nPowerCLI $($PowerCLICheck.Version.
 else { Write-Host "`nPowerCLI not found." -ForegroundColor red }
 
 #Check for Git environment variable
-if ($env:githome) { $githome = $env:githome; Write-Host "`nGit path found." -ForegroundColor Green; Set-Location $githome }
+if ($env:githome) { $githome = $env:githome; Write-Host "`nGit path found." -ForegroundColor Green; Set-Location $githome\PowerShell }
 else { Write-Host "`nGit path NOT found." -ForegroundColor Red }
 
 if ([System.Net.Dns]::GetHostByName($env:computerName).HostName -like "*.evorigin.com") {
@@ -86,7 +86,7 @@ if ([System.Net.Dns]::GetHostByName($env:computerName).HostName -like "*.evorigi
 
 	if ($githome) { 
 		Write-Host "Importing credentials..." -ForegroundColor Gray
-		& $githome\Credentials\Import-Credentials.ps1
+		Import-Credentials
 	}
 
 	#Check for Dropbox environment variable

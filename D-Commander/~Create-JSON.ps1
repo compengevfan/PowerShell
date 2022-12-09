@@ -4,7 +4,7 @@ Param(
 )
  
 $ScriptPath = $PSScriptRoot
-cd $ScriptPath
+Set-Location $ScriptPath
  
 $ScriptStarted = Get-Date -Format MM-dd-yyyy_HH-mm-ss
 $ScriptName = $MyInvocation.MyCommand.Name
@@ -29,7 +29,7 @@ if (!(Get-Module -Name DupreeFunctions)) { Import-Module DupreeFunctions }
 if (!(Test-Path .\~Logs)) { New-Item -Name "~Logs" -ItemType Directory | Out-Null }
  
 Check-PowerCLI
-Connect-vCenter $vCenter
+cvi $vCenter
 
 while ($true)
 {
