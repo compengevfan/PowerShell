@@ -40,12 +40,13 @@ Function Invoke-SystemSetup {
         }
         else { 
             Write-Host "Git environment variable NOT found." -ForegroundColor Yellow
-            if (Test-Path C:\git\PowerShell) { $GitPath = "C:\git\PowerShell" } 
+            if (Test-Path C:\git) { $GitPath = "C:\git" } 
+            elseif (Test-Path E:\Dupree\git) { $GitPath = "E:\Dupree\git" }
             else { $GitPath = Read-Host "Please provide the git path." -ForegroundColor Yellow }
             Write-Host "Creating Git environment variable." -ForegroundColor Green
             [System.Environment]::SetEnvironmentVariable('githome', $GitPath, [System.EnvironmentVariableTarget]::User)
             Write-Host "Copying primary profile script using temporary variable." -ForegroundColor Green
-            Copy-Item -Path $GitPath\Profile\Microsoft.PowerShell_profile.ps1 -Destination $PROFILE -Force
+            Copy-Item -Path $GitPath\PowerShell\Profile\Microsoft.PowerShell_profile.ps1 -Destination $PROFILE -Force
         }
         Write-Host "Creating ISE profile script." -ForegroundColor Green
         Copy-Item -Path $PROFILE -Destination $PROFILE.Replace("Microsoft.PowerShell_profile.ps1", "Microsoft.PowerShellISE_profile.ps1")
