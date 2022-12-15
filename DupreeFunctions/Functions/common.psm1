@@ -61,7 +61,7 @@ Function Invoke-SystemSetup {
         Write-Host $_
     }
 
-    $DropboxProcess = Get-Process -Name Dropbox
+    $DropboxProcess = Get-Process -Name Dropbox -ErrorAction SilentlyContinue
     if ($($DropboxProcess).Count -gt 0) {
         Write-Host "Dropbox is installed and running." -ForegroundColor Green
         Write-Host "Checking for Dropbox environment variable..." -ForegroundColor Green
