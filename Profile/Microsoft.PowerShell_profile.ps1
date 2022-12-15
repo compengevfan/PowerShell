@@ -69,7 +69,9 @@ else { Write-Host "`nPowerCLI not found." -ForegroundColor red }
 if ($env:githome) { $githome = $env:githome; Write-Host "`nGit path found." -ForegroundColor Green; Set-Location $githome\PowerShell }
 else { Write-Host "`nGit path NOT found." -ForegroundColor Red }
 
-if ([System.Net.Dns]::GetHostByName($env:computerName).HostName -like "*.evorigin.com") {
+$LocalComputerName = [System.Net.Dns]::GetHostByName($env:computerName).HostName
+
+if ($LocalComputerName -like "*.evorigin.com") {
 	Write-Host "Detected EvOrigin Computer..." -ForegroundColor Green
 
 	try {
@@ -94,8 +96,8 @@ if ([System.Net.Dns]::GetHostByName($env:computerName).HostName -like "*.evorigi
 	else { Write-Host "Dropbox path NOT found." -ForegroundColor Yellow }
 }
 
-if ([System.Net.Dns]::GetHostByName($env:computerName).HostName -like "*.advent.com") {
-	Write-Host "Detected Advent Computer..." -ForegroundColor Green
+else {
+	Write-Host "Must be a work Computer..." -ForegroundColor Green
 
 	try {
 		Write-Host "Importing DC.Automation..." -ForegroundColor Gray
@@ -105,6 +107,7 @@ if ([System.Net.Dns]::GetHostByName($env:computerName).HostName -like "*.advent.
 		Write-Host "DC.Automation NOT found." -ForegroundColor Red
 	}
 }
+
 
 <# Write-Host "Checking DupreeFunctions module available and latest version..."
 $DupreeFunctionsMinVersion = (Find-Module DupreeFunctions).Version
