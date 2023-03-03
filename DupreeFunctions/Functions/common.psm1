@@ -130,10 +130,10 @@ Function Import-Credentials {
 
 Function Show-Credentials {
     $InSession = (Get-Variable Cred*).Name
-    Write-Host "Here's the list of imported credentials:"
+    Write-Host "Here's the list of imported credentials:" -ForegroundColor Green
     $InSession
     $CredFiles = (Get-ChildItem $env:LOCALAPPDATA\DupreeFunctions\Cred*.xml).Name
-    Write-Host "Here's the list of credential files:"
+    Write-Host "`r`nHere's the list of credential files:" -ForegroundColor Green
     $CredFiles
 }
 
