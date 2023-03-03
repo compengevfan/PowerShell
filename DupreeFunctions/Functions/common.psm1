@@ -128,6 +128,15 @@ Function Import-Credentials {
     } else { Write-Host "DupreeFunctions AppData folder not found."}
 }
 
+Function Show-Credentials {
+    $InSession = (Get-Variable Cred*).Name
+    Write-Host "Here's the list of imported credentials:"
+    $InSession
+    $CredFiles = (Get-ChildItem $env:LOCALAPPDATA\DupreeFunctions\Cred*.xml).Name
+    Write-Host "Here's the list of credential files:"
+    $CredFiles
+}
+
 Function ConvertToDN {
     Param(
         [Parameter(Mandatory = $true)] [string] $Domain,
