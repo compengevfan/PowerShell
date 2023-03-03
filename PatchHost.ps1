@@ -70,7 +70,7 @@ if ($($Cluster.DrsEnabled))
 
 $Hosts_In_Cluster = Get-Cluster $Cluster | Get-VMHost | Sort-Object Name
 
-$i = 0
+$i = 1
 
 $Hosts_In_Array = @()
 cls
