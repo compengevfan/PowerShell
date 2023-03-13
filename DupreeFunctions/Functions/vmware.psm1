@@ -243,3 +243,191 @@ function Set-AlarmActionState {
         }
     }
 }
+
+Function Invoke-BDDrainHost {
+    [cmdletbinding()]
+    param (
+        [Parameter(Mandatory = $true)] [VMware.VimAutomation.ViCore.Impl.V1.Inventory.VMHostImpl]$VMHost
+    )
+
+    $ErrorActionPreference = "Stop"
+
+    try {
+        $Cluster = $VMHost | Get-Cluster
+
+        if ($($Cluster.DrsEnabled))
+        {
+            Send-LogInsight -Application "Invoke-BDDrainHost" -Message "Storing current cluster DRS Automation level." -Fields @{Server=$($HostToPatch.Name)} -OutputLocal
+            $Stored_DRS_Level = $Cluster.DrsAutomationLevel
+            Send-LogInsight -Application "Invoke-BDDrainHost" -Message "Setting DRS Automation level to manual." -Fields @{Server=$($HostToPatch.Name)} -OutputLocal
+            Set-Cluster -Cluster $Cluster -DrsAutomationLevel Manual -Confirm:$false | Out-Null
+        }
+    
+        $VmsToMigrate = $VMHost | Get-VM | Where-Object {$_.PowerState -eq "PoweredOn"}
+        $VmsToMigrateCount = $VmsToMigrate.Count
+        $VMc = 1
+    
+        foreach ($VmToMigrate in $VmsToMigrate)
+        {
+            # Write-Host "Determining host to migrate to."
+            Send-LogInsight -Application "Invoke-BDDrainHost" -Message "Determining host to migrate to." -Fields @{Server=$($HostToPatch.Name)} -OutputLocal
+            $ClusterHosts = $Cluster | Get-VMHost | Where-Object { $_.ConnectionState -eq "Connected" }
+            $TargetHost = $ClusterHosts | Where-Object { $_ -ne $VMHost } | Sort-Object MemoryUsageGB | Select-Object -First 1
+    
+            # Write-Host "Moving VM $($VmToMigrate.Name) ($VMc of $VmsToMigrateCount) to $($TargetHost.Name)."
+            Send-LogInsight -Application "Invoke-BDDrainHost" -Message "Moving VM $($VmToMigrate.Name) ($VMc of $VmsToMigrateCount) to $($TargetHost.Name)." -Fields @{Server=$($HostToPatch.Name)} -OutputLocal
+            Move-VM -VM $VmToMigrate -Destination $TargetHost | Out-Null
+    
+            $VMc++
+            Start-Sleep 5
+        }
+    
+        # Write-Host "Setting cluster DRS to 'FullyAutomated'."
+        Send-LogInsight -Application "Invoke-BDDrainHost" -Message "Setting cluster DRS to 'FullyAutomated'." -Fields @{Server=$($HostToPatch.Name)} -OutputLocal
+        Set-Cluster -Cluster $Cluster -DrsAutomationLevel FullyAutomated -Confirm:$false | Out-Null
+    
+        # Write-Host "Verifying host is empty and setting to MM."
+        Send-LogInsight -Application "Invoke-BDDrainHost" -Message "Verifying host is empty and setting to MM." -Fields @{Server=$($HostToPatch.Name)} -OutputLocal
+        $Check = $VMHost | Get-VM | Where-Object {$_.PowerState -eq "PoweredOn"}
+        if ($null -eq $Check) { Set-VMHost -VMHost $VMHost -State Maintenance -Evacuate:$true -Confirm:$false | Out-Null }
+        else { Write-Host "Host did not completely drain. Please check VMs left on the host for VMotion errors, resolve and run the script again."; throw "Host did not completely drain. Please check VMs left on the host for VMotion errors, resolve and run the script again." }
+    
+        #Waiting for vCenter to do stuff
+        Start-Sleep 30
+        Wait-vCenterTasks
+
+        # Write-Host "Setting DRS mode to pre-script setting."
+        Send-LogInsight -Application "Invoke-BDDrainHost" -Message "Setting DRS mode to pre-script setting." -Fields @{Server=$($HostToPatch.Name)} -OutputLocal
+        Set-Cluster -Cluster $Cluster -DrsAutomationLevel $Stored_DRS_Level -Confirm:$false | Out-Null
+    }
+    catch {
+        throw
+    }
+}
+
+Function Invoke-BDPatchESXHost {
+    [cmdletbinding()]
+    param (
+        [Parameter(Mandatory = $true)] [VMware.VimAutomation.ViCore.Impl.V1.Inventory.VMHostImpl]$HostToPatch,
+        [Parameter()][ValidateSet("DRS", "DrainHost")] [string]$EvacType = "DrainHost",
+        [bool]$AutoExitMm = $false,
+        [string]$emailTo = ([DC.Automation]::TeamEmail)
+    )
+
+    $ErrorActionPreference = "Stop"
+
+    try {
+        #Obtain a count of host datastores before applying updates
+        $DsCountStart = ($HostToPatch | Get-Datastore).Count
+        #Write-Host "Scanning $($HostToPatch.Name) baselines."
+        Send-LogInsight -Application "Invoke-PatchESXHost" -Message "Scanning baselines." -Fields @{Server=$($HostToPatch.Name)} -OutputLocal
+        Scan-Inventory -Entity $HostToPatch.Name
+
+        #Write-Host "Determining if there are non-compliant baselines"
+        Send-LogInsight -Application "Invoke-PatchESXHost" -Message "Determining if there are non-compliant baselines" -Fields @{Server=$($HostToPatch.Name)} -OutputLocal
+        $NcBaselines = Get-Compliance -Entity $HostToPatch.Name -ComplianceStatus NotCompliant
+
+        if ($null -eq $NcBaselines) { Send-LogInsight -Application "Invoke-PatchESXHost" -Message "Host is already compliant with all applied baselines." -Fields @{Server=$($HostToPatch.Name)} -OutputLocal }
+        else {
+            switch ($EvacType) {
+                "DRS" { 
+                    #Write-Host "Putting host in MM using DRS."
+                    Send-LogInsight -Application "Invoke-PatchESXHost" -Message "Putting host in MM using DRS." -Fields @{Server=$($HostToPatch.Name)} -OutputLocal
+                    Set-VMHost -VMHost $HostToPatch -State Maintenance -Evacuate:$true -Confirm:$false
+                 }
+                "DrainHost" { 
+                    #Write-Host "Putting host in MM using DrainHost Function."
+                    Send-LogInsight -Application "Invoke-PatchESXHost" -Message "Putting host in MM using DrainHost Function." -Fields @{Server=$($HostToPatch.Name)} -OutputLocal
+                    Invoke-BDDrainHost -VMHost $HostToPatch
+                 }
+                Default {}
+            }
+    
+            #Verify host is in MM
+            # Write-Host "Verifying host is in MM."
+            Send-LogInsight -Application "Invoke-PatchESXHost" -Message "Verifying host is in MM." -Fields @{Server=$($HostToPatch.Name)} -OutputLocal
+            if ((Get-VMHost $HostToPatch).ConnectionState -ne "Maintenance") { Throw "$($HostToPatch.Name) is not in MM." }
+    
+            # Write-Host "Staging non-compliant baselines."
+            Send-LogInsight -Application "Invoke-PatchESXHost" -Message "Staging baselines." -Fields @{Server=$($HostToPatch.Name)} -OutputLocal
+            $Baselines = Get-PatchBaseline -Entity $HostToPatch -Inherit
+            Copy-Patch -Entity $HostToPatch -Baseline $Baselines
+            Send-LogInsight -Application "Invoke-PatchESXHost" -Message "Remediating baselines: `r`n`t$($Baselines.Name -join "`n`t")" -Fields @{Server=$($HostToPatch.Name)} -OutputLocal
+            Remediate-Inventory -Entity $HostToPatch -Baseline $Baselines -ClusterDisableDistributedPowerManagement:$true -Confirm:$false -ErrorAction "Ignore"
+    
+            #Waiting for 10 successful pings
+            # Write-Host "Performing ping checks."
+            Send-LogInsight -Application "Invoke-PatchESXHost" -Message "Performing ping checks." -Fields @{Server=$($HostToPatch.Name)} -OutputLocal
+            $PingCheck = 0
+            while ($PingCheck -lt 10) {
+                $PingCheck += 1
+                if (!(Test-Connection -ComputerName $HostToPatch.Name -Count 1 -Quiet)) { throw "Post patch ping checks failed for $($HostToPatch.Name)" }
+                Start-Sleep 3
+            }
+            
+            #Rescan host and verify compliance
+            # Write-Host "Rescanning $($HostToPatch.Name) baselines."
+            Send-LogInsight -Application "Invoke-PatchESXHost" -Message "Rescanning $($HostToPatch.Name) baselines." -Fields @{Server=$($HostToPatch.Name)} -OutputLocal
+            Scan-Inventory -Entity $HostToPatch.Name
+            # Write-Host "Determining if there are non-compliant baselines"
+            Send-LogInsight -Application "Invoke-PatchESXHost" -Message "Determining if there are non-compliant baselines" -Fields @{Server=$($HostToPatch.Name)} -OutputLocal
+            $PostNcBaselines = Get-Compliance -Entity $HostToPatch.Name -ComplianceStatus NotCompliant
+            if ($null -ne $PostNcBaselines) { Send-LogInsight -Application "Invoke-PatchESXHost" -Message "Patching was attempted on $($HostToPatch.Name) but there are still non-compliant baselines." -Fields @{Server=$($HostToPatch.Name)}; throw "Patching was attempted on $($HostToPatch.Name) but there are still non-compliant baselines" }
+    
+            #Verify datastore count matches pre-upgrade count
+            Send-LogInsight -Application "Invoke-PatchESXHost" -Message "Verifying datastore count matches pre-upgrade count." -Fields @{Server=$($HostToPatch.Name)} -OutputLocal
+            $DsCountEnd = ($HostToPatch | Get-Datastore).Count
+            if ($DsCountStart -ne $DsCountEnd) { throw "Post upgrade datastore count on $($HostToPatch.Name) does not match the pre upgrade count"}
+    
+            if ($AutoExitMm){
+                Send-LogInsight -Application "Invoke-PatchESXHost" -Message "$($HostToPatch.Name) exiting Maintenance Mode." -OutputLocal
+                Set-VMHost -VMHost $HostToPatch -State Connected -Confirm:$false | Out-Null
+            }
+    
+            Write-Host "Sending success message."
+            Send-LogInsight -Application "Invoke-PatchESXHost" -Message "$($HostToPatch.Name) was successfully patched. Baselines installed: `r`n`t$($Baselines.Name -join "`n`t")" -Fields @{Server=$($HostToPatch.Name)} -OutputLocal
+        }
+    }
+    catch {
+        Write-Host "Sending failure message."
+        Send-MailMessage -To $emailTo -Subject "Host Patch Error" -smtpserver ([DC.Automation]::SMTPProd) -From "PatchEsxHost@sscinc.com" -body "Attempt to patch $($HostToPatch.Name) failed. The error encountered was:`r`n$($_.Exception.Message)`n$($_.ScriptStackTrace)"
+        Send-LogInsight -Application "Invoke-PatchESXHost" -Message "Attempt to patch $($HostToPatch.Name) failed. The error encountered was:`r`n$($_.Exception.Message)`n$($_.ScriptStackTrace)" -Fields @{Server=$($HostToPatch.Name)} -OutputLocal
+    }
+}
+
+Function Invoke-BDPatchESXCluster {
+    [cmdletbinding()]
+    param (
+        [Parameter()] [VMware.VimAutomation.ViCore.Impl.V1.Inventory.ClusterImpl]$ClusterToPatch,
+        [Parameter()][ValidateSet("DRS", "DrainHost")] [string]$EvacType = "DrainHost",
+        [string]$emailTo = ([DC.Automation]::TeamEmail)
+    )
+
+    $ErrorActionPreference = "Stop"
+
+    try {
+        if ($null -eq $ClusterToPatch) {
+            $Clusters = Get-Cluster | Sort-Object Name
+            $ClusterToPatch = Invoke-BDMenu -Objects $Clusters -MenuColumn "Name" -SelectionText "Please select a cluster for ESX host upgrades" -ClearScreen:$true
+        }
+
+        $AreYouSure = Read-Host "Are you sure you want to apply ESX updates to the hosts in cluster $ClusterToPatch (You must respond with 'yes' to continue)?"
+        if ($AreYouSure -ne "yes") {Write-Host "You did not respond with 'yes'."}
+        else {
+            # Write-Host "Getting all the hosts in the cluster sorted by Name."
+            Send-LogInsight -Application "Invoke-BDPatchESXCluster" -Message "Getting all the hosts in the cluster sorted by Name." -Fields @{Cluster=$($ClusterToPatch.Name)} -OutputLocal
+
+            $ClusterHosts = $ClusterToPatch | Get-VMHost | Sort-Object Name
+
+            foreach ($ClusterHost in $ClusterHosts) {
+                Send-LogInsight -Application "Invoke-BDPatchESXCluster" -Message "Calling patch host function for $($ClusterHost.Name)" -Fields @{Cluster=$($ClusterToPatch.Name)} -OutputLocal
+                Invoke-BDPatchESXHost -HostToPatch $ClusterHost -EvacType $EvacType -AutoExitMm:$true
+            }
+            Send-MailMessage -To $emailTo -Subject "Cluster Patch Success" -smtpserver ([DC.Automation]::SMTPProd) -From "PatchEsxHost@sscinc.com" -body "$($ClusterToPatch.Name) was successfully patched."
+            Send-LogInsight -Application "Invoke-PatchESXCluster" -Message "$($ClusterToPatch.Name) patch process compelete. Check email for server patch failures." -OutputLocal
+        }
+    }
+    catch {
+        throw
+    }
+}
