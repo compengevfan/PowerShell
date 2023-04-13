@@ -244,7 +244,7 @@ function Set-AlarmActionState {
     }
 }
 
-Function Invoke-BDDrainHost {
+Function Invoke-DrainHost {
     [cmdletbinding()]
     param (
         [Parameter(Mandatory = $true)] [VMware.VimAutomation.ViCore.Impl.V1.Inventory.VMHostImpl]$VMHost
@@ -252,14 +252,22 @@ Function Invoke-BDDrainHost {
 
     $ErrorActionPreference = "Stop"
 
+    $ScriptStarted = Get-Date -Format MM-dd-yyyy_HH-mm-ss
+    $ScriptName = $MyInvocation.MyCommand.Name
+
+    # $LoggingSuccSplat = @{ScriptStarted = $ScriptStarted; ScriptName = $ScriptName; LogType = "Succ"}
+    $LoggingInfoSplat = @{ScriptStarted = $ScriptStarted; ScriptName = $ScriptName; LogType = "Info"}
+    # $LoggingWarnSplat = @{ScriptStarted = $ScriptStarted; ScriptName = $ScriptName; LogType = "Warn"}
+    # $LoggingErrSplat = @{ScriptStarted = $ScriptStarted; ScriptName = $ScriptName; LogType = "Err"}
+
     try {
         $Cluster = $VMHost | Get-Cluster
 
         if ($($Cluster.DrsEnabled))
         {
-            Send-LogInsight -Application "Invoke-BDDrainHost" -Message "Storing current cluster DRS Automation level." -Fields @{Server=$($HostToPatch.Name)} -OutputLocal
+            Invoke-Logging @LoggingInfoSplat -LogString "Storing current cluster DRS Automation level."
             $Stored_DRS_Level = $Cluster.DrsAutomationLevel
-            Send-LogInsight -Application "Invoke-BDDrainHost" -Message "Setting DRS Automation level to manual." -Fields @{Server=$($HostToPatch.Name)} -OutputLocal
+            Invoke-Logging @LoggingInfoSplat -LogString "Setting DRS Automation level to manual."
             Set-Cluster -Cluster $Cluster -DrsAutomationLevel Manual -Confirm:$false | Out-Null
         }
     
@@ -270,12 +278,12 @@ Function Invoke-BDDrainHost {
         foreach ($VmToMigrate in $VmsToMigrate)
         {
             # Write-Host "Determining host to migrate to."
-            Send-LogInsight -Application "Invoke-BDDrainHost" -Message "Determining host to migrate to." -Fields @{Server=$($HostToPatch.Name)} -OutputLocal
+            Invoke-Logging @LoggingInfoSplat -LogString "Determining host to migrate to."
             $ClusterHosts = $Cluster | Get-VMHost | Where-Object { $_.ConnectionState -eq "Connected" }
             $TargetHost = $ClusterHosts | Where-Object { $_ -ne $VMHost } | Sort-Object MemoryUsageGB | Select-Object -First 1
     
             # Write-Host "Moving VM $($VmToMigrate.Name) ($VMc of $VmsToMigrateCount) to $($TargetHost.Name)."
-            Send-LogInsight -Application "Invoke-BDDrainHost" -Message "Moving VM $($VmToMigrate.Name) ($VMc of $VmsToMigrateCount) to $($TargetHost.Name)." -Fields @{Server=$($HostToPatch.Name)} -OutputLocal
+            Invoke-Logging @LoggingInfoSplat -LogString "Moving VM $($VmToMigrate.Name) ($VMc of $VmsToMigrateCount) to $($TargetHost.Name)."
             Move-VM -VM $VmToMigrate -Destination $TargetHost | Out-Null
     
             $VMc++
@@ -283,21 +291,20 @@ Function Invoke-BDDrainHost {
         }
     
         # Write-Host "Setting cluster DRS to 'FullyAutomated'."
-        Send-LogInsight -Application "Invoke-BDDrainHost" -Message "Setting cluster DRS to 'FullyAutomated'." -Fields @{Server=$($HostToPatch.Name)} -OutputLocal
+        Invoke-Logging @LoggingInfoSplat -LogString "Setting cluster DRS to 'FullyAutomated'."
         Set-Cluster -Cluster $Cluster -DrsAutomationLevel FullyAutomated -Confirm:$false | Out-Null
     
         # Write-Host "Verifying host is empty and setting to MM."
-        Send-LogInsight -Application "Invoke-BDDrainHost" -Message "Verifying host is empty and setting to MM." -Fields @{Server=$($HostToPatch.Name)} -OutputLocal
+        Invoke-Logging @LoggingInfoSplat -LogString "Verifying host is empty and setting to MM."
         $Check = $VMHost | Get-VM | Where-Object {$_.PowerState -eq "PoweredOn"}
         if ($null -eq $Check) { Set-VMHost -VMHost $VMHost -State Maintenance -Evacuate:$true -Confirm:$false | Out-Null }
         else { Write-Host "Host did not completely drain. Please check VMs left on the host for VMotion errors, resolve and run the script again."; throw "Host did not completely drain. Please check VMs left on the host for VMotion errors, resolve and run the script again." }
     
         #Waiting for vCenter to do stuff
         Start-Sleep 30
-        Wait-vCenterTasks
 
         # Write-Host "Setting DRS mode to pre-script setting."
-        Send-LogInsight -Application "Invoke-BDDrainHost" -Message "Setting DRS mode to pre-script setting." -Fields @{Server=$($HostToPatch.Name)} -OutputLocal
+        Invoke-Logging @LoggingInfoSplat -LogString "Setting DRS mode to pre-script setting."
         Set-Cluster -Cluster $Cluster -DrsAutomationLevel $Stored_DRS_Level -Confirm:$false | Out-Null
     }
     catch {
@@ -305,7 +312,7 @@ Function Invoke-BDDrainHost {
     }
 }
 
-Function Invoke-BDPatchESXHost {
+Function Invoke-PatchESXHost {
     [cmdletbinding()]
     param (
         [Parameter(Mandatory = $true)] [VMware.VimAutomation.ViCore.Impl.V1.Inventory.VMHostImpl]$HostToPatch,
@@ -315,6 +322,14 @@ Function Invoke-BDPatchESXHost {
     )
 
     $ErrorActionPreference = "Stop"
+
+    $ScriptStarted = Get-Date -Format MM-dd-yyyy_HH-mm-ss
+    $ScriptName = $MyInvocation.MyCommand.Name
+
+    $LoggingSuccSplat = @{ScriptStarted = $ScriptStarted; ScriptName = $ScriptName; LogType = "Succ"}
+    $LoggingInfoSplat = @{ScriptStarted = $ScriptStarted; ScriptName = $ScriptName; LogType = "Info"}
+    $LoggingWarnSplat = @{ScriptStarted = $ScriptStarted; ScriptName = $ScriptName; LogType = "Warn"}
+    $LoggingErrSplat = @{ScriptStarted = $ScriptStarted; ScriptName = $ScriptName; LogType = "Err"}
 
     try {
         #Obtain a count of host datastores before applying updates
@@ -338,7 +353,7 @@ Function Invoke-BDPatchESXHost {
                 "DrainHost" { 
                     #Write-Host "Putting host in MM using DrainHost Function."
                     Send-LogInsight -Application "Invoke-PatchESXHost" -Message "Putting host in MM using DrainHost Function." -Fields @{Server=$($HostToPatch.Name)} -OutputLocal
-                    Invoke-BDDrainHost -VMHost $HostToPatch
+                    Invoke-DrainHost -VMHost $HostToPatch
                  }
                 Default {}
             }
@@ -390,12 +405,13 @@ Function Invoke-BDPatchESXHost {
     }
     catch {
         Write-Host "Sending failure message."
-        Send-MailMessage -To $emailTo -Subject "Host Patch Error" -smtpserver ([DC.Automation]::SMTPProd) -From "PatchEsxHost@sscinc.com" -body "Attempt to patch $($HostToPatch.Name) failed. The error encountered was:`r`n$($_.Exception.Message)`n$($_.ScriptStackTrace)"
+        Invoke-SendEmail -Subject "Host Patch Error" -EmailBody "Attempt to patch $($HostToPatch.Name) failed. The error encountered was:`r`n$($_.Exception.Message)`n$($_.ScriptStackTrace)"
+        # Send-MailMessage -To $emailTo -Subject "Host Patch Error" -smtpserver ([DC.Automation]::SMTPProd) -From "PatchEsxHost@sscinc.com" -body "Attempt to patch $($HostToPatch.Name) failed. The error encountered was:`r`n$($_.Exception.Message)`n$($_.ScriptStackTrace)"
         Send-LogInsight -Application "Invoke-PatchESXHost" -Message "Attempt to patch $($HostToPatch.Name) failed. The error encountered was:`r`n$($_.Exception.Message)`n$($_.ScriptStackTrace)" -Fields @{Server=$($HostToPatch.Name)} -OutputLocal
     }
 }
 
-Function Invoke-BDPatchESXCluster {
+Function Invoke-PatchESXCluster {
     [cmdletbinding()]
     param (
         [Parameter()] [VMware.VimAutomation.ViCore.Impl.V1.Inventory.ClusterImpl]$ClusterToPatch,
@@ -405,25 +421,34 @@ Function Invoke-BDPatchESXCluster {
 
     $ErrorActionPreference = "Stop"
 
+    $ScriptStarted = Get-Date -Format MM-dd-yyyy_HH-mm-ss
+    $ScriptName = $MyInvocation.MyCommand.Name
+
+    $LoggingSuccSplat = @{ScriptStarted = $ScriptStarted; ScriptName = $ScriptName; LogType = "Succ"}
+    $LoggingInfoSplat = @{ScriptStarted = $ScriptStarted; ScriptName = $ScriptName; LogType = "Info"}
+    $LoggingWarnSplat = @{ScriptStarted = $ScriptStarted; ScriptName = $ScriptName; LogType = "Warn"}
+    $LoggingErrSplat = @{ScriptStarted = $ScriptStarted; ScriptName = $ScriptName; LogType = "Err"}
+
     try {
         if ($null -eq $ClusterToPatch) {
             $Clusters = Get-Cluster | Sort-Object Name
-            $ClusterToPatch = Invoke-BDMenu -Objects $Clusters -MenuColumn "Name" -SelectionText "Please select a cluster for ESX host upgrades" -ClearScreen:$true
+            $ClusterToPatch = Invoke-Menu -Objects $Clusters -MenuColumn "Name" -SelectionText "Please select a cluster for ESX host upgrades" -ClearScreen:$true
         }
 
         $AreYouSure = Read-Host "Are you sure you want to apply ESX updates to the hosts in cluster $ClusterToPatch (You must respond with 'yes' to continue)?"
         if ($AreYouSure -ne "yes") {Write-Host "You did not respond with 'yes'."}
         else {
             # Write-Host "Getting all the hosts in the cluster sorted by Name."
-            Send-LogInsight -Application "Invoke-BDPatchESXCluster" -Message "Getting all the hosts in the cluster sorted by Name." -Fields @{Cluster=$($ClusterToPatch.Name)} -OutputLocal
+            Send-LogInsight -Application "Invoke-PatchESXCluster" -Message "Getting all the hosts in the cluster sorted by Name." -Fields @{Cluster=$($ClusterToPatch.Name)} -OutputLocal
 
             $ClusterHosts = $ClusterToPatch | Get-VMHost | Sort-Object Name
 
             foreach ($ClusterHost in $ClusterHosts) {
-                Send-LogInsight -Application "Invoke-BDPatchESXCluster" -Message "Calling patch host function for $($ClusterHost.Name)" -Fields @{Cluster=$($ClusterToPatch.Name)} -OutputLocal
-                Invoke-BDPatchESXHost -HostToPatch $ClusterHost -EvacType $EvacType -AutoExitMm:$true
+                Send-LogInsight -Application "Invoke-PatchESXCluster" -Message "Calling patch host function for $($ClusterHost.Name)" -Fields @{Cluster=$($ClusterToPatch.Name)} -OutputLocal
+                Invoke-PatchESXHost -HostToPatch $ClusterHost -EvacType $EvacType -AutoExitMm:$true
             }
-            Send-MailMessage -To $emailTo -Subject "Cluster Patch Success" -smtpserver ([DC.Automation]::SMTPProd) -From "PatchEsxHost@sscinc.com" -body "$($ClusterToPatch.Name) was successfully patched."
+            Invoke-SendEmail -Subject "Cluster Patch Success" -EmailBody "$($ClusterToPatch.Name) was successfully patched."
+            # Send-MailMessage -To $emailTo -Subject "Cluster Patch Success" -smtpserver ([DC.Automation]::SMTPProd) -From "PatchEsxHost@sscinc.com" -body "$($ClusterToPatch.Name) was successfully patched."
             Send-LogInsight -Application "Invoke-PatchESXCluster" -Message "$($ClusterToPatch.Name) patch process compelete. Check email for server patch failures." -OutputLocal
         }
     }
