@@ -298,7 +298,7 @@ Function Invoke-DrainHost {
         Invoke-Logging @LoggingInfoSplat -LogString "Verifying host is empty and setting to MM."
         $Check = $VMHost | Get-VM | Where-Object {$_.PowerState -eq "PoweredOn"}
         if ($null -eq $Check) { Set-VMHost -VMHost $VMHost -State Maintenance -Evacuate:$true -Confirm:$false | Out-Null }
-        else { Write-Host "Host did not completely drain. Please check VMs left on the host for VMotion errors, resolve and run the script again."; throw "Host did not completely drain. Please check VMs left on the host for VMotion errors, resolve and run the script again." }
+        else { Invoke-Logging @LoggingErrSplat -LogString "Host did not completely drain. Please check VMs left on the host for VMotion errors, resolve and run the script again."; throw "Host did not completely drain. Please check VMs left on the host for VMotion errors, resolve and run the script again." }
     
         #Waiting for vCenter to do stuff
         Start-Sleep 30
@@ -335,24 +335,24 @@ Function Invoke-PatchESXHost {
         #Obtain a count of host datastores before applying updates
         $DsCountStart = ($HostToPatch | Get-Datastore).Count
         #Write-Host "Scanning $($HostToPatch.Name) baselines."
-        Send-LogInsight -Application "Invoke-PatchESXHost" -Message "Scanning baselines." -Fields @{Server=$($HostToPatch.Name)} -OutputLocal
+        Invoke-Logging $LoggingInfoSplat -LogString "Scanning $($HostToPatch.Name) baselines."
         Scan-Inventory -Entity $HostToPatch.Name
 
         #Write-Host "Determining if there are non-compliant baselines"
-        Send-LogInsight -Application "Invoke-PatchESXHost" -Message "Determining if there are non-compliant baselines" -Fields @{Server=$($HostToPatch.Name)} -OutputLocal
+        Invoke-Logging $LoggingInfoSplat -LogString "Determining if there are non-compliant baselines"
         $NcBaselines = Get-Compliance -Entity $HostToPatch.Name -ComplianceStatus NotCompliant
 
-        if ($null -eq $NcBaselines) { Send-LogInsight -Application "Invoke-PatchESXHost" -Message "Host is already compliant with all applied baselines." -Fields @{Server=$($HostToPatch.Name)} -OutputLocal }
+        if ($null -eq $NcBaselines) { Invoke-Logging $LoggingSuccSplat -LogString "Host is already compliant with all applied baselines." }
         else {
             switch ($EvacType) {
                 "DRS" { 
                     #Write-Host "Putting host in MM using DRS."
-                    Send-LogInsight -Application "Invoke-PatchESXHost" -Message "Putting host in MM using DRS." -Fields @{Server=$($HostToPatch.Name)} -OutputLocal
+                    Invoke-Logging $LoggingInfoSplat -LogString "Putting host in MM using DRS."
                     Set-VMHost -VMHost $HostToPatch -State Maintenance -Evacuate:$true -Confirm:$false
                  }
                 "DrainHost" { 
                     #Write-Host "Putting host in MM using DrainHost Function."
-                    Send-LogInsight -Application "Invoke-PatchESXHost" -Message "Putting host in MM using DrainHost Function." -Fields @{Server=$($HostToPatch.Name)} -OutputLocal
+                    Invoke-Logging $LoggingInfoSplat -LogString "Putting host in MM using DrainHost Function."
                     Invoke-DrainHost -VMHost $HostToPatch
                  }
                 Default {}
@@ -360,54 +360,53 @@ Function Invoke-PatchESXHost {
     
             #Verify host is in MM
             # Write-Host "Verifying host is in MM."
-            Send-LogInsight -Application "Invoke-PatchESXHost" -Message "Verifying host is in MM." -Fields @{Server=$($HostToPatch.Name)} -OutputLocal
+            Invoke-Logging $LoggingInfoSplat -LogString "Verifying host is in MM."
             if ((Get-VMHost $HostToPatch).ConnectionState -ne "Maintenance") { Throw "$($HostToPatch.Name) is not in MM." }
     
             # Write-Host "Staging non-compliant baselines."
-            Send-LogInsight -Application "Invoke-PatchESXHost" -Message "Staging baselines." -Fields @{Server=$($HostToPatch.Name)} -OutputLocal
+            Invoke-Logging $LoggingInfoSplat -LogString "Staging baselines."
             $Baselines = Get-PatchBaseline -Entity $HostToPatch -Inherit
             Copy-Patch -Entity $HostToPatch -Baseline $Baselines
-            Send-LogInsight -Application "Invoke-PatchESXHost" -Message "Remediating baselines: `r`n`t$($Baselines.Name -join "`n`t")" -Fields @{Server=$($HostToPatch.Name)} -OutputLocal
+            Invoke-Logging $LoggingInfoSplat -LogString "Remediating baselines: `r`n`t$($Baselines.Name -join "`n`t")"
             Remediate-Inventory -Entity $HostToPatch -Baseline $Baselines -ClusterDisableDistributedPowerManagement:$true -Confirm:$false -ErrorAction "Ignore"
     
             #Waiting for 10 successful pings
             # Write-Host "Performing ping checks."
-            Send-LogInsight -Application "Invoke-PatchESXHost" -Message "Performing ping checks." -Fields @{Server=$($HostToPatch.Name)} -OutputLocal
+            Invoke-Logging $LoggingInfoSplat -LogString "Performing ping checks."
             $PingCheck = 0
             while ($PingCheck -lt 10) {
                 $PingCheck += 1
-                if (!(Test-Connection -ComputerName $HostToPatch.Name -Count 1 -Quiet)) { throw "Post patch ping checks failed for $($HostToPatch.Name)" }
+                if (!(Test-Connection -ComputerName $HostToPatch.Name -Count 1 -Quiet)) { Invoke-Logging @LoggingErrSplat -LogString "Post patch ping checks failed for $($HostToPatch.Name)"; throw "Post patch ping checks failed for $($HostToPatch.Name)" }
                 Start-Sleep 3
             }
             
             #Rescan host and verify compliance
             # Write-Host "Rescanning $($HostToPatch.Name) baselines."
-            Send-LogInsight -Application "Invoke-PatchESXHost" -Message "Rescanning $($HostToPatch.Name) baselines." -Fields @{Server=$($HostToPatch.Name)} -OutputLocal
+            Invoke-Logging $LoggingInfoSplat -LogString "Rescanning $($HostToPatch.Name) baselines."
             Scan-Inventory -Entity $HostToPatch.Name
             # Write-Host "Determining if there are non-compliant baselines"
-            Send-LogInsight -Application "Invoke-PatchESXHost" -Message "Determining if there are non-compliant baselines" -Fields @{Server=$($HostToPatch.Name)} -OutputLocal
+            Invoke-Logging $LoggingInfoSplat -LogString "Determining if there are non-compliant baselines"
             $PostNcBaselines = Get-Compliance -Entity $HostToPatch.Name -ComplianceStatus NotCompliant
-            if ($null -ne $PostNcBaselines) { Send-LogInsight -Application "Invoke-PatchESXHost" -Message "Patching was attempted on $($HostToPatch.Name) but there are still non-compliant baselines." -Fields @{Server=$($HostToPatch.Name)}; throw "Patching was attempted on $($HostToPatch.Name) but there are still non-compliant baselines" }
+            if ($null -ne $PostNcBaselines) { Invoke-Logging $LoggingWarnSplat -LogString "Patching was attempted on $($HostToPatch.Name) but there are still non-compliant baselines." }
     
             #Verify datastore count matches pre-upgrade count
-            Send-LogInsight -Application "Invoke-PatchESXHost" -Message "Verifying datastore count matches pre-upgrade count." -Fields @{Server=$($HostToPatch.Name)} -OutputLocal
+            Invoke-Logging $LoggingInfoSplat -LogString "Verifying datastore count matches pre-upgrade count."
             $DsCountEnd = ($HostToPatch | Get-Datastore).Count
-            if ($DsCountStart -ne $DsCountEnd) { throw "Post upgrade datastore count on $($HostToPatch.Name) does not match the pre upgrade count"}
+            if ($DsCountStart -ne $DsCountEnd) { Invoke-Logging @LoggingErrSplat -LogString "Post upgrade datastore count on $($HostToPatch.Name) does not match the pre upgrade count"; throw "Post upgrade datastore count on $($HostToPatch.Name) does not match the pre upgrade count"}
     
             if ($AutoExitMm){
-                Send-LogInsight -Application "Invoke-PatchESXHost" -Message "$($HostToPatch.Name) exiting Maintenance Mode." -OutputLocal
+                Invoke-Logging $LoggingInfoSplat -LogString "$($HostToPatch.Name) exiting Maintenance Mode."
                 Set-VMHost -VMHost $HostToPatch -State Connected -Confirm:$false | Out-Null
             }
     
-            Write-Host "Sending success message."
-            Send-LogInsight -Application "Invoke-PatchESXHost" -Message "$($HostToPatch.Name) was successfully patched. Baselines installed: `r`n`t$($Baselines.Name -join "`n`t")" -Fields @{Server=$($HostToPatch.Name)} -OutputLocal
+            # Write-Host "Sending success message."
+            Invoke-Logging $LoggingSuccSplat -LogString "$($HostToPatch.Name) was successfully patched. Baselines installed: `r`n`t$($Baselines.Name -join "`n`t")"
         }
     }
     catch {
-        Write-Host "Sending failure message."
+        # Write-Host "Sending failure message."
+        Invoke-Logging $LoggingErrSplat -LogString "Attempt to patch $($HostToPatch.Name) failed. The error encountered was:`r`n$($_.Exception.Message)`n$($_.ScriptStackTrace)"
         Invoke-SendEmail -Subject "Host Patch Error" -EmailBody "Attempt to patch $($HostToPatch.Name) failed. The error encountered was:`r`n$($_.Exception.Message)`n$($_.ScriptStackTrace)"
-        # Send-MailMessage -To $emailTo -Subject "Host Patch Error" -smtpserver ([DC.Automation]::SMTPProd) -From "PatchEsxHost@sscinc.com" -body "Attempt to patch $($HostToPatch.Name) failed. The error encountered was:`r`n$($_.Exception.Message)`n$($_.ScriptStackTrace)"
-        Send-LogInsight -Application "Invoke-PatchESXHost" -Message "Attempt to patch $($HostToPatch.Name) failed. The error encountered was:`r`n$($_.Exception.Message)`n$($_.ScriptStackTrace)" -Fields @{Server=$($HostToPatch.Name)} -OutputLocal
     }
 }
 
@@ -426,8 +425,8 @@ Function Invoke-PatchESXCluster {
 
     $LoggingSuccSplat = @{ScriptStarted = $ScriptStarted; ScriptName = $ScriptName; LogType = "Succ"}
     $LoggingInfoSplat = @{ScriptStarted = $ScriptStarted; ScriptName = $ScriptName; LogType = "Info"}
-    $LoggingWarnSplat = @{ScriptStarted = $ScriptStarted; ScriptName = $ScriptName; LogType = "Warn"}
-    $LoggingErrSplat = @{ScriptStarted = $ScriptStarted; ScriptName = $ScriptName; LogType = "Err"}
+    # $LoggingWarnSplat = @{ScriptStarted = $ScriptStarted; ScriptName = $ScriptName; LogType = "Warn"}
+    # $LoggingErrSplat = @{ScriptStarted = $ScriptStarted; ScriptName = $ScriptName; LogType = "Err"}
 
     try {
         if ($null -eq $ClusterToPatch) {
@@ -439,17 +438,16 @@ Function Invoke-PatchESXCluster {
         if ($AreYouSure -ne "yes") {Write-Host "You did not respond with 'yes'."}
         else {
             # Write-Host "Getting all the hosts in the cluster sorted by Name."
-            Send-LogInsight -Application "Invoke-PatchESXCluster" -Message "Getting all the hosts in the cluster sorted by Name." -Fields @{Cluster=$($ClusterToPatch.Name)} -OutputLocal
+            Invoke-Logging $LoggingInfoSplat -LogString "Getting all the hosts in the cluster sorted by Name."
 
             $ClusterHosts = $ClusterToPatch | Get-VMHost | Sort-Object Name
 
             foreach ($ClusterHost in $ClusterHosts) {
-                Send-LogInsight -Application "Invoke-PatchESXCluster" -Message "Calling patch host function for $($ClusterHost.Name)" -Fields @{Cluster=$($ClusterToPatch.Name)} -OutputLocal
+                Invoke-Logging $LoggingInfoSplat -LogString "Calling patch host function for $($ClusterHost.Name)"
                 Invoke-PatchESXHost -HostToPatch $ClusterHost -EvacType $EvacType -AutoExitMm:$true
             }
+            Invoke-Logging $LoggingSuccSplat -LogString "$($ClusterToPatch.Name) patch process compelete. Check email for server patch failures."
             Invoke-SendEmail -Subject "Cluster Patch Success" -EmailBody "$($ClusterToPatch.Name) was successfully patched."
-            # Send-MailMessage -To $emailTo -Subject "Cluster Patch Success" -smtpserver ([DC.Automation]::SMTPProd) -From "PatchEsxHost@sscinc.com" -body "$($ClusterToPatch.Name) was successfully patched."
-            Send-LogInsight -Application "Invoke-PatchESXCluster" -Message "$($ClusterToPatch.Name) patch process compelete. Check email for server patch failures." -OutputLocal
         }
     }
     catch {
