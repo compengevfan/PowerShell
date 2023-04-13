@@ -1,9 +1,25 @@
+Function Invoke-SendEmail {
+    Param(
+        [Parameter(Mandatory = $true)] [string] $Subject,
+        [Parameter(Mandatory = $true)] [string] $EmailBody
+    )
+
+    if ($null -ne $CredGmail){
+        $emailFrom = "HomeLab@evorigin.com"
+        $emailTo = "chris.dupree@gmail.com"
+        $emailServer = "smtp.gmail.com"
+    
+        # $EmailBody = Get-Content .\~Logs\"$ScriptName $ScriptStarted.log" | Out-String
+        Send-MailMessage -smtpserver $emailServer -to $emailTo -from $emailFrom -subject $Subject -body $EmailBody -Credential $CredGmail -UseSsl -port 587
+    }
+}
+
 Function Invoke-Logging {
     Param(
         [Parameter(Mandatory = $true)] [string] $ScriptStarted,
         [Parameter(Mandatory = $true)] [string] $ScriptName,
         [Parameter(Mandatory = $true)][ValidateSet("Succ", "Info", "Warn", "Err")] [string] $LogType,
-        [Parameter()] [string] $LogString
+        [Parameter(Mandatory = $true)] [string] $LogString
     )
 
     $TimeStamp = Get-Date -Format 'yyyy-MM-dd HH:mm:ss'
