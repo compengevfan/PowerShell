@@ -64,6 +64,7 @@
 	# Modules to import as nested modules of the module specified in RootModule/ModuleToProcess
 	NestedModules = @(
 		"functions\common.psm1",
+		"functions\dell.psm1",
 		"functions\netbox.psm1",
 		"functions\vmware.psm1"
 		)
