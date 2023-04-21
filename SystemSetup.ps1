@@ -2,23 +2,6 @@
 Param(
 )
 
-#Display .NET Versions Installed
-Write-Host ".NET version installed: " -NoNewline
-$dotNetVersion = (Get-ItemProperty "HKLM:\SOFTWARE\Microsoft\NET Framework Setup\NDP\v4\Full").Release
-switch ($dotNetVersion) {
-    378389 { Write-Host "4.5" }
-    {($_ -eq 378675) -or ($_ -eq 378758)} { Write-Host "4.5.1" }
-    379893 { Write-Host "4.5.2" }
-    {($_ -eq 393295) -or ($_ -eq 393297)} { Write-Host "4.6" }
-    {($_ -eq 394254) -or ($_ -eq 394271)} { Write-Host "4.6.1" }
-    {($_ -eq 394802) -or ($_ -eq 394806)} { Write-Host "4.6.2" }
-    {($_ -eq 460798) -or ($_ -eq 460805)} { Write-Host "4.7" }
-    {($_ -eq 461308) -or ($_ -eq 461310)} { Write-Host "4.7.1" }
-    {($_ -eq 461808) -or ($_ -eq 461814)} { Write-Host "4.7.2" }
-    {($_ -eq 528040) -or ($_ -eq 528372) -or ($_ -eq 528049) -or ($_ -eq 528449)} { Write-Host "4.8" }
-    Default { Write-Host "Unknown build $dotNetVersion found."}
-}
-
 #Display PowerShell Version
 Write-Host "`nPowerShell Version:"
 $PSVersionTable.PSVersion
