@@ -1,7 +1,7 @@
 Function Invoke-DracReset {
     [cmdletbinding()]
     param (
-        [Parameter()] [ValidateSet("1", "2", "3")] [string] $DracToReset,
+        [Parameter()] [ValidateSet("1", "2", "3", "All")] [string] $DracToReset,
         [Parameter()] [ValidateSet("soft", "hard")] [string] $ResetMode = "soft"
     )
 
@@ -21,8 +21,8 @@ Function Invoke-DracReset {
     $DracUserName = $CredDrac.UserName
     $DracPassword = $CredDrac.GetNetworkCredential().Password
 
-    if ($null -ne $DracToReset){
-        $LocalHosts = "esx1.evorigin.com","esx2.evorigin.com","esx3.evorigin.com"
+    if ($DracToReset -eq "All"){
+        $LocalHosts = "rac-esx1.evorigin.com","rac-esx2.evorigin.com","rac-esx3.evorigin.com"
 
         foreach ($LocalHost in $LocalHosts) {
             Invoke-Logging @LoggingInfoSplat -LogString "Issuing command to reset iDrac on $LocalHost"
