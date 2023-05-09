@@ -1,6 +1,6 @@
 <#PSScriptInfo
 
-.VERSION 2.0.5
+.VERSION 2.0.6
 
 .GUID b53cae85-1769-4697-ba24-a6fd87efb453
 
@@ -75,20 +75,30 @@ if ($LocalComputerName -like "*.evorigin.com") {
 	Write-Host "Detected EvOrigin Computer..." -ForegroundColor Green
 
 	try {
-		Write-Host "DupreeFunctions Installed...Importing..." -ForegroundColor Gray
-		Import-Module DupreeFunctions -Force -ErrorAction Continue
+		Write-Host "Checking DupreeFunctions module available and latest version..."
+		$DupreeFunctionsCurrVersion = (Find-Module DupreeFunctions).Version
+		if (!(Get-InstalledModule -Name DupreeFunctions -MinimumVersion $DupreeFunctionsCurrVersion -ErrorAction SilentlyContinue))
+		{
+			try 
+			{
+				if (!(Get-Module -ListAvailable -Name DupreeFunctions)) { Install-Module -Name DupreeFunctions -Scope CurrentUser -Force -ErrorAction Stop }
+				else { Update-Module -Name DupreeFunctions -RequiredVersion $DupreeFunctionsCurrVersion -Force -ErrorAction Stop }
+			}
+			catch { Write-Host "Failed to install 'DupreeFunctions' module from PSGallery!!! Error encountered is:`n`r`t$($Error[0])" -ForegroundColor Red}
+		}
+
+		Import-Module DupreeFunctions -Force -ErrorAction Stop
 		Write-Host "Creating Alias for 'Connect-vCenter' function..."
 		Set-Alias -Name cvc -Value Connect-vCenter
 		Write-Host "Creating Alias for 'Show-vCenter' function..."
 		Set-Alias -Name svc -Value Show-vCenter
-	}
-	catch {
-		Write-Host "DupreeFunctions NOT found." -ForegroundColor Red
-	}
 
-	if ($githome) { 
 		Write-Host "Importing credentials..." -ForegroundColor Gray
 		Import-Credentials
+	}
+	catch {
+		# Write-Host "DupreeFunctions NOT found." -ForegroundColor Red
+		throw
 	}
 
 	#Check for Dropbox environment variable
@@ -135,8 +145,9 @@ function prompt {
 	# } else {
 	# 	$path = $pathbits[$pathbits.length - 1]
 	# }
-	$userLocation = $env:username + '@' + [System.Environment]::UserDomainName + ' ' + $path + ' ' + $vCenter
-	$host.UI.RawUi.WindowTitle = $userLocation
+	$userLocation = $env:username + '@' + [System.Environment]::UserDomainName + ' ' + $path
+	$WindowTitle = $userLocation + ' ' + $vCenter
+	$host.UI.RawUi.WindowTitle = $WindowTitle
 	Write-Host($userLocation) -nonewline -foregroundcolor Green 
 
 	Write-Host('>') -nonewline -foregroundcolor Green    

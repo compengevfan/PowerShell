@@ -10,26 +10,17 @@ Set-Location $ScriptPath
 
 $ScriptStarted = Get-Date -Format MM-dd-yyyy_HH-mm-ss
 $ScriptName = $MyInvocation.MyCommand.Name
- 
-#$ErrorActionPreference = "SilentlyContinue"
-#$WarningPreference = "SilentlyContinue"
- 
-Function Check-PowerCLI {
-    Param(
-    )
- 
-    if (!(Get-Module -Name VMware.VimAutomation.Core)) {
-        write-host ("Adding PowerCLI...")
-        Get-Module -Name VMware* -ListAvailable | Import-Module -Global
-        write-host ("Loaded PowerCLI.")
-    }
-}
+
+$LoggingSuccSplat = @{ScriptStarted = $ScriptStarted; ScriptName = $ScriptName; LogType = "Succ"}
+$LoggingInfoSplat = @{ScriptStarted = $ScriptStarted; ScriptName = $ScriptName; LogType = "Info"}
+$LoggingWarnSplat = @{ScriptStarted = $ScriptStarted; ScriptName = $ScriptName; LogType = "Warn"}
+$LoggingErrSplat = @{ScriptStarted = $ScriptStarted; ScriptName = $ScriptName; LogType = "Err"}
  
 if (!(Get-Module -ListAvailable -Name DupreeFunctions)) { Write-Host "'DupreeFunctions' module not available!!! Please check with Dupree!!! Script exiting!!!" -ForegroundColor Red; exit }
 if (!(Get-Module -Name DupreeFunctions)) { Import-Module DupreeFunctions }
 if (!(Test-Path .\~Logs)) { New-Item -Name "~Logs" -ItemType Directory | Out-Null }
  
-Check-PowerCLI
+Import-PowerCLI
 
 ##############################################################################################################################
 
@@ -54,9 +45,9 @@ if (!(Test-Path .\~Processed-JSON-Files)) { New-Item -Name "~Processed-JSON-File
 if (!(Get-Module -Name ActiveDirectory)) { Import-Module ActiveDirectory }
 
 #Check to make sure we have a JSON file location and if so, get the info.
-Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Importing JSON Data File: $InputFile..."
+Invoke-Logging @LoggingInfoSplat -LogString "Importing JSON Data File: $InputFile..."
 $DataFromFile = ConvertFrom-JSON (Get-Content $githome\vmbuildfiles\$InputFile -raw)
-if ($null -eq $DataFromFile) { Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Err -LogString "Error importing JSON file. Please verify proper syntax and file name."; exit }
+if ($null -eq $DataFromFile) { Invoke-Logging @LoggingErrSplat -LogString "Error importing JSON file. Please verify proper syntax and file name."; exit }
 
 Connect-vCenter $($DataFromFile.VMInfo.vCenter)
 
@@ -67,10 +58,10 @@ Connect-vCenter $($DataFromFile.VMInfo.vCenter)
 if ($($DataFromFile.GuestInfo.Domain) -ne "none") {
     while ($true) {
         if ($null -eq $DomainCredentials) {
-            Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Warn -LogString "Obtaining Domain Credentials. Note: Username MUST be in 'user principle name' format. For example: me@domain.com"
+            Invoke-Logging @LoggingWarnSplat -LogString "Obtaining Domain Credentials. Note: Username MUST be in 'user principle name' format. For example: me@domain.com"
             $DomainCredentials = Get-Credential -Message "READ ME!!! Please provide the username and password for joining the $($DataFromFile.GuestInfo.Domain) domain. Username MUST be in 'user principle name' format. For example: me@domain.com"
         }
-        Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Testing domain credentials..."
+        Invoke-Logging @LoggingInfoSplat -LogString "Testing domain credentials..."
         #Verify Domain Credentials
         $username = $DomainCredentials.username
         $password = $DomainCredentials.GetNetworkCredential().password
@@ -79,8 +70,8 @@ if ($($DataFromFile.GuestInfo.Domain) -ne "none") {
         $CurrentDomain = "LDAP://" + $($DataFromFile.GuestInfo.Domain)
         $domain = New-Object System.DirectoryServices.DirectoryEntry($CurrentDomain, $UserName, $Password)
 
-        if ($null -eq $domain.name) { Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Warn -LogString "Domain Credentials Failed. Please try again or press Control-C to exit..."; Start-Sleep -Seconds 2 }
-        else { Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Succ -LogString "Credential test was successful..."; break }
+        if ($null -eq $domain.name) { Invoke-Logging @LoggingWarnSplat -LogString "Domain Credentials Failed. Please try again or press Control-C to exit..."; Start-Sleep -Seconds 2 }
+        else { Invoke-Logging @LoggingSuccSplat -LogString "Credential test was successful..."; break }
     }
 }
 
@@ -90,40 +81,40 @@ if ($($DataFromFile.GuestInfo.Domain) -ne "none") {
 
 #Find the template to be used based on site and OS version from JSON. If template not found, exit.
 $TemplateToFind = $($DataFromFile.VMInfo.Template)
-Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Locating Template $TemplateToFind"
+Invoke-Logging @LoggingInfoSplat -LogString "Locating Template $TemplateToFind"
 $TemplateToUse = Get-Template $TemplateToFind -ErrorAction Ignore
-if ($null -ne $TemplateToUse) { Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Succ -LogString "Template found..." }
-else { Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Err -LogString "Template NOT found!!! Script Exiting!!!"; return 66 }
+if ($null -ne $TemplateToUse) { Invoke-Logging @LoggingSuccSplat -LogString "Template found..." }
+else { Invoke-Logging @LoggingErrSplat -LogString "Template NOT found!!! Script Exiting!!!"; return 66 }
 
 #Find the Folder. If it is not found, exit.
-Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Parsing folder path to find proper location..."
+Invoke-Logging @LoggingInfoSplat -LogString "Parsing folder path to find proper location..."
 $Folder = $null
 $Folder = Get-FolderByPath -Path $($DataFromFile.VMInfo.FolderPath) -ErrorAction Ignore
-if ($null -ne $Folder) { Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Succ -LogString "Location found..." }
-else { Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Err -LogString "Location NOT found!!! Script Exiting!!!"; return 66 }
+if ($null -ne $Folder) { Invoke-Logging @LoggingSuccSplat -LogString "Location found..." }
+else { Invoke-Logging @LoggingErrSplat -LogString "Location NOT found!!! Script Exiting!!!"; return 66 }
 
 #Find the customization spec. If it is not found, exit.
-Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Locating Customization Spec $($DataFromFile.GuestInfo.CustomizationSpec)..."
+Invoke-Logging @LoggingInfoSplat -LogString "Locating Customization Spec $($DataFromFile.GuestInfo.CustomizationSpec)..."
 $OSCustSpec = Get-OSCustomizationSpec $($DataFromFile.GuestInfo.CustomizationSpec) -ErrorAction Ignore
-if ($null -ne $OSCustSpec) { Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Succ -LogString "Customization Spec found..." }
-else { Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Err -LogString "Customization Spec NOT found!!! Script Exiting!!!"; return 66 }
+if ($null -ne $OSCustSpec) { Invoke-Logging @LoggingSuccSplat -LogString "Customization Spec found..." }
+else { Invoke-Logging @LoggingErrSplat -LogString "Customization Spec NOT found!!! Script Exiting!!!"; return 66 }
 
 #Find the Portgroup. Check for vDS first; if not found, check for standard. If it is not found, exit.
-Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Locating PortGroup $($DataFromFile.VMInfo.PortGroup)..."
+Invoke-Logging @LoggingInfoSplat -LogString "Locating PortGroup $($DataFromFile.VMInfo.PortGroup)..."
 $PortGroup = Get-Datacenter $($DataFromFile.VMInfo.DataCenter) | Get-VDSwitch | Get-VDPortgroup $($DataFromFile.VMInfo.PortGroup) -ErrorAction Ignore
-if ($null -ne $PortGroup) { Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Succ -LogString "PortGroup found..."; $PortType = "vds" }
+if ($null -ne $PortGroup) { Invoke-Logging @LoggingSuccSplat -LogString "PortGroup found..."; $PortType = "vds" }
 if ($null -eq $PortGroup) {
     $PortGroup = Get-Datacenter $($DataFromFile.VMInfo.DataCenter) | Get-VirtualPortGroup | Where-Object Name -eq $($DataFromFile.VMInfo.PortGroup) -ErrorAction Ignore
-    if ($null -ne $PortGroup) { Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Succ -LogString "PortGroup found..."; $PortType = "std" }
-    else { Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Err -LogString "PortGroup NOT found!!! Script Exiting!!!"; return 66 }
+    if ($null -ne $PortGroup) { Invoke-Logging @LoggingSuccSplat -LogString "PortGroup found..."; $PortType = "std" }
+    else { Invoke-Logging @LoggingErrSplat -LogString "PortGroup NOT found!!! Script Exiting!!!"; return 66 }
 }
 
 #Find the Datastore. First, look for a DS Cluster. If not found, look for DS. If it is not found, exit.
-Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Locating Datastore Cluster $($DataFromFile.VMInfo.Datastore)..."
+Invoke-Logging @LoggingInfoSplat -LogString "Locating Datastore Cluster $($DataFromFile.VMInfo.Datastore)..."
 $DataStore = Get-DatastoreCluster $($DataFromFile.VMInfo.Datastore) -ErrorAction Ignore
 if ($null -eq $DataStore) { $DataStore = Get-Datastore $($DataFromFile.VMInfo.Datastore) -ErrorAction Ignore }
-if ($null -ne $DataStore) { Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Succ -LogString "Storage found..." }
-else { Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Err -LogString "Storage NOT found!!! Script Exiting!!!"; return 66 }
+if ($null -ne $DataStore) { Invoke-Logging @LoggingSuccSplat -LogString "Storage found..." }
+else { Invoke-Logging @LoggingErrSplat -LogString "Storage NOT found!!! Script Exiting!!!"; return 66 }
 
 ##################
 #Perform Sanity Checks (Name not in use, IP not in use, etc)
@@ -133,20 +124,20 @@ $VmName = $InputFile.Replace(".json", "").ToUpper()
 
 #Verify that VM name does not exist
 $CheckName = Get-VM $VmName -ErrorAction Ignore
-if ($null -eq $CheckName) { Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Succ -LogString "New VM name not found..." }
-else { Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Err -LogString "New VM name found!!! Script Exiting!!!"; return 66 }
+if ($null -eq $CheckName) { Invoke-Logging @LoggingSuccSplat -LogString "New VM name not found..." }
+else { Invoke-Logging @LoggingErrSplat -LogString "New VM name found!!! Script Exiting!!!"; return 66 }
 
 #Verify that the IP address is not one of the first 20 IPs in the subnet.
 
 #Verify that IP address is not assigned to another VM.
 $CheckIPAddress = Find-VmByAddress -IP $($DataFromFile.GuestInfo.IPaddress) -ErrorAction Ignore
-if ($null -eq $CheckIPAddress) { Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Succ -LogString "New VM IP not found..." }
-else { Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Err -LogString "New VM IP found!!! Script Exiting!!!"; return 66 }
+if ($null -eq $CheckIPAddress) { Invoke-Logging @LoggingSuccSplat -LogString "New VM IP not found..." }
+else { Invoke-Logging @LoggingErrSplat -LogString "New VM IP found!!! Script Exiting!!!"; return 66 }
 
 #Verify that the IP address does not respond to ping.
 $CheckIPAddress = Test-Connection $($DataFromFile.GuestInfo.IPaddress) -Count 1 -ErrorAction Ignore
-if ($null -eq $CheckIPAddress) { Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Succ -LogString "New VM IP does not respond to ping..." }
-else { Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Err -LogString "New VM IP does respond to ping!!! Script Exiting!!!"; return 66 }
+if ($null -eq $CheckIPAddress) { Invoke-Logging @LoggingSuccSplat -LogString "New VM IP does not respond to ping..." }
+else { Invoke-Logging @LoggingErrSplat -LogString "New VM IP does respond to ping!!! Script Exiting!!!"; return 66 }
 
 ##################
 #Display VM Info for verification before build
@@ -157,42 +148,42 @@ else { Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -Log
 ##################
 
 #Create a temporary Customization Spec with appropriate network settings and domain information
-Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Creating temporary customization spec..."
+Invoke-Logging @LoggingInfoSplat -LogString "Creating temporary customization spec..."
 if ($null -ne (Get-OSCustomizationSpec -Name $VmName -ErrorAction Ignore)) { Remove-OSCustomizationSpec -OSCustomizationSpec $VmName -Confirm:$false }
 $TempCustomizationSpec = New-OSCustomizationSpec -Name $VmName -Spec ( Get-OSCustomizationSpec -Name $OSCustSpec )
 
 if ($($DataFromFile.GuestInfo.Domain) -ne "none") {
-    Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Configuring domain settings in temporary customization spec..."
+    Invoke-Logging @LoggingInfoSplat -LogString "Configuring domain settings in temporary customization spec..."
     $TempCustomizationSpec | Set-OSCustomizationSpec -Domain $($DataFromFile.GuestInfo.Domain) -DomainCredentials $DomainCredentials -AutoLogonCount 0 | Out-Null
 }
 
-Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Configuring network settings in temporary customization spec..."
+Invoke-Logging @LoggingInfoSplat -LogString "Configuring network settings in temporary customization spec..."
 $TempCustomizationSpec | Get-OSCustomizationNicMapping | Set-OSCustomizationNicMapping -IpMode UseStaticIP -IpAddress ($($DataFromFile.GuestInfo.IPAddress)) -SubnetMask ($($DataFromFile.GuestInfo.SubnetMask)) -DefaultGateway ($($DataFromFile.GuestInfo.Gateway)) -Dns ($($DataFromFile.GuestInfo.DNS1)), ($($DataFromFile.GuestInfo.DNS2)) | Out-Null
 
 #Create the VM
-Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Deploying VM..."
+Invoke-Logging @LoggingInfoSplat -LogString "Deploying VM..."
 New-VM -Name $VmName -Template $TemplateToUse -ResourcePool $($DataFromFile.VMInfo.Cluster) -Datastore $DataStore -Location $Folder -OSCustomizationSpec $TempCustomizationSpec -ErrorAction SilentlyContinue -ErrorVariable NewVMFail | Out-Null
 
 Start-Sleep 5
 
 #Verify VM Deployed, update specs, power on and wait for customization to complete.
-if ($null -eq (Get-VM $VmName -ErrorAction SilentlyContinue)) { Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Err -LogString "VM Deploy failed!!! Script exiting!!!"; Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Err -LogString $NewVMFail; return 66 }
+if ($null -eq (Get-VM $VmName -ErrorAction SilentlyContinue)) { Invoke-Logging @LoggingErrSplat -LogString "VM Deploy failed!!! Script exiting!!!"; Invoke-Logging @LoggingErrSplat -LogString $NewVMFail; return 66 }
 else {
-    Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Updating VM Specs..."
+    Invoke-Logging @LoggingInfoSplat -LogString "Updating VM Specs..."
     $Notes = "Deployed by " + (whoami) + " via Dupree's Script: " + (Get-Date -Format g)
     Get-VM $VmName | Set-VM -MemoryGB $($DataFromFile.GuestInfo.RAM) -NumCpu $($DataFromFile.GuestInfo.vCPUs) -Description $Notes -Confirm:$false | Out-Null
     switch ($PortType) {
         vds { Get-NetworkAdapter -VM $VmName | Where-Object Name -eq "Network adapter 1" | Set-NetworkAdapter -PortGroup $PortGroup -Confirm:$false | Set-NetworkAdapter -StartConnected:$true -Confirm:$false | Out-Null }
         std { $PortGroup = (Get-VM $VmName).VMHost | Get-VirtualPortGroup | Where-Object name -eq ($PortGroup.Name | Select-Object -First 1); Get-NetworkAdapter -VM $VmName | Where-Object Name -eq "Network adapter 1" | Set-NetworkAdapter -PortGroup $PortGroup -Confirm:$false | Set-NetworkAdapter -StartConnected:$true -Confirm:$false | Out-Null }
     }
-    Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Checking for an optical drive..."
-    if (!(Get-CDDrive -VM $VmName)) { Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Adding optical drive..."; New-CDDrive -VM $VmName -Confirm:$false | Out-Null }
-    else { Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "VM already has an optical drive..." }
+    Invoke-Logging @LoggingInfoSplat -LogString "Checking for an optical drive..."
+    if (!(Get-CDDrive -VM $VmName)) { Invoke-Logging @LoggingInfoSplat -LogString "Adding optical drive..."; New-CDDrive -VM $VmName -Confirm:$false | Out-Null }
+    else { Invoke-Logging @LoggingInfoSplat -LogString "VM already has an optical drive..." }
     Start-Sleep 5
 
-    Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Powering on VM..."
+    Invoke-Logging @LoggingInfoSplat -LogString "Powering on VM..."
     Start-VM $VmName | Out-Null
-    Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Waiting for customization to start..."
+    Invoke-Logging @LoggingInfoSplat -LogString "Waiting for customization to start..."
     while ($True) {
         $vmEvents = Get-VIEvent -Entity $VmName
         $startedEvent = $vmEvents | Where-Object { $_.GetType().Name -eq "CustomizationStartedEvent" }
@@ -206,14 +197,14 @@ else {
         }
     }
  
-    Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Customization has started. Waiting for it to complete..."
+    Invoke-Logging @LoggingInfoSplat -LogString "Customization has started. Waiting for it to complete..."
     while ($True) {
         $vmEvents = Get-VIEvent -Entity $VmName
         $SucceededEvent = $vmEvents | Where-Object { $_.GetType().Name -eq "CustomizationSucceeded" }
         $FailureEvent = $vmEvents | Where-Object { $_.GetType().Name -eq "CustomizationFailed" }
  
         if ($FailureEvent) {
-            Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Err -LogString -Message "Customization of VM failed!!! Script exiting!!!"; exit
+            Invoke-Logging @LoggingErrSplat -LogString -Message "Customization of VM failed!!! Script exiting!!!"; exit
         }
  
         if ($SucceededEvent) {
@@ -221,30 +212,30 @@ else {
         }
         Start-Sleep -Seconds 5
     }
-    Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Succ -LogString "Customization of VM Completed Successfully..."
+    Invoke-Logging @LoggingSuccSplat -LogString "Customization of VM Completed Successfully..."
 }
 
-Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Removing temporary customization spec..."
+Invoke-Logging @LoggingInfoSplat -LogString "Removing temporary customization spec..."
 Remove-OSCustomizationSpec -OSCustomizationSpec $VmName -Confirm:$false
 
-Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Waiting a while after customization for Windows to stabilize..."
+Invoke-Logging @LoggingInfoSplat -LogString "Waiting a while after customization for Windows to stabilize..."
 Start-Sleep 60
 
 if ($($DataFromFile.GuestInfo.Domain) -ne "none") {
     #Move server to appropriate OU, if OU in the JSON does not exist, the server gets moved to the "Servers" OU.
-    Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Verifying OU '$($DataFromFile.GuestInfo.OU)' exists..."
+    Invoke-Logging @LoggingInfoSplat -LogString "Verifying OU '$($DataFromFile.GuestInfo.OU)' exists..."
     $DN = ConvertToDN -OUPath $($DataFromFile.GuestInfo.OU) -Domain $($DataFromFile.GuestInfo.Domain)
     try {
-        $OUCheck = Get-ADOrganizationalUnit -Identity $DN -Server $($DataFromFile.GuestInfo.DNS1) -Credential $DomainCredentials
-        Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Moving server to OU '$($DataFromFile.GuestInfo.OU)'..."
+        Get-ADOrganizationalUnit -Identity $DN -Server $($DataFromFile.GuestInfo.DNS1) -Credential $DomainCredentials -ErrorAction SilentlyContinue
+        Invoke-Logging @LoggingInfoSplat -LogString "Moving server to OU '$($DataFromFile.GuestInfo.OU)'..."
         Get-ADComputer -Identity $VmName -Server $($DataFromFile.GuestInfo.DNS1) -Credential $DomainCredentials | Move-ADObject -TargetPath $DN -Server $($DataFromFile.GuestInfo.DNS1) -Credential $DomainCredentials
     }
     catch {
-        Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Warn -LogString "OU '$($DataFromFile.GuestInfo.OU)' does not exist!!! Moving server to 'servers' OU..."
+        Invoke-Logging @LoggingWarnSplat -LogString "OU '$($DataFromFile.GuestInfo.OU)' does not exist!!! Moving server to 'servers' OU..."
         $DN = ConvertToDN -OUPath "Servers" -Domain $($DataFromFile.GuestInfo.Domain)
         Get-ADComputer -Identity $VmName -Server $($DataFromFile.GuestInfo.DNS1) -Credential $DomainCredentials | Move-ADObject -TargetPath $DN -Server $($DataFromFile.GuestInfo.DNS1) -Credential $DomainCredentials
     }
 }
 
-Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Succ -LogString "Your VM has been successfully deployed!!!"
+Invoke-Logging @LoggingSuccSplat -LogString "Your VM has been successfully deployed!!!"
 if ($SendEmail) { $EmailBody = Get-Content .\~Logs\"$ScriptName $ScriptStarted.log" | Out-String; Send-MailMessage -smtpserver $emailServer -to $emailTo -from $emailFrom -subject "Cloud-O-Mite Deployed a VM" -body $EmailBody -Credential $CredGmail -UseSsl -port 587 }

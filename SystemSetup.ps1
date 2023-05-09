@@ -2,23 +2,6 @@
 Param(
 )
 
-#Display .NET Versions Installed
-Write-Host ".NET version installed: " -NoNewline
-$dotNetVersion = (Get-ItemProperty "HKLM:\SOFTWARE\Microsoft\NET Framework Setup\NDP\v4\Full").Release
-switch ($dotNetVersion) {
-    378389 { Write-Host "4.5" }
-    {($_ -eq 378675) -or ($_ -eq 378758)} { Write-Host "4.5.1" }
-    379893 { Write-Host "4.5.2" }
-    {($_ -eq 393295) -or ($_ -eq 393297)} { Write-Host "4.6" }
-    {($_ -eq 394254) -or ($_ -eq 394271)} { Write-Host "4.6.1" }
-    {($_ -eq 394802) -or ($_ -eq 394806)} { Write-Host "4.6.2" }
-    {($_ -eq 460798) -or ($_ -eq 460805)} { Write-Host "4.7" }
-    {($_ -eq 461308) -or ($_ -eq 461310)} { Write-Host "4.7.1" }
-    {($_ -eq 461808) -or ($_ -eq 461814)} { Write-Host "4.7.2" }
-    {($_ -eq 528040) -or ($_ -eq 528372) -or ($_ -eq 528049) -or ($_ -eq 528449)} { Write-Host "4.8" }
-    Default { Write-Host "Unknown build $dotNetVersion found."}
-}
-
 #Display PowerShell Version
 Write-Host "`nPowerShell Version:"
 $PSVersionTable.PSVersion
@@ -82,28 +65,50 @@ if ($NuGetGood -and $PowerShellGetGood)
 #Check for PowerCLI and version
 $PowerCLICheck = Get-Module -ListAvailable VMware.Vim
 if ($null -ne $PowerCLICheck){ Write-Host "`nPowerCLI $($PowerCLICheck.Version.Major).$($PowerCLICheck.Version.Minor) is installed." -ForegroundColor green}
-else { Write-Host "`nPowerCLI not found." -ForegroundColor red}
+else { Write-Host "`nPowerCLI not found." -ForegroundColor red; Install-Module VMware.PowerCLI -Scope CurrentUser -Force }
 
-$GitInstalled = Read-Host "Is Git installed? (y/n)"
-if ($GitInstalled -eq "y"){
-    Write-Host "Checking for Git Environment Variable..."
-    if ($env:githome) { Write-Host "Git path found." -ForegroundColor Green }
-    else { 
-        Write-Host "Git path NOT found." -ForegroundColor Yellow
-        $GitPath = Read-Host "Please provide the path."
-        Write-Host "Creating Git environment variable."
-        [System.Environment]::SetEnvironmentVariable('githome',$GitPath,[System.EnvironmentVariableTarget]::User)
+try {
+    git | Out-Null
+    Write-Host "Git is installed" -ForegroundColor Green
+    if ($env:githome) { 
+        Write-Host "Git environment variable found." -ForegroundColor Green
+        $githome = $env:githome
+        Write-Host "Copying primary profile script using environment variable." -ForegroundColor Green
+        Copy-Item -Path $githome\PowerShell\Profile\Microsoft.PowerShell_profile.ps1 -Destination $PROFILE -Force
     }
+    else { 
+        Write-Host "Git environment variable NOT found." -ForegroundColor Yellow
+        if (Test-Path C:\git) { $GitPath = "C:\git" } 
+        elseif (Test-Path E:\Dupree\git) { $GitPath = "E:\Dupree\git" }
+        else { $GitPath = Read-Host "Please provide the git path." -ForegroundColor Yellow }
+        Write-Host "Creating Git environment variable." -ForegroundColor Green
+        [System.Environment]::SetEnvironmentVariable('githome', $GitPath, [System.EnvironmentVariableTarget]::User)
+        Write-Host "Copying primary profile script using temporary variable." -ForegroundColor Green
+        Copy-Item -Path $GitPath\PowerShell\Profile\Microsoft.PowerShell_profile.ps1 -Destination $PROFILE -Force
+    }
+    Write-Host "Creating ISE profile script." -ForegroundColor Green
+    Copy-Item -Path $PROFILE -Destination $PROFILE.Replace("Microsoft.PowerShell_profile.ps1", "Microsoft.PowerShellISE_profile.ps1")
+    Write-Host "Copying VS Code profile script." -ForegroundColor Green
+    Copy-Item -Path $PROFILE -Destination $PROFILE.Replace("Microsoft.PowerShell_profile.ps1", "Microsoft.VSCode_profile.ps1")
+}
+catch [System.Management.Automation.CommandNotFoundException] {
+    Write-Host "Git install not found" -ForegroundColor red
+}
+catch {
+    Write-Host "An error occurred:"
+    Write-Host $_
 }
 
-$DropboxInstalled = Read-Host "Is Dropbox installed (y/n)"
-if ($DropboxInstalled -eq "y"){
-    Write-Host "Checking for Dropbox Environment Variable..."
-    if ($env:dropboxhome) { Write-Host "Dropbox path found." -ForegroundColor Green }
-    else { 
-        Write-Host "Dropbox path NOT found." -ForegroundColor Yellow
-        $GitPath = Read-Host "Please provide the path."
-        Write-Host "Creating Dropbox environment variable."
-        [System.Environment]::SetEnvironmentVariable('dropboxhome',$GitPath,[System.EnvironmentVariableTarget]::User)
+$DropboxProcess = Get-Process -Name Dropbox -ErrorAction SilentlyContinue
+if ($($DropboxProcess).Count -gt 0) {
+    Write-Host "Dropbox is installed and running." -ForegroundColor Green
+    Write-Host "Checking for Dropbox environment variable..." -ForegroundColor Green
+    if ($env:dropboxhome) { Write-Host "Dropbox environment variable found." -ForegroundColor Green }
+    else {
+        Write-Host "Dropbox environment variable NOT found." -ForegroundColor Yellow
+        if (Test-Path "C:\Cloud\Dropbox") { $GitPath = "C:\Cloud\Dropbox" }
+        else { $GitPath = Read-Host "Please provide the Dropbox path." -ForegroundColor Yellow }
+        Write-Host "Creating Dropbox environment variable." -ForegroundColor Green
+        [System.Environment]::SetEnvironmentVariable('dropboxhome', $GitPath, [System.EnvironmentVariableTarget]::User)
     }
 }
