@@ -29,7 +29,7 @@ Function Invoke-DracReset {
             Invoke-Command -ScriptBlock { racadm -r $LocalHost -u $DracUserName -p $DracPassword racreset $ResetMode }
         }
     } else {
-        Invoke-Logging @LoggingInfoSplat -LogString "Issuing command to reset iDrac on esx$DracToReset.evorigin.com"
-        Invoke-Command -ScriptBlock { racadm -r "esx$DracToReset.evorigin.com" -u $DracUserName -p $DracPassword racreset $ResetMode }
+        Invoke-Logging @LoggingInfoSplat -LogString "Issuing command to reset iDrac on rac-esx$DracToReset.evorigin.com"
+        Invoke-Command -ScriptBlock { racadm -r "rac-esx$DracToReset.evorigin.com" -u $DracUserName -p $DracPassword racreset $ResetMode }
     }
 }
