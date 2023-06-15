@@ -407,6 +407,7 @@ Function Invoke-PatchESXHost {
         # Write-Host "Sending failure message."
         Invoke-Logging $LoggingErrSplat -LogString "Attempt to patch $($HostToPatch.Name) failed. The error encountered was:`r`n$($_.Exception.Message)`n$($_.ScriptStackTrace)"
         Invoke-SendEmail -Subject "Host Patch Error" -EmailBody "Attempt to patch $($HostToPatch.Name) failed. The error encountered was:`r`n$($_.Exception.Message)`n$($_.ScriptStackTrace)"
+        throw
     }
 }
 
