@@ -1,6 +1,6 @@
 ﻿[CmdletBinding()]
 Param(
-    [Parameter(Mandatory = $true)] [string] $InputFile,
+    [Parameter()] [string] $InputFile,
     [Parameter()] [PSCredential] $DomainCredentials = $null,
     [Parameter()] $SendEmail = $True
 )
@@ -49,7 +49,7 @@ Invoke-Logging @LoggingInfoSplat -LogString "Importing JSON Data File: $InputFil
 $DataFromFile = ConvertFrom-JSON (Get-Content $githome\vmbuildfiles\$InputFile -raw)
 if ($null -eq $DataFromFile) { Invoke-Logging @LoggingErrSplat -LogString "Error importing JSON file. Please verify proper syntax and file name."; exit }
 
-Connect-vCenter $($DataFromFile.VMInfo.vCenter)
+#Connect-vCenter $($DataFromFile.VMInfo.vCenter)
 
 ##################
 #Obtain credentials needed to modify guest OS, add to domain and change OU.
