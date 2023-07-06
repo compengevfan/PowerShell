@@ -75,23 +75,10 @@ if ($LocalComputerName -like "*.evorigin.com") {
 	Write-Host "Detected EvOrigin Computer..." -ForegroundColor Green
 
 	try {
-		Write-Host "Checking DupreeFunctions module available and latest version..."
-		$DupreeFunctionsCurrVersion = (Find-Module DupreeFunctions).Version
-		if (!(Get-InstalledModule -Name DupreeFunctions -MinimumVersion $DupreeFunctionsCurrVersion -ErrorAction SilentlyContinue))
-		{
-			try 
-			{
-				if (!(Get-Module -ListAvailable -Name DupreeFunctions)) { Install-Module -Name DupreeFunctions -Scope CurrentUser -Force -ErrorAction Stop }
-				else { Update-Module -Name DupreeFunctions -RequiredVersion $DupreeFunctionsCurrVersion -Force -ErrorAction Stop }
-			}
-			catch { Write-Host "Failed to install 'DupreeFunctions' module from PSGallery!!! Error encountered is:`n`r`t$($Error[0])" -ForegroundColor Red}
-		}
+		Write-Host "Importing DupreeFunctions..." -ForegroundColor Gray
+		Import-Module DupreeFunctions -Force -ErrorAction Continue
 
 		Import-Module DupreeFunctions -Force -ErrorAction Stop
-		Write-Host "Creating Alias for 'Connect-vCenter' function..."
-		Set-Alias -Name cvc -Value Connect-vCenter
-		Write-Host "Creating Alias for 'Show-vCenter' function..."
-		Set-Alias -Name svc -Value Show-vCenter
 
 		Write-Host "Importing credentials..." -ForegroundColor Gray
 		Import-Credentials
