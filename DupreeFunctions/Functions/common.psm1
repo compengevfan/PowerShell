@@ -1,3 +1,14 @@
+Function Import-DupreeFunctionsClean {
+    [cmdletbinding()]
+    param (
+        [string][ValidateSet("Profile", "Git")]$Location = "Profile"
+    )
+    Write-Host "Re-importing DupreeFunctions module"
+    Remove-Module DupreeFunctions -ErrorAction "SilentlyContinue"
+    if ($Location -eq "Profile") { Import-Module DupreeFunctions -Force -Global }
+    else {Import-Module $githome\PowerShell\DupreeFunctions\DupreeFunctions.psd1 -force}
+}
+
 Function Invoke-SendEmail {
     Param(
         [Parameter(Mandatory = $true)] [string] $Subject,
