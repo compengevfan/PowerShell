@@ -33,7 +33,7 @@ Function Set-GitPath {
 Function Sync-ProfileScript {
     if ($env:githome) {
         Write-Host "Copying primary profile script using temporary variable." -ForegroundColor Green
-        Copy-Item -Path $GitPath\PowerShell\Profile\Microsoft.PowerShell_profile.ps1 -Destination $PROFILE -Force
+        Copy-Item -Path $githome\PowerShell\Profile\Microsoft.PowerShell_profile.ps1 -Destination $PROFILE -Force
         Write-Host "Creating ISE profile script." -ForegroundColor Green
         Copy-Item -Path $PROFILE -Destination $PROFILE.Replace("Microsoft.PowerShell_profile.ps1", "Microsoft.PowerShellISE_profile.ps1") -Force
         Write-Host "Copying VS Code profile script." -ForegroundColor Green
@@ -51,8 +51,17 @@ Function Import-DupreeFunctionsClean {
     )
     Write-Host "Re-importing DupreeFunctions module"
     Remove-Module DupreeFunctions -ErrorAction "SilentlyContinue"
-    if ($Location -eq "Profile") { Import-Module DupreeFunctions -Force -Global }
-    else { Import-Module $githome\PowerShell\DupreeFunctions\DupreeFunctions.psd1 -force }
+    switch ($Location) {
+        "Profile" {
+            Write-Host "Importing DupreeFunctions From Profile Location"
+            Import-Module DupreeFunctions -Force -Global 
+        }
+        "Git" { 
+            Write-Host "Importing DupreeFunctions From Git Location"
+            Import-Module $githome\PowerShell\DupreeFunctions\DupreeFunctions.psd1 -force 
+        }
+        Default { Write-Host "Something unexpected happened."}
+    }
 }
 
 Function Invoke-SendEmail {
