@@ -8,9 +8,6 @@ Function Set-GitPath {
         Write-Host "Git is installed" -ForegroundColor Green
         if ($env:githome) { 
             Write-Host "Git environment variable found." -ForegroundColor Green
-            $githome = $env:githome
-            Write-Host "Copying primary profile script using environment variable." -ForegroundColor Green
-            Copy-Item -Path $githome\PowerShell\Profile\Microsoft.PowerShell_profile.ps1 -Destination $PROFILE -Force
         }
         else { 
             Write-Host "Git environment variable NOT found." -ForegroundColor Yellow
@@ -50,7 +47,8 @@ Function Import-DupreeFunctionsClean {
         [string][ValidateSet("Profile", "Git")]$Location = "Profile"
     )
     Write-Host "Re-importing DupreeFunctions module"
-    Remove-Module DupreeFunctions -ErrorAction "SilentlyContinue"
+    Write-Host "Removing DupreeFunctions module"
+    Remove-Module DupreeFunctions -ErrorAction "SilentlyContinue" -Force
     switch ($Location) {
         "Profile" {
             Write-Host "Importing DupreeFunctions From Profile Location"
@@ -58,7 +56,7 @@ Function Import-DupreeFunctionsClean {
         }
         "Git" { 
             Write-Host "Importing DupreeFunctions From Git Location"
-            Import-Module $githome\PowerShell\DupreeFunctions\DupreeFunctions.psd1 -force 
+            Import-Module $githome\PowerShell\DupreeFunctions\DupreeFunctions.psd1 -Global -force 
         }
         Default { Write-Host "Something unexpected happened."}
     }

@@ -66,6 +66,7 @@
 		"functions\common.psm1",
 		"functions\dell.psm1",
 		"functions\netbox.psm1",
+		"functions\plex.psm1",
 		"functions\vmware.psm1"
 		)
 

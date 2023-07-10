@@ -6,9 +6,6 @@ Function Get-PlexTVShows {
     Import-Credentials
 
     if ($CredPlexToken) {
-        Write-Host "Plex token not found. Exiting."
-    }
-    else {
         $TVShows = @()
         $Token = $CredPlexToken.GetNetworkCredential().password
         $response = Invoke-RestMethod "http://jax-plms001.evorigin.com:32400/library/sections/1/all?X-Plex-Token=$Token" -Method "GET"
@@ -16,6 +13,11 @@ Function Get-PlexTVShows {
         foreach ($TVShow in $response.MediaContainer.Directory) {
             $TVShows += $TVShow.Title
         }
+        Write-Host "$($TVShows.Count) TV Shows Found."
+    }
+    else {
+        Write-Host "Plex token not found. Exiting."
+
     }
 }
 
@@ -27,9 +29,6 @@ Function Get-PlexMovies {
     Import-Credentials
 
     if ($CredPlexToken) {
-        Write-Host "Plex token not found. Exiting."
-    }
-    else {
         $Movies = @()
         $Token = $CredPlexToken.GetNetworkCredential().password
         $response = Invoke-RestMethod "http://jax-plms001.evorigin.com:32400/library/sections/2/all?X-Plex-Token=$Token" -Method "GET"
@@ -37,5 +36,10 @@ Function Get-PlexMovies {
         foreach ($Movie in $response.MediaContainer.Video) {
             $Movies += $Movie.Title
         }
+        Write-Host "$($Movies.Count) Movies Found."
+    }
+    else {
+        Write-Host "Plex token not found. Exiting."
+
     }
 }
