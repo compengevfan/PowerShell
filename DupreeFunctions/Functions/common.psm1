@@ -1,3 +1,41 @@
+Function Set-GitPath {
+    [cmdletbinding()]
+    param (
+    )
+
+    try {
+        git | Out-Null
+        Write-Host "Git is installed" -ForegroundColor Green
+        if ($env:githome) { 
+            Write-Host "Git environment variable found." -ForegroundColor Green
+            $githome = $env:githome
+            Write-Host "Copying primary profile script using environment variable." -ForegroundColor Green
+            Copy-Item -Path $githome\PowerShell\Profile\Microsoft.PowerShell_profile.ps1 -Destination $PROFILE -Force
+        }
+        else { 
+            Write-Host "Git environment variable NOT found." -ForegroundColor Yellow
+            if (Test-Path C:\git) { $GitPath = "C:\git" } 
+            elseif (Test-Path E:\Dupree\git) { $GitPath = "E:\Dupree\git" }
+            else { $GitPath = Read-Host "Please provide the git path." -ForegroundColor Yellow }
+            Write-Host "Creating Git environment variable." -ForegroundColor Green
+            [System.Environment]::SetEnvironmentVariable('githome', $GitPath, [System.EnvironmentVariableTarget]::User)
+            Write-Host "Copying primary profile script using temporary variable." -ForegroundColor Green
+            Copy-Item -Path $GitPath\PowerShell\Profile\Microsoft.PowerShell_profile.ps1 -Destination $PROFILE -Force
+        }
+        Write-Host "Creating ISE profile script." -ForegroundColor Green
+        Copy-Item -Path $PROFILE -Destination $PROFILE.Replace("Microsoft.PowerShell_profile.ps1", "Microsoft.PowerShellISE_profile.ps1")
+        Write-Host "Copying VS Code profile script." -ForegroundColor Green
+        Copy-Item -Path $PROFILE -Destination $PROFILE.Replace("Microsoft.PowerShell_profile.ps1", "Microsoft.VSCode_profile.ps1")
+    }
+    catch [System.Management.Automation.CommandNotFoundException] {
+        Write-Host "Git install not found" -ForegroundColor red
+    }
+    catch {
+        Write-Host "An error occurred:"
+        Write-Host $_
+    }
+}
+
 Function Import-DupreeFunctionsClean {
     [cmdletbinding()]
     param (
