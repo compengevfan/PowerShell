@@ -5,11 +5,11 @@
 		"EvOriginWithDomain": "EvOriginWithDomain",
 		"EvOriginWithoutDomain":"EvOriginWithoutDomain",
 		"Gmail": "Gmail",
-		"OriginDotLocalDaUpn":"OriginDotLocalDaUpn"
+		"OriginDotLocalDaUpn":"OriginDotLocalDaUpn",
+		"PlexToken":"PlexToken"
 	},
-	
-	"vCPUs": "2",
-	"RAM": "4",
-	"IPAddress": "192.168.1.30",
-	"ConfigToUse": "JAX_EvOrigin"
+	"VMware":
+	{
+		"vCenter":"anthology.evorigin.com"
+	}
 }

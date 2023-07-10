@@ -1,4 +1,5 @@
 Function Import-PowerCLI {
+    [CmdletBinding()]
     Param(
     )
  
@@ -10,6 +11,7 @@ Function Import-PowerCLI {
 }
 
 function Connect-vCenter {
+    [CmdletBinding()]
     Param(
         [Parameter()] [string] $vCenter,
         [Parameter()] [PSCredential] $Credential
@@ -48,6 +50,7 @@ function Connect-vCenter {
 }
 
 function Show-vCenter {
+    [CmdletBinding()]
     $ConnectedvCenter = $global:DefaultVIServers
 
     if ($ConnectedvCenter.Count -eq 1) {
@@ -256,27 +259,25 @@ Function Invoke-DrainHost {
     $ScriptName = $MyInvocation.MyCommand.Name
 
     # $LoggingSuccSplat = @{ScriptStarted = $ScriptStarted; ScriptName = $ScriptName; LogType = "Succ"}
-    $LoggingInfoSplat = @{ScriptStarted = $ScriptStarted; ScriptName = $ScriptName; LogType = "Info"}
+    $LoggingInfoSplat = @{ScriptStarted = $ScriptStarted; ScriptName = $ScriptName; LogType = "Info" }
     # $LoggingWarnSplat = @{ScriptStarted = $ScriptStarted; ScriptName = $ScriptName; LogType = "Warn"}
     # $LoggingErrSplat = @{ScriptStarted = $ScriptStarted; ScriptName = $ScriptName; LogType = "Err"}
 
     try {
         $Cluster = $VMHost | Get-Cluster
 
-        if ($($Cluster.DrsEnabled))
-        {
+        if ($($Cluster.DrsEnabled)) {
             Invoke-Logging @LoggingInfoSplat -LogString "Storing current cluster DRS Automation level."
             $Stored_DRS_Level = $Cluster.DrsAutomationLevel
             Invoke-Logging @LoggingInfoSplat -LogString "Setting DRS Automation level to manual."
             Set-Cluster -Cluster $Cluster -DrsAutomationLevel Manual -Confirm:$false | Out-Null
         }
     
-        $VmsToMigrate = $VMHost | Get-VM | Where-Object {$_.PowerState -eq "PoweredOn"}
+        $VmsToMigrate = $VMHost | Get-VM | Where-Object { $_.PowerState -eq "PoweredOn" }
         $VmsToMigrateCount = $VmsToMigrate.Count
         $VMc = 1
     
-        foreach ($VmToMigrate in $VmsToMigrate)
-        {
+        foreach ($VmToMigrate in $VmsToMigrate) {
             # Write-Host "Determining host to migrate to."
             Invoke-Logging @LoggingInfoSplat -LogString "Determining host to migrate to."
             $ClusterHosts = $Cluster | Get-VMHost | Where-Object { $_.ConnectionState -eq "Connected" }
@@ -296,7 +297,7 @@ Function Invoke-DrainHost {
     
         # Write-Host "Verifying host is empty and setting to MM."
         Invoke-Logging @LoggingInfoSplat -LogString "Verifying host is empty and setting to MM."
-        $Check = $VMHost | Get-VM | Where-Object {$_.PowerState -eq "PoweredOn"}
+        $Check = $VMHost | Get-VM | Where-Object { $_.PowerState -eq "PoweredOn" }
         if ($null -eq $Check) { Set-VMHost -VMHost $VMHost -State Maintenance -Evacuate:$true -Confirm:$false | Out-Null }
         else { Invoke-Logging @LoggingErrSplat -LogString "Host did not completely drain. Please check VMs left on the host for VMotion errors, resolve and run the script again."; throw "Host did not completely drain. Please check VMs left on the host for VMotion errors, resolve and run the script again." }
     
@@ -326,10 +327,10 @@ Function Invoke-PatchESXHost {
     $ScriptStarted = Get-Date -Format MM-dd-yyyy_HH-mm-ss
     $ScriptName = $MyInvocation.MyCommand.Name
 
-    $LoggingSuccSplat = @{ScriptStarted = $ScriptStarted; ScriptName = $ScriptName; LogType = "Succ"}
-    $LoggingInfoSplat = @{ScriptStarted = $ScriptStarted; ScriptName = $ScriptName; LogType = "Info"}
-    $LoggingWarnSplat = @{ScriptStarted = $ScriptStarted; ScriptName = $ScriptName; LogType = "Warn"}
-    $LoggingErrSplat = @{ScriptStarted = $ScriptStarted; ScriptName = $ScriptName; LogType = "Err"}
+    $LoggingSuccSplat = @{ScriptStarted = $ScriptStarted; ScriptName = $ScriptName; LogType = "Succ" }
+    $LoggingInfoSplat = @{ScriptStarted = $ScriptStarted; ScriptName = $ScriptName; LogType = "Info" }
+    $LoggingWarnSplat = @{ScriptStarted = $ScriptStarted; ScriptName = $ScriptName; LogType = "Warn" }
+    $LoggingErrSplat = @{ScriptStarted = $ScriptStarted; ScriptName = $ScriptName; LogType = "Err" }
 
     try {
         #Obtain a count of host datastores before applying updates
@@ -349,12 +350,12 @@ Function Invoke-PatchESXHost {
                     #Write-Host "Putting host in MM using DRS."
                     Invoke-Logging $LoggingInfoSplat -LogString "Putting host in MM using DRS."
                     Set-VMHost -VMHost $HostToPatch -State Maintenance -Evacuate:$true -Confirm:$false
-                 }
+                }
                 "DrainHost" { 
                     #Write-Host "Putting host in MM using DrainHost Function."
                     Invoke-Logging $LoggingInfoSplat -LogString "Putting host in MM using DrainHost Function."
                     Invoke-DrainHost -VMHost $HostToPatch
-                 }
+                }
                 Default {}
             }
     
@@ -392,9 +393,9 @@ Function Invoke-PatchESXHost {
             #Verify datastore count matches pre-upgrade count
             Invoke-Logging $LoggingInfoSplat -LogString "Verifying datastore count matches pre-upgrade count."
             $DsCountEnd = ($HostToPatch | Get-Datastore).Count
-            if ($DsCountStart -ne $DsCountEnd) { Invoke-Logging @LoggingErrSplat -LogString "Post upgrade datastore count on $($HostToPatch.Name) does not match the pre upgrade count"; throw "Post upgrade datastore count on $($HostToPatch.Name) does not match the pre upgrade count"}
+            if ($DsCountStart -ne $DsCountEnd) { Invoke-Logging @LoggingErrSplat -LogString "Post upgrade datastore count on $($HostToPatch.Name) does not match the pre upgrade count"; throw "Post upgrade datastore count on $($HostToPatch.Name) does not match the pre upgrade count" }
     
-            if ($AutoExitMm){
+            if ($AutoExitMm) {
                 Invoke-Logging $LoggingInfoSplat -LogString "$($HostToPatch.Name) exiting Maintenance Mode."
                 Set-VMHost -VMHost $HostToPatch -State Connected -Confirm:$false | Out-Null
             }
@@ -424,8 +425,8 @@ Function Invoke-PatchESXCluster {
     $ScriptStarted = Get-Date -Format MM-dd-yyyy_HH-mm-ss
     $ScriptName = $MyInvocation.MyCommand.Name
 
-    $LoggingSuccSplat = @{ScriptStarted = $ScriptStarted; ScriptName = $ScriptName; LogType = "Succ"}
-    $LoggingInfoSplat = @{ScriptStarted = $ScriptStarted; ScriptName = $ScriptName; LogType = "Info"}
+    $LoggingSuccSplat = @{ScriptStarted = $ScriptStarted; ScriptName = $ScriptName; LogType = "Succ" }
+    $LoggingInfoSplat = @{ScriptStarted = $ScriptStarted; ScriptName = $ScriptName; LogType = "Info" }
     # $LoggingWarnSplat = @{ScriptStarted = $ScriptStarted; ScriptName = $ScriptName; LogType = "Warn"}
     # $LoggingErrSplat = @{ScriptStarted = $ScriptStarted; ScriptName = $ScriptName; LogType = "Err"}
 
@@ -436,7 +437,7 @@ Function Invoke-PatchESXCluster {
         }
 
         $AreYouSure = Read-Host "Are you sure you want to apply ESX updates to the hosts in cluster $ClusterToPatch (You must respond with 'yes' to continue)?"
-        if ($AreYouSure -ne "yes") {Write-Host "You did not respond with 'yes'."}
+        if ($AreYouSure -ne "yes") { Write-Host "You did not respond with 'yes'." }
         else {
             # Write-Host "Getting all the hosts in the cluster sorted by Name."
             Invoke-Logging $LoggingInfoSplat -LogString "Getting all the hosts in the cluster sorted by Name."

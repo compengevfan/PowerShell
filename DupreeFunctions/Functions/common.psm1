@@ -6,16 +6,17 @@ Function Import-DupreeFunctionsClean {
     Write-Host "Re-importing DupreeFunctions module"
     Remove-Module DupreeFunctions -ErrorAction "SilentlyContinue"
     if ($Location -eq "Profile") { Import-Module DupreeFunctions -Force -Global }
-    else {Import-Module $githome\PowerShell\DupreeFunctions\DupreeFunctions.psd1 -force}
+    else { Import-Module $githome\PowerShell\DupreeFunctions\DupreeFunctions.psd1 -force }
 }
 
 Function Invoke-SendEmail {
+    [CmdletBinding()]
     Param(
         [Parameter(Mandatory = $true)] [string] $Subject,
         [Parameter(Mandatory = $true)] [string] $EmailBody
     )
 
-    if ($null -ne $CredGmail){
+    if ($null -ne $CredGmail) {
         $emailFrom = "HomeLab@evorigin.com"
         $emailTo = "chris.dupree@gmail.com"
         $emailServer = "smtp.gmail.com"
@@ -26,6 +27,7 @@ Function Invoke-SendEmail {
 }
 
 Function Invoke-Logging {
+    [CmdletBinding()]
     Param(
         [Parameter(Mandatory = $true)] [string] $ScriptStarted,
         [Parameter(Mandatory = $true)] [string] $ScriptName,
@@ -48,6 +50,7 @@ Function Invoke-Logging {
 }
 
 Function Save-Credential {
+    [CmdletBinding()]
     Param(
         [Parameter()] [string] $Name
     )
@@ -68,13 +71,15 @@ Function Save-Credential {
 }
 
 Function Update-Credential {
+    [CmdletBinding()]
     $CredFiles = Get-ChildItem $env:LOCALAPPDATA\DupreeFunctions\Cred*.xml
     $CredToUpdate = Invoke-Menu -Objects $CredFiles -MenuColumn Name -SelectionText "Please select a credential to update." -ClearScreen:$true
-    $CredName = $($CredToUpdate.Name).Replace("Cred","").Replace(".xml","")
+    $CredName = $($CredToUpdate.Name).Replace("Cred", "").Replace(".xml", "")
     Save-Credential -Name $CredName
 }
 
 Function Remove-Credential {
+    [CmdletBinding()]
     $CredFiles = Get-ChildItem $env:LOCALAPPDATA\DupreeFunctions\Cred*.xml
     $CredToDelete = Invoke-Menu -Objects $CredFiles -MenuColumn Name -SelectionText "Please select a credential to delete." -ClearScreen:$true
     Remove-Item $CredToDelete
@@ -94,10 +99,12 @@ Function Import-Credentials {
         }
 
         Write-Host "$CredCount Credential(s) Imported."
-    } else { Write-Host "DupreeFunctions AppData folder not found."}
+    }
+    else { Write-Host "DupreeFunctions AppData folder not found." }
 }
 
 Function Show-Credentials {
+    [CmdletBinding()]
     $InSession = (Get-Variable Cred*).Name
     Write-Host "Here's the list of imported credentials:" -ForegroundColor Green
     $InSession
@@ -107,6 +114,7 @@ Function Show-Credentials {
 }
 
 Function ConvertToDN {
+    [CmdletBinding()]
     Param(
         [Parameter(Mandatory = $true)] [string] $Domain,
         [Parameter(Mandatory = $true)] [string] $OUPath
@@ -193,6 +201,7 @@ Function Convert-PhoneticAlphabet {
 } # End Function
 
 Function Get-FileName {
+    [CmdletBinding()]
     Param(
         [Parameter(Mandatory = $true)] [string] $Filter
     )
@@ -208,6 +217,7 @@ Function Get-FileName {
 }
 
 Function Invoke-Menu {
+    [CmdletBinding()]
     Param(
         [Parameter(Mandatory = $true)] $Objects,
         [Parameter(Mandatory = $true)] [string] $MenuColumn,
