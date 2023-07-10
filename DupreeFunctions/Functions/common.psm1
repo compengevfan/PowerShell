@@ -19,13 +19,7 @@ Function Set-GitPath {
             else { $GitPath = Read-Host "Please provide the git path." -ForegroundColor Yellow }
             Write-Host "Creating Git environment variable." -ForegroundColor Green
             [System.Environment]::SetEnvironmentVariable('githome', $GitPath, [System.EnvironmentVariableTarget]::User)
-            Write-Host "Copying primary profile script using temporary variable." -ForegroundColor Green
-            Copy-Item -Path $GitPath\PowerShell\Profile\Microsoft.PowerShell_profile.ps1 -Destination $PROFILE -Force
         }
-        Write-Host "Creating ISE profile script." -ForegroundColor Green
-        Copy-Item -Path $PROFILE -Destination $PROFILE.Replace("Microsoft.PowerShell_profile.ps1", "Microsoft.PowerShellISE_profile.ps1")
-        Write-Host "Copying VS Code profile script." -ForegroundColor Green
-        Copy-Item -Path $PROFILE -Destination $PROFILE.Replace("Microsoft.PowerShell_profile.ps1", "Microsoft.VSCode_profile.ps1")
     }
     catch [System.Management.Automation.CommandNotFoundException] {
         Write-Host "Git install not found" -ForegroundColor red
@@ -33,6 +27,20 @@ Function Set-GitPath {
     catch {
         Write-Host "An error occurred:"
         Write-Host $_
+    }
+}
+
+Function Sync-ProfileScript {
+    if ($env:githome) {
+        Write-Host "Copying primary profile script using temporary variable." -ForegroundColor Green
+        Copy-Item -Path $GitPath\PowerShell\Profile\Microsoft.PowerShell_profile.ps1 -Destination $PROFILE -Force
+        Write-Host "Creating ISE profile script." -ForegroundColor Green
+        Copy-Item -Path $PROFILE -Destination $PROFILE.Replace("Microsoft.PowerShell_profile.ps1", "Microsoft.PowerShellISE_profile.ps1") -Force
+        Write-Host "Copying VS Code profile script." -ForegroundColor Green
+        Copy-Item -Path $PROFILE -Destination $PROFILE.Replace("Microsoft.PowerShell_profile.ps1", "Microsoft.VSCode_profile.ps1") -Force
+    }
+    else {
+        Write-Host "Git environment variable NOT found." -ForegroundColor Red
     }
 }
 
