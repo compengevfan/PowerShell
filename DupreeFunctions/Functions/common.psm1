@@ -123,9 +123,12 @@ Function Save-Credential {
             Write-Host "$Name credential created/overwritten." -ForegroundColor Green
         }
         "Auto" { 
-            $CredsToCreate = Get-Content $githome\PowerShell\Credentials.txt
-            foreach ($Cred in $CredsToCreate) {
-                
+            $Names = Get-Content $githome\PowerShell\Credentials.txt
+            foreach ($Name in $Names) {
+                $CredName = "Cred" + $Name + ".xml"
+                if (Test-Path $env:LOCALAPPDATA\DupreeFunctions\$CredName) { Remove-Item $env:LOCALAPPDATA\DupreeFunctions\$CredName }
+                $Credential | Export-Clixml -Path $env:LOCALAPPDATA\DupreeFunctions\$CredName
+                Write-Host "$Name credential created/overwritten." -ForegroundColor Green
             }
         }
         Default {}
