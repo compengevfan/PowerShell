@@ -58,7 +58,7 @@ Function Import-DupreeFunctionsClean {
             Write-Host "Importing DupreeFunctions From Git Location"
             Import-Module $githome\PowerShell\DupreeFunctions\DupreeFunctions.psd1 -Global -force 
         }
-        Default { Write-Host "Something unexpected happened."}
+        Default { Write-Host "Something unexpected happened." }
     }
 }
 
@@ -105,6 +105,7 @@ Function Invoke-Logging {
 Function Save-Credential {
     [CmdletBinding()]
     Param(
+        [string][ValidateSet("Auto", "AdHoc")]$Mode = "AdHoc",
         [Parameter()] [string] $Name
     )
 
@@ -112,13 +113,23 @@ Function Save-Credential {
         New-Item -Path $env:LOCALAPPDATA\DupreeFunctions -ItemType Directory
     }
 
-    $Name = $Name.Replace(" ", "")
-
-    $Credential = Get-Credential -Message "Provide the $Name Credential."
-    $CredName = "Cred" + $Name + ".xml"
-    if (Test-Path $env:LOCALAPPDATA\DupreeFunctions\$CredName) { Remove-Item $env:LOCALAPPDATA\DupreeFunctions\$CredName }
-    $Credential | Export-Clixml -Path $env:LOCALAPPDATA\DupreeFunctions\$CredName
-    Write-Host "$Name credential created/overwritten." -ForegroundColor Green
+    # $Name = $Name.Replace(" ", "")
+    switch ($Mode) {
+        "AdHoc" { 
+            $Credential = Get-Credential -Message "Provide the $Name Credential."
+            $CredName = "Cred" + $Name + ".xml"
+            if (Test-Path $env:LOCALAPPDATA\DupreeFunctions\$CredName) { Remove-Item $env:LOCALAPPDATA\DupreeFunctions\$CredName }
+            $Credential | Export-Clixml -Path $env:LOCALAPPDATA\DupreeFunctions\$CredName
+            Write-Host "$Name credential created/overwritten." -ForegroundColor Green
+        }
+        "Auto" { 
+            $CredsToCreate = Get-Content $githome\PowerShell\Credentials.txt
+            foreach ($Cred in $CredsToCreate) {
+                
+            }
+        }
+        Default {}
+    }
 
     Import-Credentials
 }

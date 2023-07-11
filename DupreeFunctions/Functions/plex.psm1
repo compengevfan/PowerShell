@@ -17,7 +17,6 @@ Function Get-PlexTVShows {
     }
     else {
         Write-Host "Plex token not found. Exiting."
-
     }
 }
 
@@ -40,6 +39,5 @@ Function Get-PlexMovies {
     }
     else {
         Write-Host "Plex token not found. Exiting."
-
     }
 }
