@@ -1,4 +1,5 @@
 Function Invoke-NetboxGetHeader {
+    [CmdletBinding()]
     Param(
         [Parameter(Mandatory = $true)] [pscredential] $Credential
     )
@@ -14,6 +15,7 @@ Function Invoke-NetboxGetHeader {
 }
 
 Function Invoke-NetboxAddVm {
+    [CmdletBinding()]
     Param(
         [Parameter(Mandatory = $true)] [string] $VMName,
         [Parameter()] [string] $Status = "active",
@@ -35,6 +37,7 @@ Function Invoke-NetboxAddVm {
 }
 
 Function Invoke-NetboxAddVmInterface {
+    [CmdletBinding()]
     Param(
         [Parameter(Mandatory = $true)] [int16] $VmId,
         [Parameter()] [string] $Name = "FrontEnd",
@@ -53,6 +56,7 @@ Function Invoke-NetboxAddVmInterface {
 }
 
 Function Invoke-NetboxAddIp {
+    [CmdletBinding()]
     Param(
         [Parameter(Mandatory = $true)] [string] $IpAddress,
         [Parameter()] [string] $Status = "active",
@@ -73,6 +77,7 @@ Function Invoke-NetboxAddIp {
 }
 
 Function Invoke-NetboxAddIpToVM {
+    [CmdletBinding()]
     Param(
         [Parameter(Mandatory = $true)] [string] $VmId,
         [Parameter(Mandatory = $true)] [int16] $IpId,

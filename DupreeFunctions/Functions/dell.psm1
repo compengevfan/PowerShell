@@ -11,7 +11,7 @@ Function Invoke-DracReset {
     $ScriptName = $MyInvocation.MyCommand.Name
 
     # $LoggingSuccSplat = @{ScriptStarted = $ScriptStarted; ScriptName = $ScriptName; LogType = "Succ"}
-    $LoggingInfoSplat = @{ScriptStarted = $ScriptStarted; ScriptName = $ScriptName; LogType = "Info"}
+    $LoggingInfoSplat = @{ScriptStarted = $ScriptStarted; ScriptName = $ScriptName; LogType = "Info" }
     # $LoggingWarnSplat = @{ScriptStarted = $ScriptStarted; ScriptName = $ScriptName; LogType = "Warn"}
     # $LoggingErrSplat = @{ScriptStarted = $ScriptStarted; ScriptName = $ScriptName; LogType = "Err"}
 
@@ -21,14 +21,15 @@ Function Invoke-DracReset {
     $DracUserName = $CredDrac.UserName
     $DracPassword = $CredDrac.GetNetworkCredential().Password
 
-    if ($DracToReset -eq "All"){
-        $LocalHosts = "rac-esx1.evorigin.com","rac-esx2.evorigin.com","rac-esx3.evorigin.com"
+    if ($DracToReset -eq "All") {
+        $LocalHosts = "rac-esx1.evorigin.com", "rac-esx2.evorigin.com", "rac-esx3.evorigin.com"
 
         foreach ($LocalHost in $LocalHosts) {
             Invoke-Logging @LoggingInfoSplat -LogString "Issuing command to reset iDrac on $LocalHost"
             Invoke-Command -ScriptBlock { racadm -r $LocalHost -u $DracUserName -p $DracPassword racreset $ResetMode }
         }
-    } else {
+    }
+    else {
         Invoke-Logging @LoggingInfoSplat -LogString "Issuing command to reset iDrac on rac-esx$DracToReset.evorigin.com"
         Invoke-Command -ScriptBlock { racadm -r "rac-esx$DracToReset.evorigin.com" -u $DracUserName -p $DracPassword racreset $ResetMode }
     }
