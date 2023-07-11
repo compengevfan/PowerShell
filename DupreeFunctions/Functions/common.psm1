@@ -125,6 +125,7 @@ Function Save-Credential {
         "Auto" { 
             $Names = Get-Content $githome\PowerShell\Credentials.txt
             foreach ($Name in $Names) {
+                $Credential = Get-Credential -Message "Provide the $Name Credential."
                 $CredName = "Cred" + $Name + ".xml"
                 if (Test-Path $env:LOCALAPPDATA\DupreeFunctions\$CredName) { Remove-Item $env:LOCALAPPDATA\DupreeFunctions\$CredName }
                 $Credential | Export-Clixml -Path $env:LOCALAPPDATA\DupreeFunctions\$CredName
