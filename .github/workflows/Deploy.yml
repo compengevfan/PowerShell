@@ -34,7 +34,7 @@ jobs:
         run: |
           Publish-Module -Path C:\git\PowerShell\DupreeFunctions -NuGetApiKey ${{secrets.PSG_API_KEY}}
 
-      #[1]
+      #[12]
       - name: Update-LabBoxes
         shell: powershell
         run: |
