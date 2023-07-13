@@ -22,7 +22,6 @@ jobs:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
       - uses: actions/checkout@v3
 
-      #[12345]
       # Update repository on JAX-TASK001
       - name: Update Repo
         shell: cmd
@@ -34,3 +33,10 @@ jobs:
         shell: PowerShell
         run: |
           Publish-Module -Path C:\git\PowerShell\DupreeFunctions -NuGetApiKey ${{secrets.PSG_API_KEY}}
+
+      #[1]
+      - name: Update-LabBoxes
+        shell: powershell
+        run: |
+          Start-Sleep -Seconds 30
+          C:\actions-runner\Update-LabBoxes.ps1
