@@ -22,7 +22,7 @@ jobs:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
       - uses: actions/checkout@v3
 
-      #[1234]
+      #[12345]
       # Update repository on JAX-TASK001
       - name: Update Repo
         shell: cmd
@@ -33,5 +33,4 @@ jobs:
       - name: Publish to PowerShell Gallery
         shell: PowerShell
         run: |
-          Install-PackageProvider -Name NuGet -Force
           Publish-Module -Path C:\git\PowerShell\DupreeFunctions -NuGetApiKey ${{secrets.PSG_API_KEY}}
