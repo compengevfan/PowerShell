@@ -34,4 +34,4 @@ jobs:
       - name: Publish to PowerShell Gallery
         shell: PowerShell
         run: |
-          Publish-Module -Name DupreeFunctions -NuGetApiKey ${{PSG_API_KEY}}
+          Publish-Module -Name DupreeFunctions -NuGetApiKey ${{secrets.PSG_API_KEY}}
