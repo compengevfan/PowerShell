@@ -26,12 +26,20 @@ jobs:
       - name: Run a one-line script
         run: echo Hello, world!
 
-      # Runs a set of commands using the runners shell - changing something again and again
+      # Runs a set of commands using the runners shell [1]
       - name: Run a multi-line script
         run: |
           echo Add other actions to build,
           echo test, and deploy your project.
-      - name: Publish to PowerShell Gallery
-        shell: PowerShell
+
+      # Update repository on JAX-TASK001
+      - name: Update Repo
+        shell: cmd
         run: |
-          Publish-Module -Name DupreeFunctions -NuGetApiKey ${{secrets.PSG_API_KEY}}
+          git -C C:\git\PowerShell pull origin master
+
+      # Publish DupreeFunctions to PSG
+      # - name: Publish to PowerShell Gallery
+      #   shell: PowerShell
+      #   run: |
+      #     Publish-Module -Name DupreeFunctions -NuGetApiKey ${{secrets.PSG_API_KEY}}
