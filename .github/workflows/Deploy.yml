@@ -30,7 +30,7 @@ jobs:
           git -C C:\git\PowerShell pull origin master
 
       # Publish DupreeFunctions to PSG
-      # - name: Publish to PowerShell Gallery
-      #   shell: PowerShell
-      #   run: |
-      #     Publish-Module -Path C:\git\PowerShell\DupreeFunctions -NuGetApiKey ${{secrets.PSG_API_KEY}}
+      - name: Publish to PowerShell Gallery
+        shell: PowerShell
+        run: |
+          Publish-Module -Path C:\git\PowerShell\DupreeFunctions -NuGetApiKey ${{secrets.PSG_API_KEY}}
