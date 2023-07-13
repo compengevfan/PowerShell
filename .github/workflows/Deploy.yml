@@ -6,7 +6,9 @@ name: DeployToLab
 on:
   # Triggers the workflow on pull request events but only for the "master" branch
   pull_request:
-    branches: [ "master" ]
+    types: [closed]
+    branches:
+      - master
 
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
@@ -29,3 +31,7 @@ jobs:
         run: |
           echo Add other actions to build,
           echo test, and deploy your project.
+      - name: Publish to PowerShell Gallery
+        shell: PowerShell
+        run: |
+          Publish-Module -Name DupreeFunctions -NuGetApiKey ${{PSG_API_KEY}}
