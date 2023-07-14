@@ -15,13 +15,5 @@ foreach ($destination in $destinations) {
         else {
             Write-Host "NuGet Package Provider already in place."
         }
-
-        #Check if PowerShell Gallery Repository is set as trusted.
-        $PsgInstallPolicy = Get-PSRepository -Name PSGallery
-        if ($($PsgInstallPolicy.InstallationPolicy) -ne "Trusted") {
-            Write-Host "Setting PSGallery Install Policy to Trusted"
-            Set-PSRepository -Name PSGallery -InstallationPolicy Trusted
-        }
-        else { Write-Host "PSGallery Install Policy already set to Trusted" }
     }
 }
