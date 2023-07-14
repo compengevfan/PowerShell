@@ -9,7 +9,7 @@ foreach ($destination in $destinations) {
         $NuGetPSCheck = Get-PackageSource NuGet
         if ($null -eq $NuGetPSCheck) {
             Write-Host "Registering nuget.org"
-            Register-PackageSource -Name NuGet -Location https://www.nuget.org/api/v2 -ProviderName NuGet -Trusted
+            Register-PackageSource -Name NuGet -Location https://www.nuget.org/api/v2 -ProviderName NuGet -Trusted -Confirm:$false
         }
         else {
             Write-Host "NuGet Package Source Found. Checking it's trusted."
@@ -29,7 +29,7 @@ foreach ($destination in $destinations) {
         $NuGetPPCheck = Get-PackageProvider NuGet
         if ($null -eq $NuGetPPCheck) {
             Write-Host "Installing NuGet Package Provider"
-            Install-PackageProvider -Name NuGet -Scope CurrentUser
+            Install-PackageProvider -Name NuGet -Scope CurrentUser -Confirm:$false
         }
         else {
             Write-Host "NuGet Package Provider already in place."
