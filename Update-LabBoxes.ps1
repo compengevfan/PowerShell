@@ -9,7 +9,7 @@ foreach ($destination in $destinations) {
         $NuGetPSCheck = Get-PackageSource NuGet
         if ($null -eq $NuGetPSCheck) {
             Write-Host "Registering nuget.org"
-            Register-PackageSource -Name NuGet -Location https://www.nuget.org/api/v2 -ProviderName NuGet -Trusted -Confirm:$false
+            Register-PackageSource -Name NuGet -Location https://onegetcdn.azureedge.net/providers -ProviderName NuGet -Trusted -Confirm:$false
         }
         else {
             Write-Host "NuGet Package Source Found. Checking it's trusted."
