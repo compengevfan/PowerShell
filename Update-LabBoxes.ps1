@@ -5,31 +5,11 @@ $destinations = @(
 foreach ($destination in $destinations) {
     Write-Host "Processing $destination"
     Invoke-Command -ComputerName $destination -ScriptBlock {
-        #Check if NuGet Package Source is in place and trusted
-        $NuGetPSCheck = Get-PackageSource NuGet
-        if ($null -eq $NuGetPSCheck) {
-            Write-Host "Registering nuget.org"
-            Register-PackageSource -Name NuGet -Location https://onegetcdn.azureedge.net/providers -ProviderName NuGet -Trusted -Confirm:$false
-        }
-        else {
-            Write-Host "NuGet Package Source Found. Checking it's trusted."
-            if (!$($NuGetPSCheck.IsTrusted)) {
-                Write-Host "Setting NuGet Package Source to Trusted."
-				Set-PackageSource -Name NuGet -Trusted
-			}
-            else {
-                Write-Host "NuGet Package Source is in place and trusted."
-            }
-		}
-
-        Write-Host "List of Package sources:"
-        Get-PackageSource
-
         #Check if NuGet Package Provider is in place
         $NuGetPPCheck = Get-PackageProvider NuGet
         if ($null -eq $NuGetPPCheck) {
             Write-Host "Installing NuGet Package Provider"
-            Install-PackageProvider -Name NuGet -Scope CurrentUser -Confirm:$false
+            Install-PackageProvider -Name NuGet -Scope CurrentUser -Force
         }
         else {
             Write-Host "NuGet Package Provider already in place."
