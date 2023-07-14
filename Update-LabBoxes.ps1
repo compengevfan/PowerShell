@@ -22,6 +22,9 @@ foreach ($destination in $destinations) {
             }
 		}
 
+        Write-Host "List of Package sources:"
+        Get-PackageSource
+
         #Check if NuGet Package Provider is in place
         $NuGetPPCheck = Get-PackageProvider NuGet
         if ($null -eq $NuGetPPCheck) {
