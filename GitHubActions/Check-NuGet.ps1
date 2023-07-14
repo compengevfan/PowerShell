@@ -10,7 +10,6 @@ foreach ($destination in $destinations) {
         if ($null -eq $NuGetPPCheck) {
             Write-Host "Installing NuGet Package Provider"
             Install-PackageProvider -Name NuGet -Scope CurrentUser -Force
-            Import-PackageProvider NuGet
         }
         else {
             Write-Host "NuGet Package Provider already in place."
