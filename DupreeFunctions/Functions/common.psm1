@@ -323,6 +323,7 @@ Function Update-LabBoxes {
     )
 
     $destinations = @(
+        "jax-pc001.evorigin.com"
         "jax-pc002.evorigin.com"
     ) | Sort-Object
 
