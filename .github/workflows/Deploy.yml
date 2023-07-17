@@ -34,7 +34,6 @@ jobs:
         run: |
           Publish-Module -Path C:\git\PowerShell\DupreeFunctions -NuGetApiKey ${{secrets.PSG_API_KEY}}
 
-      #[123456789012]
       # - name: Check-NuGet
       #   shell: powershell
       #   run: |
