@@ -11,7 +11,7 @@
 	RootModule = 'DupreeFunctions.psm1'
 
 	# Version number of this module.
-	ModuleVersion = '2.0.4'
+	ModuleVersion = '2.0.5'
 
 	# ID used to uniquely identify this module
 	GUID = '9b11776c-339d-4868-b66a-b9f735c71aa0'
