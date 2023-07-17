@@ -2,9 +2,12 @@ $destinations = @(
     "jax-pc002.evorigin.com"
 ) | Sort-Object
 
+$CredImport = Import-Clixml C:\actions-runner\Cred.xml
+New-Variable -Name Credential -Value $CredImport -Scope Global
+
 foreach ($destination in $destinations) {
     Write-Host "Processing $destination"
-    Invoke-Command -ComputerName $destination CredSSP -ScriptBlock {
+    Invoke-Command -ComputerName $destination -Credential $Credential -ScriptBlock {
         #Check if PowerShell Gallery Repository is set as trusted.
         $PsgInstallPolicy = Get-PSRepository -Name PSGallery
         if ($($PsgInstallPolicy.InstallationPolicy) -ne "Trusted") {
