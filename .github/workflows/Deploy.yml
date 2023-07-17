@@ -34,14 +34,19 @@ jobs:
         run: |
           Publish-Module -Path C:\git\PowerShell\DupreeFunctions -NuGetApiKey ${{secrets.PSG_API_KEY}}
 
-      #[123456789]
+      #[1234567890]
       # - name: Check-NuGet
       #   shell: powershell
       #   run: |
       #     C:\actions-runner\Check-NuGet.ps1
 
-      - name: Update-LabBoxes
+      - name: Update-Task-Server
         shell: powershell
         run: |
           Start-Sleep -Seconds 30
+          Update-Module DupreeFunctions
+
+      - name: Update-LabBoxes
+        shell: powershell
+        run: |
           C:\actions-runner\Update-LabBoxes.ps1
