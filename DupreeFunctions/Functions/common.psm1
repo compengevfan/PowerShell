@@ -325,6 +325,7 @@ Function Update-LabBoxes {
     $destinations = @(
         "jax-pc001.evorigin.com"
         "jax-pc002.evorigin.com"
+        "jax-lt001.evorigin.com"
     ) | Sort-Object
 
     $CredImport = Import-Clixml C:\actions-runner\Cred.xml
