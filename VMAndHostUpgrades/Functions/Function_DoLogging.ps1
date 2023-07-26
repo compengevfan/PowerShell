@@ -1,4 +1,4 @@
-Function Invoke-Logging
+Function Invoke-DfLogging
 {
     Param(
         [Parameter(Mandatory=$true)][ValidateSet("Succ","Info","Warn","Err")] [string] $LogType,

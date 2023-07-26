@@ -8,9 +8,9 @@ $ScriptPath = $PSScriptRoot
 cd $ScriptPath
 
 . .\Functions\function_Check-PowerCLI.ps1
-. .\Functions\function_Connect-vCenter.ps1
-. .\Functions\function_Get-FileName.ps1
-. .\Functions\function_Wait-Shutdown.ps1
+. .\Functions\function_Connect-DFvCenter.ps1
+. .\Functions\function_Get-DfFileName.ps1
+. .\Functions\function_Wait-DfShutdown.ps1
 
 Check-PowerCLI
 
@@ -21,10 +21,10 @@ $ErrorActionPreference = "SilentlyContinue"
 $ScriptStarted = Get-Date -Format MM-dd-yyyy_HH-mm-ss
 $ScriptName = $MyInvocation.MyCommand.Name
 
-Connect-vCenter -vCenter $vCenter
+Connect-DFvCenter -vCenter $vCenter
 
 #if there is no input file, present an explorer window for the user to select one.
-if ($InputFile -eq "" -or $InputFile -eq $null) { cls; Write-Host "Please select an input file..."; $InputFile = Get-FileName }
+if ($InputFile -eq "" -or $InputFile -eq $null) { cls; Write-Host "Please select an input file..."; $InputFile = Get-DfFileName }
 
 #Grab the list of servers to upgrade
 $VMsToUpdate = Get-Content $InputFile

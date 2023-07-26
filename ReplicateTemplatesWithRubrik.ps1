@@ -36,7 +36,7 @@ if ($null -ne $CredFile)
     New-Variable -Name Credential_To_Use -Value $(Import-Clixml $($CredFile))
 }
  
-Connect-vCenter -vCenter $vCenter -vCenterCredential $Credential_To_Use
+Connect-DFvCenter -vCenter $vCenter -vCenterCredential $Credential_To_Use
 
 ##################
 #Email Variables
@@ -49,9 +49,9 @@ $emailServer = "smtp.ff.p10"
 
 if (!(Test-Path .\~Logs)) { New-Item -Name "~Logs" -ItemType Directory | Out-Null }
 
-Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Importing JSON Data File."
+Invoke-DfLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Importing JSON Data File."
 try { $DataFromFile = ConvertFrom-JSON (Get-Content ".\ReplicateTemplatesWithRubrik-Data.json" -raw) -ErrorAction Stop }
-catch { Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Err -LogString "JSON Import failed!!!`n`rError encountered is:`n`r$($Error[0])`n`rScript Exiting!!!"; exit }
+catch { Invoke-DfLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Err -LogString "JSON Import failed!!!`n`rError encountered is:`n`r$($Error[0])`n`rScript Exiting!!!"; exit }
 
 #List of OS Codes.
 $OSes = $DataFromFile.OSCodes
@@ -60,29 +60,29 @@ $OSes = $DataFromFile.OSCodes
 $TemplateNames = @()
 foreach ($OSCode in $OSes) { $TemplateNames += "TPL_GOLD_$($OSCode.OSCode)" }
 
-Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Checking for Rubrik PS Module..."
+Invoke-DfLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Checking for Rubrik PS Module..."
 if (Get-Module -ListAvailable -Name Rubrik)
 {
-    Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Succ -LogString "Importing Rubrik PS module..."
+    Invoke-DfLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Succ -LogString "Importing Rubrik PS module..."
     Import-Module Rubrik
 }
 else
 {
-    Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Err -LogString "Rubrik PS Module is missing!!! Script exiting!!!"
+    Invoke-DfLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Err -LogString "Rubrik PS Module is missing!!! Script exiting!!!"
     exit
 }
 
-Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Obtaining Rubrik credentials."
+Invoke-DfLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Obtaining Rubrik credentials."
 $RubrikCred = Get-Credential -Message "Please provide credentials for connecting to Rubrik. Note these credentials will be used to connect to all Rubrik devices."
 
 ##################
 #Begin: Environment and sanity checks
 ##################
 
-Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Warn -LogString "Beginning environment and sanity checks. Please wait for this to complete."
+Invoke-DfLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Warn -LogString "Beginning environment and sanity checks. Please wait for this to complete."
 Read-Host "Press 'Enter' to continue..."
 
-Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Verifying IAD-PROD info..."
+Invoke-DfLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Verifying IAD-PROD info..."
 $IADInfo = $DataFromFile.IADPROD
 try
 {
@@ -90,28 +90,28 @@ try
     Get-VMHost $($IADInfo.Host) | Get-Datastore $($IADInfo.Datastore) -ErrorAction Stop | Out-Null
     $Folders = Get-Datacenter $($IADInfo.Datacenter) | Get-Folder "Templates" -ErrorAction Stop | Out-Null
     if ($Folders.Count -gt 1) { throw "Too Many Folders" }
-    Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Succ -LogString "Host, Datastore and Folder located."
+    Invoke-DfLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Succ -LogString "Host, Datastore and Folder located."
 }
 catch
 {
-    if ($Error[0] -like "*Get-VMHost*") { Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Err -LogString "IAD-PROD host is incorrect!!! Script Exiting!!!" }
-    if ($Error[0] -like "*Get-Datastore*") { Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Err -LogString "IAD-PROD datastore is incorrect!!! Script Exiting!!!" }
-    if ($Error[0] -like "*Get-Folder*") { Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Err -LogString "IAD datacenter does not have a 'Templates' folder!!! Script Exiting!!!" }
-    if ($Error[0].Exception.tostring() -like "*Too Many Folders") { Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Err -LogString "Multiple templates folders found in $($IADInfo.Datacenter) Datacenter!!! Script exiting!!!" }
+    if ($Error[0] -like "*Get-VMHost*") { Invoke-DfLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Err -LogString "IAD-PROD host is incorrect!!! Script Exiting!!!" }
+    if ($Error[0] -like "*Get-Datastore*") { Invoke-DfLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Err -LogString "IAD-PROD datastore is incorrect!!! Script Exiting!!!" }
+    if ($Error[0] -like "*Get-Folder*") { Invoke-DfLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Err -LogString "IAD datacenter does not have a 'Templates' folder!!! Script Exiting!!!" }
+    if ($Error[0].Exception.tostring() -like "*Too Many Folders") { Invoke-DfLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Err -LogString "Multiple templates folders found in $($IADInfo.Datacenter) Datacenter!!! Script exiting!!!" }
     exit
 }
 
-Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Verifying GOLD VMs exist..."
+Invoke-DfLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Verifying GOLD VMs exist..."
 foreach ($TemplateName in $TemplateNames)
 {
     try
     {
         Get-Cluster $($IADInfo.Cluster) | Get-VM $TemplateName -ErrorAction Stop | Out-Null
-        Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Succ -LogString "$TemplateName found."
+        Invoke-DfLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Succ -LogString "$TemplateName found."
     }
     catch
     {
-        Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Err -LogString "$TemplateName not found!!! Error encountered is:`n`r$($Error[0])`n`rScript exiting!!!"
+        Invoke-DfLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Err -LogString "$TemplateName not found!!! Error encountered is:`n`r$($Error[0])`n`rScript exiting!!!"
         exit
     }
 }
@@ -119,108 +119,108 @@ foreach ($TemplateName in $TemplateNames)
 $RemoteRubriks = $DataFromFile.RubrikInfo | Where-Object {$_.Enable -eq "Yes"}
 foreach ($RemoteRubrik in $RemoteRubriks)
 {
-    Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Checking connection to $($RemoteRubrik.RubrikDevice)..."
+    Invoke-DfLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Checking connection to $($RemoteRubrik.RubrikDevice)..."
     try
     {
         Connect-Rubrik $($RemoteRubrik.RubrikDevice) -Credential $RubrikCred | Out-Null
         $RubrikClusterID = Invoke-RubrikRESTCall -Endpoint cluster/me -Method GET #gets the id of the current rubrik cluster
-        Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Succ -LogString "Connection to $($RemoteRubrik.RubrikDevice) successful."
-        Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Storing the Rubrik ID..."
+        Invoke-DfLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Succ -LogString "Connection to $($RemoteRubrik.RubrikDevice) successful."
+        Invoke-DfLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Storing the Rubrik ID..."
         $RemoteRubrik.ID = $RubrikClusterID.id
         Disconnect-Rubrik -Confirm:$false
     }
     catch
     {
-        Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Err -LogString "Connection to $($RemoteRubrik.RubrikDevice) failed!!! Error encountered is:`n`r$($Error[0])`n`rScript exiting!!!"
+        Invoke-DfLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Err -LogString "Connection to $($RemoteRubrik.RubrikDevice) failed!!! Error encountered is:`n`r$($Error[0])`n`rScript exiting!!!"
         exit
     }
 
-    Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Verifying cluster $($RemoteRubrik.Cluster)..."
+    Invoke-DfLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Verifying cluster $($RemoteRubrik.Cluster)..."
     try
     {
         Get-Cluster $($RemoteRubrik.Cluster) -ErrorAction Stop | Out-Null
-        Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Succ -LogString "Cluster $($RemoteRubrik.Cluster) is valid."
+        Invoke-DfLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Succ -LogString "Cluster $($RemoteRubrik.Cluster) is valid."
     }
     catch
     {
-        Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Err -LogString "Cluster $($RemoteRubrik.Cluster) is invalid!!! Script exiting!!!"
+        Invoke-DfLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Err -LogString "Cluster $($RemoteRubrik.Cluster) is invalid!!! Script exiting!!!"
         exit
     }
 
-    Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Verifying host $($RemoteRubrik.Host)..."
+    Invoke-DfLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Verifying host $($RemoteRubrik.Host)..."
     try
     {
         Get-VMHost $($RemoteRubrik.Host) -ErrorAction Stop | Out-Null
-        Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Succ -LogString "Host $($RemoteRubrik.Host) is valid."
+        Invoke-DfLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Succ -LogString "Host $($RemoteRubrik.Host) is valid."
     }
     catch
     {
-        Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Err -LogString "Host $($RemoteRubrik.Host) is invalid!!! Script exiting!!!"
+        Invoke-DfLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Err -LogString "Host $($RemoteRubrik.Host) is invalid!!! Script exiting!!!"
         exit
     }
 
-    Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Verifying datastore $($RemoteRubrik.Datastore)..."
+    Invoke-DfLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Verifying datastore $($RemoteRubrik.Datastore)..."
     try
     {
         Get-Datastore $($RemoteRubrik.Datastore) -ErrorAction Stop | Out-Null
-        Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Succ -LogString "Datastore $($RemoteRubrik.Datastore) is valid"
+        Invoke-DfLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Succ -LogString "Datastore $($RemoteRubrik.Datastore) is valid"
     }
     catch
     {
-        Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Err -LogString "Datastore $($RemoteRubrik.Datastore) is invalid!!! Script exiting!!!"
+        Invoke-DfLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Err -LogString "Datastore $($RemoteRubrik.Datastore) is invalid!!! Script exiting!!!"
         exit
     }
 
-    Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Verifying 'Templates' folder..."
+    Invoke-DfLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Verifying 'Templates' folder..."
     try
     {
         $Folders = Get-Datacenter $($RemoteRubrik.Datacenter) | Get-Folder "Templates"
         if ($Folders.Count -gt 1) { throw "Too Many Folders" }
-        Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Succ -LogString "Templates folder located."
+        Invoke-DfLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Succ -LogString "Templates folder located."
     }
     catch
     {
-        if ($Error[0].Exception.tostring() -like "*Too Many Folders") { Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Err -LogString "Multiple templates folders found in $($RemoteRubrik.Datacenter) Datacenter!!! Script exiting!!!" }
-        else { Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Err -LogString "Templates folder not found in $($RemoteRubrik.Datacenter) Datacenter!!! Script exiting!!!" }
+        if ($Error[0].Exception.tostring() -like "*Too Many Folders") { Invoke-DfLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Err -LogString "Multiple templates folders found in $($RemoteRubrik.Datacenter) Datacenter!!! Script exiting!!!" }
+        else { Invoke-DfLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Err -LogString "Templates folder not found in $($RemoteRubrik.Datacenter) Datacenter!!! Script exiting!!!" }
         exit
     }
 }
 
-Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Checking connection to IAD Rubrik..."
+Invoke-DfLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Checking connection to IAD Rubrik..."
 try
 {
     Connect-Rubrik $($IADInfo.RubrikDevice) -Credential $RubrikCred | Out-Null
     $RubrikClusterID = Invoke-RubrikRESTCall -Endpoint cluster/me -Method GET #gets the id of the current rubrik cluster
-    Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Succ -LogString "Connection to IAD Rubrik successful."
+    Invoke-DfLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Succ -LogString "Connection to IAD Rubrik successful."
 }
 catch
 {
-    Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Err -LogString "Connection to IAD Rubrik cluster failed!!! Script exiting"
+    Invoke-DfLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Err -LogString "Connection to IAD Rubrik cluster failed!!! Script exiting"
     exit
 }
 
-Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Checking to make sure all enabled Rubriks have an SLA with the correct replication target..."
+Invoke-DfLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Checking to make sure all enabled Rubriks have an SLA with the correct replication target..."
 foreach ($RemoteRubrik in $RemoteRubriks)
 {
-    Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Verifying SLA for $($RemoteRubrik.RubrikDevice)..."
+    Invoke-DfLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Verifying SLA for $($RemoteRubrik.RubrikDevice)..."
     $SLA = Get-RubrikSLA | Where-Object { $_.Name -eq "Gold Templates to $($RemoteRubrik.RubrikDevice)" }
     if ($null -eq $SLA)
     {
-        Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Err -LogString "IAD Rubrik does not have an SLA for $($RemoteRubrik.RubrikDevice)!!! Script exiting!!!"
+        Invoke-DfLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Err -LogString "IAD Rubrik does not have an SLA for $($RemoteRubrik.RubrikDevice)!!! Script exiting!!!"
         exit
     }
-    else { Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Succ -LogString "SLA for $($RemoteRubrik.RubrikDevice) found." }
+    else { Invoke-DfLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Succ -LogString "SLA for $($RemoteRubrik.RubrikDevice) found." }
     
-    Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Verifying replication target..."
+    Invoke-DfLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Verifying replication target..."
     if ($SLA.replicationSpecs.locationId -ne $RemoteRubrik.ID)
     {
-        Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Err -LogString "SLA replication target is incorrect!!! Script exiting!!!"
+        Invoke-DfLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Err -LogString "SLA replication target is incorrect!!! Script exiting!!!"
         exit
     }
-    else { Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Succ -LogString "SLA replicaiton target verified." }
+    else { Invoke-DfLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Succ -LogString "SLA replicaiton target verified." }
 }
 
-Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Succ -LogString "Environment and sanity checks completed successfully. Starting the replication process which could take several hours."
+Invoke-DfLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Succ -LogString "Environment and sanity checks completed successfully. Starting the replication process which could take several hours."
 Read-Host "Press 'Enter' to continue..."
 
 ##################
@@ -234,7 +234,7 @@ Send-MailMessage -smtpserver $emailServer -to $emailTo -from $emailFrom -subject
 $Snapshots = @()
 
 #Kick off template backups
-Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Creating manual backup jobs for each SLA..."
+Invoke-DfLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Creating manual backup jobs for each SLA..."
 foreach ($RemoteRubrik in $RemoteRubriks)
 {
     foreach ($TemplateName in $TemplateNames)
@@ -248,7 +248,7 @@ foreach ($RemoteRubrik in $RemoteRubriks)
 }
 
 #Wait for all backups to complete
-Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Waiting for manual backup jobs to complete..."
+Invoke-DfLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Waiting for manual backup jobs to complete..."
 while($true)
 {
     Clear-Host
@@ -270,31 +270,31 @@ while($true)
     Start-Sleep 30
 }
 
-Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Backup jobs complete."
+Invoke-DfLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Backup jobs complete."
 
 if ($($IADInfo.Enable) -eq "yes")
 {
     #Create templates at IAD-Prod from the GOLD VMs
-    Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Creating templates in IAD-PROD..."
+    Invoke-DfLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Creating templates in IAD-PROD..."
     foreach ($TemplateName in $TemplateNames)
     {
         $TplName = $TemplateName.replace("GOLD","IAD-PROD")
         if ($null -ne (Get-Template $TplName -ErrorAction SilentlyContinue))
         {
-            Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Deleting $TplName..."
+            Invoke-DfLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Deleting $TplName..."
             Remove-Template $TplName -DeletePermanently -Confirm:$false | Out-Null
         }
         New-VM -VM $TemplateName -Datastore $(Get-Datastore $($IADInfo.Datastore)) -DiskStorageFormat Thick -Name $TplName -VMHost $($IADInfo.Host) | Out-Null
         $ConvertedToTemplate = Set-VM $TplName -ToTemplate -Confirm:$false
         Move-Template -Template $ConvertedToTemplate -Destination $(Get-Datacenter $($IADInfo.Datacenter) | Get-Folder "Templates")
-        Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Succ -LogString "$TplName has been recreated and is ready for use."
+        Invoke-DfLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Succ -LogString "$TplName has been recreated and is ready for use."
         Send-MailMessage -smtpserver $emailServer -to $emailTo -from $emailFrom -subject "Template Replication Update..." -body "$($TplName.Name) has been recreated and is ready for use."
     }
 }
-else { Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Skipping IAD template creation..." }
+else { Invoke-DfLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Skipping IAD template creation..." }
 
 #Gather all snapshot endpoints
-Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Obtaining a list of snapshot endpoints..."
+Invoke-DfLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Obtaining a list of snapshot endpoints..."
 $Endpoints = @()
 foreach ($Snapshot in $Snapshots)
 {
@@ -305,11 +305,11 @@ foreach ($Snapshot in $Snapshots)
         ReplicationComplete = "Not Complete"})
 }
 
-Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Exporting Snapshot information to file..."
+Invoke-DfLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Exporting Snapshot information to file..."
 $Endpoints | Select-Object Rubrik, Template, @{Name="Endpoint ID";Expression={$_.id}} | Out-File .\~Logs\"$ScriptName $ScriptStarted.debug" -append
 
 #Monitor for replication completion
-Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Waiting for replication to complete..."
+Invoke-DfLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Waiting for replication to complete..."
 while($true)
 {
     Clear-Host
@@ -331,20 +331,20 @@ while($true)
     Start-Sleep 60
 }
 
-Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Disconnecting from IAD Rubrik..."
+Invoke-DfLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Disconnecting from IAD Rubrik..."
 Disconnect-Rubrik -Confirm:$false
 
 #Export new VMs to convert to templates
 foreach ($RemoteRubrik in $RemoteRubriks)
 {
-    Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Connecting to $($RemoteRubrik.RubrikDevice)..."
+    Invoke-DfLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Connecting to $($RemoteRubrik.RubrikDevice)..."
     Connect-Rubrik $($RemoteRubrik.RubrikDevice) -Credential $RubrikCred | Out-Null
 
     foreach ($TemplateName in $TemplateNames)
     {
         try
         {
-            Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Issuing export task on $($RemoteRubrik.RubrikDevice) for $TemplateName..."
+            Invoke-DfLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Issuing export task on $($RemoteRubrik.RubrikDevice) for $TemplateName..."
             $Replica = Get-RubrikVM $TemplateName | Where-Object { $_.primaryClusterId -eq "$($RubrikClusterID.id)" } | Get-RubrikSnapshot | Select-Object -First 1 #gets the ID of the replicated snapshot using the rubrik cluster ID
             $ExportHost = $(Invoke-RubrikRESTCall -Endpoint vmware/host -Method Get).data | Where-Object { $_.name -eq "$($RemoteRubrik.Host)" -and $_.primaryClusterId -eq "$($RemoteRubrik.ID)" } #gets the Rubrik ID of the host listed in the data file using the rubrik cluster ID
             $ExportDatastore = $ExportHost.datastores | Where-Object { $_.name -eq $($RemoteRubrik.Datastore) } #gets the Rubrik ID of the datastore listed in the data file from the exporthost info above
@@ -353,7 +353,7 @@ foreach ($RemoteRubrik in $RemoteRubriks)
         }
         catch
         {
-            Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Err -LogString "Error encountered while creating export tasks:`n`r$($Error[0])`n`rScript Exiting!!!"
+            Invoke-DfLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Err -LogString "Error encountered while creating export tasks:`n`r$($Error[0])`n`rScript Exiting!!!"
             exit
         }
     }
@@ -362,7 +362,7 @@ foreach ($RemoteRubrik in $RemoteRubriks)
 }
 
 #Wait for exports to complete, power down, rename and convert to templates.
-Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Starting export completion checks. Once a VM export is complete, the VM will be powered down, renamed and converted to template..."
+Invoke-DfLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Starting export completion checks. Once a VM export is complete, the VM will be powered down, renamed and converted to template..."
 while ($true)
 {
     $Complete = $true
@@ -382,12 +382,12 @@ while ($true)
 
                         if ($null -ne (Get-Template $TemplateNameModified -ErrorAction SilentlyContinue))
                         {
-                            Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Deleting $TemplateNameModified..."
+                            Invoke-DfLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Deleting $TemplateNameModified..."
                             Remove-Template $TemplateNameModified -DeletePermanently -Confirm:$false
                         }
 
-                        Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Converting '$($LocalGoldCopy.Name)' at '$($RemoteRubrik.Cluster)' to template..."
-                        Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Waiting for VMware tools to start..."
+                        Invoke-DfLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Converting '$($LocalGoldCopy.Name)' at '$($RemoteRubrik.Cluster)' to template..."
+                        Invoke-DfLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Waiting for VMware tools to start..."
                         $Ready = $false
                         while (!($Ready))
                         {
@@ -396,19 +396,19 @@ while ($true)
                             Start-Sleep 5
                         }
                         Clear-Variable ToolsStatus
-                        Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Shutting down the VM..."
+                        Invoke-DfLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Shutting down the VM..."
                         Shutdown-VMGuest $($LocalGoldCopy.Name) -Confirm:$false | Out-Null
                         while ($PowerState -eq "PoweredOn")
                         {
                             Start-Sleep 5
                             $PowerState = (Get-VM $($LocalGoldCopy.Name)).PowerState
                         }
-                        Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Renaming VM..."
+                        Invoke-DfLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Renaming VM..."
                         $VMRenamed = Get-Cluster $($RemoteRubrik.Cluster) | Get-VM $($LocalGoldCopy.Name) | Set-VM -Name $TemplateNameModified -Confirm:$false
-                        Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Converting to template..."
+                        Invoke-DfLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Converting to template..."
                         $VMConverted = Set-VM $VMRenamed -ToTemplate -Confirm:$false
                         Move-Template -Template $VMConverted -Destination $(Get-Datacenter $($RemoteRubrik.Datacenter) | Get-Folder "Templates")
-                        Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Continuing export completion checks..."
+                        Invoke-DfLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Continuing export completion checks..."
                         Send-MailMessage -smtpserver $emailServer -to $emailTo -from $emailFrom -subject "Template Replication Update..." -body "$($VMRenamed.Name) template has been recreated and is ready for use."
                     }
                 }
@@ -421,5 +421,5 @@ while ($true)
     Start-Sleep 60
 }
 
-Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Succ -LogString "Template replication has completed successfully!!!"
+Invoke-DfLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Succ -LogString "Template replication has completed successfully!!!"
 $EmailBody = Get-Content .\~Logs\"$ScriptName $ScriptStarted.log" | Out-String; Send-MailMessage -smtpserver $emailServer -to $emailTo -from $emailFrom -subject "Template Replication Completed!!!" -body $EmailBody

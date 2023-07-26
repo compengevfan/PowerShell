@@ -1,4 +1,4 @@
-Function Invoke-Logging
+Function Invoke-DfLogging
 {
     Param(
         [Parameter(Mandatory=$true)] [string] $ScriptStarted,

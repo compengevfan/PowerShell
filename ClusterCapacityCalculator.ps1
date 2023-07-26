@@ -54,7 +54,7 @@ if ($CredFile -ne $null)
     New-Variable -Name Credential_To_Use -Value $(Import-Clixml $($CredFile))
 }
  
-Connect-vCenter -vCenter $vCenter -vCenterCredential $Credential_To_Use
+Connect-DFvCenter -vCenter $vCenter -vCenterCredential $Credential_To_Use
 
 cls
 

@@ -1,9 +1,9 @@
-Function Get-PlexTVShows {
+Function Get-DfPlexTVShows {
     [CmdletBinding()]
     Param(
     )
  
-    Import-Credentials
+    Import-DfCredentials
 
     if ($CredPlexToken) {
         $TVShows = @()
@@ -20,12 +20,12 @@ Function Get-PlexTVShows {
     }
 }
 
-Function Get-PlexMovies {
+Function Get-DfPlexMovies {
     [CmdletBinding()]
     Param(
     )
  
-    Import-Credentials
+    Import-DfCredentials
 
     if ($CredPlexToken) {
         $Movies = @()

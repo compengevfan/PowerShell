@@ -1,5 +1,5 @@
 . .\Functions\function_Check-PowerCLI.ps1
-. .\Functions\function_Connect-vCenter.ps1
+. .\Functions\function_Connect-DFvCenter.ps1
 
 ################
 #Make it pretty#

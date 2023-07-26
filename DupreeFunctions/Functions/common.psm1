@@ -1,4 +1,4 @@
-Function Set-GitPath {
+Function Set-DfGitPath {
     [cmdletbinding()]
     param (
     )
@@ -27,7 +27,7 @@ Function Set-GitPath {
     }
 }
 
-Function Sync-ProfileScript {
+Function Sync-DfProfileScript {
     if ($env:githome) {
         Write-Host "Copying primary profile script using temporary variable." -ForegroundColor Green
         Copy-Item -Path $githome\PowerShell\Profile\Microsoft.PowerShell_profile.ps1 -Destination $PROFILE -Force
@@ -41,7 +41,7 @@ Function Sync-ProfileScript {
     }
 }
 
-Function Import-DupreeFunctionsClean {
+Function Import-DfDupreeFunctionsClean {
     [cmdletbinding()]
     param (
         [string][ValidateSet("Profile", "Git")]$Location = "Profile"
@@ -62,7 +62,7 @@ Function Import-DupreeFunctionsClean {
     }
 }
 
-Function Invoke-SendEmail {
+Function Invoke-DfSendEmail {
     [CmdletBinding()]
     Param(
         [Parameter(Mandatory = $true)] [string] $Subject,
@@ -79,7 +79,7 @@ Function Invoke-SendEmail {
     }
 }
 
-Function Invoke-Logging {
+Function Invoke-DfLogging {
     [CmdletBinding()]
     Param(
         [Parameter(Mandatory = $true)] [string] $ScriptStarted,
@@ -102,7 +102,7 @@ Function Invoke-Logging {
     }
 }
 
-Function Save-Credential {
+Function Save-DfCredential {
     [CmdletBinding()]
     Param(
         [string][ValidateSet("Auto", "AdHoc")]$Mode = "AdHoc",
@@ -135,26 +135,26 @@ Function Save-Credential {
         Default {}
     }
 
-    Import-Credentials
+    Import-DfCredentials
 }
 
-Function Update-Credential {
+Function Update-DfCredential {
     [CmdletBinding()]
     $CredFiles = Get-ChildItem $env:LOCALAPPDATA\DupreeFunctions\Cred*.xml
-    $CredToUpdate = Invoke-Menu -Objects $CredFiles -MenuColumn Name -SelectionText "Please select a credential to update." -ClearScreen:$true
+    $CredToUpdate = Invoke-DfMenu -Objects $CredFiles -MenuColumn Name -SelectionText "Please select a credential to update." -ClearScreen:$true
     $CredName = $($CredToUpdate.Name).Replace("Cred", "").Replace(".xml", "")
-    Save-Credential -Name $CredName
+    Save-DfCredential -Name $CredName
 }
 
-Function Remove-Credential {
+Function Remove-DfCredential {
     [CmdletBinding()]
     $CredFiles = Get-ChildItem $env:LOCALAPPDATA\DupreeFunctions\Cred*.xml
-    $CredToDelete = Invoke-Menu -Objects $CredFiles -MenuColumn Name -SelectionText "Please select a credential to delete." -ClearScreen:$true
+    $CredToDelete = Invoke-DfMenu -Objects $CredFiles -MenuColumn Name -SelectionText "Please select a credential to delete." -ClearScreen:$true
     Remove-Item $CredToDelete
-    Import-Credentials
+    Import-DfCredentials
 }
 
-Function Import-Credentials {
+Function Import-DfCredentials {
     Remove-Variable Cred* -Scope Global
 
     if (Test-Path $env:LOCALAPPDATA\DupreeFunctions) {
@@ -171,7 +171,7 @@ Function Import-Credentials {
     else { Write-Host "DupreeFunctions AppData folder not found." }
 }
 
-Function Show-Credentials {
+Function Show-DfCredentials {
     [CmdletBinding()]
     $InSession = (Get-Variable Cred*).Name
     Write-Host "Here's the list of imported credentials:" -ForegroundColor Green
@@ -268,7 +268,7 @@ Function Convert-PhoneticAlphabet {
     } # End Process
 } # End Function
 
-Function Get-FileName {
+Function Get-DfFileName {
     [CmdletBinding()]
     Param(
         [Parameter(Mandatory = $true)] [string] $Filter
@@ -284,7 +284,7 @@ Function Get-FileName {
     $OpenFileDialog.filename
 }
 
-Function Invoke-Menu {
+Function Invoke-DfMenu {
     [CmdletBinding()]
     Param(
         [Parameter(Mandatory = $true)] $Objects,
@@ -317,7 +317,7 @@ Function Invoke-Menu {
     return $ReturnObject
 }
 
-Function Update-LabBoxes {
+Function Update-DfLabBoxes {
     [CmdletBinding()]
     Param(
     )
@@ -325,7 +325,6 @@ Function Update-LabBoxes {
     $destinations = @(
         "jax-pc001.evorigin.com"
         "jax-pc002.evorigin.com"
-        "jax-lt002.evorigin.com"
     ) | Sort-Object
 
     $CredImport = Import-Clixml C:\actions-runner\Cred.xml

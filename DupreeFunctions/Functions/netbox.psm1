@@ -1,4 +1,4 @@
-Function Invoke-NetboxGetHeader {
+Function Invoke-DfNetboxGetHeader {
     [CmdletBinding()]
     Param(
         [Parameter(Mandatory = $true)] [pscredential] $Credential
@@ -14,7 +14,7 @@ Function Invoke-NetboxGetHeader {
     $headers
 }
 
-Function Invoke-NetboxAddVm {
+Function Invoke-DfNetboxAddVm {
     [CmdletBinding()]
     Param(
         [Parameter(Mandatory = $true)] [string] $VMName,
@@ -36,7 +36,7 @@ Function Invoke-NetboxAddVm {
     $response | ConvertTo-Json
 }
 
-Function Invoke-NetboxAddVmInterface {
+Function Invoke-DfNetboxAddVmInterface {
     [CmdletBinding()]
     Param(
         [Parameter(Mandatory = $true)] [int16] $VmId,
@@ -55,7 +55,7 @@ Function Invoke-NetboxAddVmInterface {
 
 }
 
-Function Invoke-NetboxAddIp {
+Function Invoke-DfNetboxAddIp {
     [CmdletBinding()]
     Param(
         [Parameter(Mandatory = $true)] [string] $IpAddress,
@@ -76,7 +76,7 @@ Function Invoke-NetboxAddIp {
 
 }
 
-Function Invoke-NetboxAddIpToVM {
+Function Invoke-DfNetboxAddIpToVM {
     [CmdletBinding()]
     Param(
         [Parameter(Mandatory = $true)] [string] $VmId,

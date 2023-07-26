@@ -30,7 +30,7 @@ if (!(Get-Module -Name DupreeFunctions)) { Import-Module DupreeFunctions }
 if (!(Test-Path .\~Logs)) { New-Item -Name "~Logs" -ItemType Directory | Out-Null }
  
 Check-PowerCLI
-Connect-vCenter
+Connect-DFvCenter
 
 cls
 $JSONResponse = Read-Host "Do you already have a completed JSON? (y/n)"

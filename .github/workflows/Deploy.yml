@@ -45,8 +45,8 @@ jobs:
           Start-Sleep -Seconds 30
           Update-Module DupreeFunctions
 
-      - name: Update-LabBoxes
+      - name: Update-DfLabBoxes
         shell: powershell
         run: |
           Import-Module DupreeFunctions
-          Update-LabBoxes
+          Update-DfLabBoxes

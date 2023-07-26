@@ -33,7 +33,7 @@ if (!(Get-Module -Name DupreeFunctions)) { Import-Module DupreeFunctions -Minimu
 if (!(Test-Path .\~Logs)) { New-Item -Name "~Logs" -ItemType Directory | Out-Null }
 else { Get-ChildItem .\~Logs | Where-Object CreationTime -LT (Get-Date).AddDays(-30) | Remove-Item }
   
-Import-PowerCLI
+Import-DfPowerCLI
  
 if ($CredFile -ne $null)
 {
@@ -41,10 +41,10 @@ if ($CredFile -ne $null)
     New-Variable -Name Credential_To_Use -Value $(Import-Clixml $($CredFile))
 }
 
-Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Script Started..."
+Invoke-DfLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Script Started..."
 
-Connect-vCenter -vCenter $vCenter -vCenterCredential $Credential_To_Use
+Connect-DFvCenter -vCenter $vCenter -vCenterCredential $Credential_To_Use
 
 
 
-Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Succ -LogString "Script Completed Succesfully."
+Invoke-DfLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Succ -LogString "Script Completed Succesfully."

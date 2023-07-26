@@ -26,5 +26,5 @@ if (!(Get-Module -ListAvailable -Name DupreeFunctions)) { Write-Host "'DupreeFun
 if (!(Get-Module -Name DupreeFunctions)) { Import-Module DupreeFunctions }
  
 Check-PowerCLI
-Connect-vCenter
+Connect-DFvCenter
 

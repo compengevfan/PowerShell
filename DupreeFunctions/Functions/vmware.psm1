@@ -1,4 +1,4 @@
-Function Import-PowerCLI {
+Function Import-DfPowerCLI {
     [CmdletBinding()]
     Param(
     )
@@ -10,7 +10,7 @@ Function Import-PowerCLI {
     }
 }
 
-function Connect-vCenter {
+function Connect-DFvCenter {
     [CmdletBinding()]
     Param(
         [Parameter()] [string] $vCenter,
@@ -49,7 +49,7 @@ function Connect-vCenter {
     }
 }
 
-function Show-vCenter {
+function Show-DFvCenter {
     [CmdletBinding()]
     $ConnectedvCenter = $global:DefaultVIServers
 
@@ -61,7 +61,7 @@ function Show-vCenter {
     }
 }
 
-function Wait-Shutdown {
+function Wait-DfShutdown {
     while ($PowerState -eq "PoweredOn") {
         Start-Sleep 5
         $PowerState = (Get-VM $($LocalGoldCopy.Name)).PowerState
@@ -247,7 +247,7 @@ function Set-AlarmActionState {
     }
 }
 
-Function Invoke-DrainHost {
+Function Invoke-DfDrainHost {
     [cmdletbinding()]
     param (
         [Parameter(Mandatory = $true)] [VMware.VimAutomation.ViCore.Impl.V1.Inventory.VMHostImpl]$VMHost
@@ -267,9 +267,9 @@ Function Invoke-DrainHost {
         $Cluster = $VMHost | Get-Cluster
 
         if ($($Cluster.DrsEnabled)) {
-            Invoke-Logging @LoggingInfoSplat -LogString "Storing current cluster DRS Automation level."
+            Invoke-DfLogging @LoggingInfoSplat -LogString "Storing current cluster DRS Automation level."
             $Stored_DRS_Level = $Cluster.DrsAutomationLevel
-            Invoke-Logging @LoggingInfoSplat -LogString "Setting DRS Automation level to manual."
+            Invoke-DfLogging @LoggingInfoSplat -LogString "Setting DRS Automation level to manual."
             Set-Cluster -Cluster $Cluster -DrsAutomationLevel Manual -Confirm:$false | Out-Null
         }
     
@@ -279,12 +279,12 @@ Function Invoke-DrainHost {
     
         foreach ($VmToMigrate in $VmsToMigrate) {
             # Write-Host "Determining host to migrate to."
-            Invoke-Logging @LoggingInfoSplat -LogString "Determining host to migrate to."
+            Invoke-DfLogging @LoggingInfoSplat -LogString "Determining host to migrate to."
             $ClusterHosts = $Cluster | Get-VMHost | Where-Object { $_.ConnectionState -eq "Connected" }
             $TargetHost = $ClusterHosts | Where-Object { $_ -ne $VMHost } | Sort-Object MemoryUsageGB | Select-Object -First 1
     
             # Write-Host "Moving VM $($VmToMigrate.Name) ($VMc of $VmsToMigrateCount) to $($TargetHost.Name)."
-            Invoke-Logging @LoggingInfoSplat -LogString "Moving VM $($VmToMigrate.Name) ($VMc of $VmsToMigrateCount) to $($TargetHost.Name)."
+            Invoke-DfLogging @LoggingInfoSplat -LogString "Moving VM $($VmToMigrate.Name) ($VMc of $VmsToMigrateCount) to $($TargetHost.Name)."
             Move-VM -VM $VmToMigrate -Destination $TargetHost | Out-Null
     
             $VMc++
@@ -292,20 +292,20 @@ Function Invoke-DrainHost {
         }
     
         # Write-Host "Setting cluster DRS to 'FullyAutomated'."
-        Invoke-Logging @LoggingInfoSplat -LogString "Setting cluster DRS to 'FullyAutomated'."
+        Invoke-DfLogging @LoggingInfoSplat -LogString "Setting cluster DRS to 'FullyAutomated'."
         Set-Cluster -Cluster $Cluster -DrsAutomationLevel FullyAutomated -Confirm:$false | Out-Null
     
         # Write-Host "Verifying host is empty and setting to MM."
-        Invoke-Logging @LoggingInfoSplat -LogString "Verifying host is empty and setting to MM."
+        Invoke-DfLogging @LoggingInfoSplat -LogString "Verifying host is empty and setting to MM."
         $Check = $VMHost | Get-VM | Where-Object { $_.PowerState -eq "PoweredOn" }
         if ($null -eq $Check) { Set-VMHost -VMHost $VMHost -State Maintenance -Evacuate:$true -Confirm:$false | Out-Null }
-        else { Invoke-Logging @LoggingErrSplat -LogString "Host did not completely drain. Please check VMs left on the host for VMotion errors, resolve and run the script again."; throw "Host did not completely drain. Please check VMs left on the host for VMotion errors, resolve and run the script again." }
+        else { Invoke-DfLogging @LoggingErrSplat -LogString "Host did not completely drain. Please check VMs left on the host for VMotion errors, resolve and run the script again."; throw "Host did not completely drain. Please check VMs left on the host for VMotion errors, resolve and run the script again." }
     
         #Waiting for vCenter to do stuff
         Start-Sleep 30
 
         # Write-Host "Setting DRS mode to pre-script setting."
-        Invoke-Logging @LoggingInfoSplat -LogString "Setting DRS mode to pre-script setting."
+        Invoke-DfLogging @LoggingInfoSplat -LogString "Setting DRS mode to pre-script setting."
         Set-Cluster -Cluster $Cluster -DrsAutomationLevel $Stored_DRS_Level -Confirm:$false | Out-Null
     }
     catch {
@@ -313,7 +313,7 @@ Function Invoke-DrainHost {
     }
 }
 
-Function Invoke-PatchESXHost {
+Function Invoke-DfPatchESXHost {
     [cmdletbinding()]
     param (
         [Parameter(Mandatory = $true)] [VMware.VimAutomation.ViCore.Impl.V1.Inventory.VMHostImpl]$HostToPatch,
@@ -336,83 +336,83 @@ Function Invoke-PatchESXHost {
         #Obtain a count of host datastores before applying updates
         $DsCountStart = ($HostToPatch | Get-Datastore).Count
         #Write-Host "Scanning $($HostToPatch.Name) baselines."
-        Invoke-Logging $LoggingInfoSplat -LogString "Scanning $($HostToPatch.Name) baselines."
+        Invoke-DfLogging $LoggingInfoSplat -LogString "Scanning $($HostToPatch.Name) baselines."
         Scan-Inventory -Entity $HostToPatch.Name
 
         #Write-Host "Determining if there are non-compliant baselines"
-        Invoke-Logging $LoggingInfoSplat -LogString "Determining if there are non-compliant baselines"
+        Invoke-DfLogging $LoggingInfoSplat -LogString "Determining if there are non-compliant baselines"
         $NcBaselines = Get-Compliance -Entity $HostToPatch.Name -ComplianceStatus NotCompliant
 
-        if ($null -eq $NcBaselines) { Invoke-Logging $LoggingSuccSplat -LogString "Host is already compliant with all applied baselines." }
+        if ($null -eq $NcBaselines) { Invoke-DfLogging $LoggingSuccSplat -LogString "Host is already compliant with all applied baselines." }
         else {
             switch ($EvacType) {
                 "DRS" { 
                     #Write-Host "Putting host in MM using DRS."
-                    Invoke-Logging $LoggingInfoSplat -LogString "Putting host in MM using DRS."
+                    Invoke-DfLogging $LoggingInfoSplat -LogString "Putting host in MM using DRS."
                     Set-VMHost -VMHost $HostToPatch -State Maintenance -Evacuate:$true -Confirm:$false
                 }
                 "DrainHost" { 
                     #Write-Host "Putting host in MM using DrainHost Function."
-                    Invoke-Logging $LoggingInfoSplat -LogString "Putting host in MM using DrainHost Function."
-                    Invoke-DrainHost -VMHost $HostToPatch
+                    Invoke-DfLogging $LoggingInfoSplat -LogString "Putting host in MM using DrainHost Function."
+                    Invoke-DfDrainHost -VMHost $HostToPatch
                 }
                 Default {}
             }
     
             #Verify host is in MM
             # Write-Host "Verifying host is in MM."
-            Invoke-Logging $LoggingInfoSplat -LogString "Verifying host is in MM."
+            Invoke-DfLogging $LoggingInfoSplat -LogString "Verifying host is in MM."
             if ((Get-VMHost $HostToPatch).ConnectionState -ne "Maintenance") { Throw "$($HostToPatch.Name) is not in MM." }
     
             # Write-Host "Staging non-compliant baselines."
-            Invoke-Logging $LoggingInfoSplat -LogString "Staging baselines."
+            Invoke-DfLogging $LoggingInfoSplat -LogString "Staging baselines."
             $Baselines = Get-PatchBaseline -Entity $HostToPatch -Inherit
             Copy-Patch -Entity $HostToPatch -Baseline $Baselines
-            Invoke-Logging $LoggingInfoSplat -LogString "Remediating baselines: `r`n`t$($Baselines.Name -join "`n`t")"
+            Invoke-DfLogging $LoggingInfoSplat -LogString "Remediating baselines: `r`n`t$($Baselines.Name -join "`n`t")"
             Remediate-Inventory -Entity $HostToPatch -Baseline $Baselines -ClusterDisableDistributedPowerManagement:$true -Confirm:$false -ErrorAction "Ignore"
     
             #Waiting for 10 successful pings
             # Write-Host "Performing ping checks."
-            Invoke-Logging $LoggingInfoSplat -LogString "Performing ping checks."
+            Invoke-DfLogging $LoggingInfoSplat -LogString "Performing ping checks."
             $PingCheck = 0
             while ($PingCheck -lt 10) {
                 $PingCheck += 1
-                if (!(Test-Connection -ComputerName $HostToPatch.Name -Count 1 -Quiet)) { Invoke-Logging @LoggingErrSplat -LogString "Post patch ping checks failed for $($HostToPatch.Name)"; throw "Post patch ping checks failed for $($HostToPatch.Name)" }
+                if (!(Test-Connection -ComputerName $HostToPatch.Name -Count 1 -Quiet)) { Invoke-DfLogging @LoggingErrSplat -LogString "Post patch ping checks failed for $($HostToPatch.Name)"; throw "Post patch ping checks failed for $($HostToPatch.Name)" }
                 Start-Sleep 3
             }
             
             #Rescan host and verify compliance
             # Write-Host "Rescanning $($HostToPatch.Name) baselines."
-            Invoke-Logging $LoggingInfoSplat -LogString "Rescanning $($HostToPatch.Name) baselines."
+            Invoke-DfLogging $LoggingInfoSplat -LogString "Rescanning $($HostToPatch.Name) baselines."
             Scan-Inventory -Entity $HostToPatch.Name
             # Write-Host "Determining if there are non-compliant baselines"
-            Invoke-Logging $LoggingInfoSplat -LogString "Determining if there are non-compliant baselines"
+            Invoke-DfLogging $LoggingInfoSplat -LogString "Determining if there are non-compliant baselines"
             $PostNcBaselines = Get-Compliance -Entity $HostToPatch.Name -ComplianceStatus NotCompliant
-            if ($null -ne $PostNcBaselines) { Invoke-Logging $LoggingWarnSplat -LogString "Patching was attempted on $($HostToPatch.Name) but there are still non-compliant baselines." }
+            if ($null -ne $PostNcBaselines) { Invoke-DfLogging $LoggingWarnSplat -LogString "Patching was attempted on $($HostToPatch.Name) but there are still non-compliant baselines." }
     
             #Verify datastore count matches pre-upgrade count
-            Invoke-Logging $LoggingInfoSplat -LogString "Verifying datastore count matches pre-upgrade count."
+            Invoke-DfLogging $LoggingInfoSplat -LogString "Verifying datastore count matches pre-upgrade count."
             $DsCountEnd = ($HostToPatch | Get-Datastore).Count
-            if ($DsCountStart -ne $DsCountEnd) { Invoke-Logging @LoggingErrSplat -LogString "Post upgrade datastore count on $($HostToPatch.Name) does not match the pre upgrade count"; throw "Post upgrade datastore count on $($HostToPatch.Name) does not match the pre upgrade count" }
+            if ($DsCountStart -ne $DsCountEnd) { Invoke-DfLogging @LoggingErrSplat -LogString "Post upgrade datastore count on $($HostToPatch.Name) does not match the pre upgrade count"; throw "Post upgrade datastore count on $($HostToPatch.Name) does not match the pre upgrade count" }
     
             if ($AutoExitMm) {
-                Invoke-Logging $LoggingInfoSplat -LogString "$($HostToPatch.Name) exiting Maintenance Mode."
+                Invoke-DfLogging $LoggingInfoSplat -LogString "$($HostToPatch.Name) exiting Maintenance Mode."
                 Set-VMHost -VMHost $HostToPatch -State Connected -Confirm:$false | Out-Null
             }
     
             # Write-Host "Sending success message."
-            Invoke-Logging $LoggingSuccSplat -LogString "$($HostToPatch.Name) was successfully patched. Baselines installed: `r`n`t$($Baselines.Name -join "`n`t")"
+            Invoke-DfLogging $LoggingSuccSplat -LogString "$($HostToPatch.Name) was successfully patched. Baselines installed: `r`n`t$($Baselines.Name -join "`n`t")"
         }
     }
     catch {
         # Write-Host "Sending failure message."
-        Invoke-Logging $LoggingErrSplat -LogString "Attempt to patch $($HostToPatch.Name) failed. The error encountered was:`r`n$($_.Exception.Message)`n$($_.ScriptStackTrace)"
-        Invoke-SendEmail -Subject "Host Patch Error" -EmailBody "Attempt to patch $($HostToPatch.Name) failed. The error encountered was:`r`n$($_.Exception.Message)`n$($_.ScriptStackTrace)"
+        Invoke-DfLogging $LoggingErrSplat -LogString "Attempt to patch $($HostToPatch.Name) failed. The error encountered was:`r`n$($_.Exception.Message)`n$($_.ScriptStackTrace)"
+        Invoke-DfSendEmail -Subject "Host Patch Error" -EmailBody "Attempt to patch $($HostToPatch.Name) failed. The error encountered was:`r`n$($_.Exception.Message)`n$($_.ScriptStackTrace)"
         throw
     }
 }
 
-Function Invoke-PatchESXCluster {
+Function Invoke-DfPatchESXCluster {
     [cmdletbinding()]
     param (
         [Parameter()] [VMware.VimAutomation.ViCore.Impl.V1.Inventory.ClusterImpl]$ClusterToPatch,
@@ -433,23 +433,23 @@ Function Invoke-PatchESXCluster {
     try {
         if ($null -eq $ClusterToPatch) {
             $Clusters = Get-Cluster | Sort-Object Name
-            $ClusterToPatch = Invoke-Menu -Objects $Clusters -MenuColumn "Name" -SelectionText "Please select a cluster for ESX host upgrades" -ClearScreen:$true
+            $ClusterToPatch = Invoke-DfMenu -Objects $Clusters -MenuColumn "Name" -SelectionText "Please select a cluster for ESX host upgrades" -ClearScreen:$true
         }
 
         $AreYouSure = Read-Host "Are you sure you want to apply ESX updates to the hosts in cluster $ClusterToPatch (You must respond with 'yes' to continue)?"
         if ($AreYouSure -ne "yes") { Write-Host "You did not respond with 'yes'." }
         else {
             # Write-Host "Getting all the hosts in the cluster sorted by Name."
-            Invoke-Logging $LoggingInfoSplat -LogString "Getting all the hosts in the cluster sorted by Name."
+            Invoke-DfLogging $LoggingInfoSplat -LogString "Getting all the hosts in the cluster sorted by Name."
 
             $ClusterHosts = $ClusterToPatch | Get-VMHost | Sort-Object Name
 
             foreach ($ClusterHost in $ClusterHosts) {
-                Invoke-Logging $LoggingInfoSplat -LogString "Calling patch host function for $($ClusterHost.Name)"
-                Invoke-PatchESXHost -HostToPatch $ClusterHost -EvacType $EvacType -AutoExitMm:$true
+                Invoke-DfLogging $LoggingInfoSplat -LogString "Calling patch host function for $($ClusterHost.Name)"
+                Invoke-DfPatchESXHost -HostToPatch $ClusterHost -EvacType $EvacType -AutoExitMm:$true
             }
-            Invoke-Logging $LoggingSuccSplat -LogString "$($ClusterToPatch.Name) patch process compelete. Check email for server patch failures."
-            Invoke-SendEmail -Subject "Cluster Patch Success" -EmailBody "$($ClusterToPatch.Name) was successfully patched."
+            Invoke-DfLogging $LoggingSuccSplat -LogString "$($ClusterToPatch.Name) patch process compelete. Check email for server patch failures."
+            Invoke-DfSendEmail -Subject "Cluster Patch Success" -EmailBody "$($ClusterToPatch.Name) was successfully patched."
         }
     }
     catch {

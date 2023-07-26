@@ -37,7 +37,7 @@ if ($CredFile -ne $null)
     New-Variable -Name Credential_To_Use -Value $(Import-Clixml $($CredFile))
 }
  
-Connect-vCenter -vCenter $vCenter -vCenterCredential $Credential_To_Use
+Connect-DFvCenter -vCenter $vCenter -vCenterCredential $Credential_To_Use
 
 if (!(Test-Path .\~Output)) { New-Item -Name "~Output" -ItemType Directory | Out-Null }
 
@@ -56,42 +56,42 @@ while ($Another)
         1
         {
             $ObjectToMonitor = Get-VM $ObjectName
-            if ($ObjectToMonitor -eq $null -or $ObjectToMonitor -eq "") { Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Err -LogString "VM with name $ObjectName does not exist." }
+            if ($ObjectToMonitor -eq $null -or $ObjectToMonitor -eq "") { Invoke-DfLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Err -LogString "VM with name $ObjectName does not exist." }
             else
             {
                 Write-Host "What metric do you want to monitor?`r`n`t1. CPU`r`n`t2. Memory`r`n`t3. Storage"
                 $Metric = Read-Host "Make a selection"
 
-                Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Executing 'MonitorObject' script in a new window..."
-                Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Press '<ctrl> + C' in the new window to halt monitoring."
-                Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "This window can be closed without impacting the monitoring window."
+                Invoke-DfLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Executing 'MonitorObject' script in a new window..."
+                Invoke-DfLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Press '<ctrl> + C' in the new window to halt monitoring."
+                Invoke-DfLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "This window can be closed without impacting the monitoring window."
                 Start-Process powershell -Argument "-File .\MonitorObject.ps1 -WhatToMonitor $ObjectName -ObjectType $ObjectType -Metric $Metric -vCenter $($global:defaultviserver.name) -CredFile $CredFile"
             }
         }
         2
         {
             $ObjectToMonitor = Get-VMHost $ObjectName
-            if ($ObjectToMonitor -eq $null) { Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Err -LogString "Host with name $ObjectName does not exist." }
+            if ($ObjectToMonitor -eq $null) { Invoke-DfLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Err -LogString "Host with name $ObjectName does not exist." }
             else
             {
                 Write-Host "What metric do you want to monitor?`r`n`t1. CPU`r`n`t2. Memory`r`n`t3. Storage"
                 $Metric = Read-Host "Make a selection"
 
-                Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Executing 'MonitorObject' script in a new window..."
-                Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Press '<ctrl> + C' in the new window to halt monitoring."
-                Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "This window can be closed without impacting the monitoring window."
+                Invoke-DfLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Executing 'MonitorObject' script in a new window..."
+                Invoke-DfLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Press '<ctrl> + C' in the new window to halt monitoring."
+                Invoke-DfLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "This window can be closed without impacting the monitoring window."
                 Start-Process powershell -Argument "-File .\MonitorObject.ps1 -WhatToMonitor $ObjectName -ObjectType $ObjectType -Metric $Metric -vCenter $($global:defaultviserver.name) -CredFile $CredFile"
             }
         }
         3
         {
             $ObjectToMonitor = Get-Datastore $ObjectName
-            if ($ObjectToMonitor -eq $null) { Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Err -LogString "Datastore with name $ObjectName does not exist." }
+            if ($ObjectToMonitor -eq $null) { Invoke-DfLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Err -LogString "Datastore with name $ObjectName does not exist." }
             else
             {
-                Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Executing 'MonitorObject' script in a new window..."
-                Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Press '<ctrl> + C' in the new window to halt monitoring."
-                Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "This window can be closed without impacting the monitoring window."
+                Invoke-DfLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Executing 'MonitorObject' script in a new window..."
+                Invoke-DfLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Press '<ctrl> + C' in the new window to halt monitoring."
+                Invoke-DfLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "This window can be closed without impacting the monitoring window."
                 Start-Process powershell -Argument "-File .\MonitorObject.ps1 -WhatToMonitor $ObjectName -ObjectType $ObjectType -Metric 3 -vCenter $($global:defaultviserver.name) -CredFile $CredFile"
             }
         }

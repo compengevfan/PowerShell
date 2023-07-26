@@ -32,12 +32,12 @@ if (!(Get-Module -Name DupreeFunctions)) { Import-Module DupreeFunctions }
 Check-PowerCLI
 
 #if there is no input file, present an explorer window for the user to select one.
-if ($InputFile -eq "" -or $InputFile -eq $null) { cls; Write-Host "Please select a JSON file..."; $InputFile = Get-FileName }
+if ($InputFile -eq "" -or $InputFile -eq $null) { cls; Write-Host "Please select a JSON file..."; $InputFile = Get-DfFileName }
 
 #Check to make sure we have a JSON file location and if so, get the info.
-Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Importing JSON Data File: $InputFile..."
+Invoke-DfLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Importing JSON Data File: $InputFile..."
 try { $DataFromFile = ConvertFrom-JSON (Get-Content $InputFile -raw) }
 catch [System.ArgumentException]
-{ Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Err -LogString "Error importing JSON file. Please verify proper syntax and file name." }
+{ Invoke-DfLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Err -LogString "Error importing JSON file. Please verify proper syntax and file name." }
 
 Write-Host "Blah"

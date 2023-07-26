@@ -33,7 +33,7 @@ if (!(Get-Module -Name DupreeFunctions)) { Import-Module DupreeFunctions -Minimu
 if (!(Test-Path .\~Logs)) { New-Item -Name "~Logs" -ItemType Directory | Out-Null }
 else { Get-ChildItem .\~Logs | Where-Object CreationTime -LT (Get-Date).AddDays(-30) | Remove-Item }
   
-Import-PowerCLI
+Import-DfPowerCLI
  
 if ($null -ne $CredFile)
 {
@@ -41,23 +41,23 @@ if ($null -ne $CredFile)
     New-Variable -Name Credential_To_Use -Value $(Import-Clixml $($CredFile))
 }
 
-Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Script Started..."
+Invoke-DfLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Script Started..."
 
-Connect-vCenter -vCenter $vCenter -vCenterCredential $Credential_To_Use
+Connect-DFvCenter -vCenter $vCenter -vCenterCredential $Credential_To_Use
 
-Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Getting list of distributed switches..."
+Invoke-DfLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Getting list of distributed switches..."
 $Switches = Get-VDSwitch
 
 $SwitchFails = @()
 $PortGroupFails = @()
 
-Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Checking distributed switch configurations along with their portgroups..."
+Invoke-DfLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Checking distributed switch configurations along with their portgroups..."
 foreach($Switch in $Switches)
 {
-    Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Processing switch $($Switch.Name)..."
+    Invoke-DfLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Processing switch $($Switch.Name)..."
     $PortGroups = Get-VDPortgroup -VDSwitch $Switch.Name
-    Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Checking for correct Kernel portgroups..."
-    if ($PortGroups.Name -contains "VMkernel_SC" -and $PortGroups.Name -contains "VMkernel_vMotion1" -and $PortGroups.Name -contains "VMkernel_vMotion2") { Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Kernel portgroup names are correct."; $KernelPortGroups = $true }
+    Invoke-DfLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Checking for correct Kernel portgroups..."
+    if ($PortGroups.Name -contains "VMkernel_SC" -and $PortGroups.Name -contains "VMkernel_vMotion1" -and $PortGroups.Name -contains "VMkernel_vMotion2") { Invoke-DfLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Kernel portgroup names are correct."; $KernelPortGroups = $true }
     else { $KernelPortGroups = $false }
     if ($Switch.Version -ne "6.5.0" `
         -or $Switch.NumUplinkPorts -ne 4 `
@@ -66,7 +66,7 @@ foreach($Switch in $Switches)
         -or $switch.Mtu -ne 9000 `
         -or !($KernelPortGroups))
     {
-        Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "$($Switch.Name) has a config problem."
+        Invoke-DfLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "$($Switch.Name) has a config problem."
         $SwitchFails += New-Object PSObject -Property @{
             SwitchName = $Switch.Name
             UplinkCount = $Switch.NumUplinkPorts
@@ -77,10 +77,10 @@ foreach($Switch in $Switches)
         }
     }
 
-    Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Processing portgroups on $($Switch.Name)..."
+    Invoke-DfLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Processing portgroups on $($Switch.Name)..."
     foreach($PortGroup in $PortGroups)
     {
-        Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Processing portgroup $($PortGroup.Name)..."
+        Invoke-DfLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Processing portgroup $($PortGroup.Name)..."
         $PortGroupCheck = $PortGroup | Get-VDUplinkTeamingPolicy
         switch($($PortGroup.Name))
         {
@@ -91,7 +91,7 @@ foreach($Switch in $Switches)
                     -or $PortGroupCheck.EnableFailback -ne $false `
                     -or $PortGroupCheck.ActiveUplinkPort.Count -ne 4)
                 {
-                    Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "$($PortGroup.Name) has a config problem..."
+                    Invoke-DfLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "$($PortGroup.Name) has a config problem..."
                     $PortGroupFails += New-Object PSObject -Property @{
                         SwitchName = $Switch.Name
                         PortGroupName = $PortGroup.Name
@@ -110,7 +110,7 @@ foreach($Switch in $Switches)
                     -or $PortGroupCheck.ActiveUplinkPort  -ne "dvUplink2" `
                     -or $PortGroupCheck.StandbyUplinkPort.Count -ne 3)
                 {
-                    Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "$($PortGroup.Name) has a config problem..."
+                    Invoke-DfLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "$($PortGroup.Name) has a config problem..."
                     $PortGroupFails += New-Object PSObject -Property @{
                         SwitchName = $Switch.Name
                         PortGroupName = $PortGroup.Name
@@ -130,7 +130,7 @@ foreach($Switch in $Switches)
                     -or $PortGroupCheck.ActiveUplinkPort  -ne "dvUplink3" `
                     -or $PortGroupCheck.StandbyUplinkPort.Count -ne 3)
                 {
-                    Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "$($PortGroup.Name) has a config problem..."
+                    Invoke-DfLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "$($PortGroup.Name) has a config problem..."
                     $PortGroupFails += New-Object PSObject -Property @{
                         SwitchName = $Switch.Name
                         PortGroupName = $PortGroup.Name
@@ -149,7 +149,7 @@ foreach($Switch in $Switches)
                     -or $PortGroupCheck.EnableFailback -ne $false `
                     -or $PortGroupCheck.ActiveUplinkPort.Count -ne 4)
                 {
-                    Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "$($PortGroup.Name) has a config problem..."
+                    Invoke-DfLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "$($PortGroup.Name) has a config problem..."
                     $PortGroupFails += New-Object PSObject -Property @{
                         SwitchName = $Switch.Name
                         PortGroupName = $PortGroup.Name
@@ -168,12 +168,12 @@ foreach($Switch in $Switches)
 
 if ($SwitchFails.Count -gt 0 -or $PortGroupFails -gt 0)
 {
-    Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Processing improperly configured switches and building the email body..."
+    Invoke-DfLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Processing improperly configured switches and building the email body..."
     $OutputString = "The following switches or portgroups are misconfigured in vCenter $vCenter. The incorrect settings are listed with the appropriate setting."
 
     foreach($SwitchFail in $SwitchFails)
     {
-        Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Adding $($SwitchFail.SwitchName) to the email..."
+        Invoke-DfLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Adding $($SwitchFail.SwitchName) to the email..."
         $OutputString += "Switch: $($SwitchFail.SwitchName)`r`n"
 
         if ($SwitchFail.UplinkCount -ne 4) { $OutputString += "UpLink Count: $($SwitchFail.UplinkCount)`r`n" }
@@ -183,7 +183,7 @@ if ($SwitchFails.Count -gt 0 -or $PortGroupFails -gt 0)
         if ($SwitchFail.KernelPorts -eq $false) { $OutputString += "Kernel portgroups are not named correctly." }
     }
 
-    Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Logging config problems...`r`n`r`n$OutputString"
+    Invoke-DfLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Logging config problems...`r`n`r`n$OutputString"
 }
 
-Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Succ -LogString "Script Completed Succesfully."
+Invoke-DfLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Succ -LogString "Script Completed Succesfully."
