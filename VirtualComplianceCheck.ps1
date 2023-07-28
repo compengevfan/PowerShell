@@ -37,7 +37,7 @@ if ($CredFile -ne $null)
     New-Variable -Name Credential_To_Use -Value $(Import-Clixml $($CredFile))
 }
  
-Connect-vCenter -vCenter $vCenter -vCenterCredential $Credential_To_Use
+Connect-DFvCenter -vCenter $vCenter -vCenterCredential $Credential_To_Use
 
 ##################
 #Email Variables
@@ -53,24 +53,24 @@ $emailServer = "blah.blah.blah"
 $ESXBuildNumber = "7388607"
 
 #Obtain information
-Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Retrieving clusters (Excluding 'voice')..."
+Invoke-DfLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Retrieving clusters (Excluding 'voice')..."
 $ESXClusters = Get-Cluster | ? { $_.Name -notlike "*voice*" } | sort Name
-Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Retrieving hosts (Excluding 'voice')..."
+Invoke-DfLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Retrieving hosts (Excluding 'voice')..."
 $ESXHosts = $ESXClusters | Get-VMHost | ? { $_.ConnectionState -eq "Connected" } | sort Name
-Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Retrieving distributed switches..."
+Invoke-DfLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Retrieving distributed switches..."
 $ESXvDS = Get-VDSwitch | sort Name
 
-Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Importing data file..."
+Invoke-DfLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Importing data file..."
 $DataFromFile = Import-Csv .\VirtualComplianceCheck-Data.csv
 
 ###############
 # Cluster Checks excluding "voice" clusters
 ###############
 $clusterfails = @()
-Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Checking cluster configurations..."
+Invoke-DfLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Checking cluster configurations..."
 foreach ($ESXCluster in $ESXClusters)
 {
-    Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Processing $($ESXCluster.Name)..."
+    Invoke-DfLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Processing $($ESXCluster.Name)..."
     if ($ESXCluster.HAEnabled -eq $false `
      -or $ESXCluster.ExtensionData.Configuration.DasConfig.HostMonitoring -eq "disabled" `
      -or $ESXCluster.ExtensionData.Configuration.DasConfig.DefaultVmSettings.RestartPriority -eq "disabled" `
@@ -81,7 +81,7 @@ foreach ($ESXCluster in $ESXClusters)
      -or $ESXCluster.ExtensionData.ConfigurationEx.DrsConfig.VmotionRate -ne 5 `
      -or $ESXCluster.EVCMode -eq "")
     {
-        Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "$($ESXCluster.Name) has a config problem."
+        Invoke-DfLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "$($ESXCluster.Name) has a config problem."
         $clusterfails += New-Object PSObject -Property @{
             Cluster = $ESXCluster.Name
             "HA Enabled" = $ESXCluster.HAEnabled
@@ -99,12 +99,12 @@ foreach ($ESXCluster in $ESXClusters)
 
 if ($clusterfails.Count -gt 0)
 {
-    Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Processing improperly configured clusters and building the email body..."
+    Invoke-DfLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Processing improperly configured clusters and building the email body..."
     $EmailBody = "The following cluster settings are misconfigured and their incorrect configuration settings are listed.`r`n`r`n"
 
     foreach ($clusterfail in $clusterfails)
     {
-        Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Adding $($clusterfail.Cluster) to the email..."
+        Invoke-DfLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Adding $($clusterfail.Cluster) to the email..."
         $EmailBody += "Cluster: $($clusterfail.Cluster)`r`n"
 
         if ($clusterfail.'HA Enabled' -eq $false) { $EmailBody += "HA Enabled: $($clusterfail.'HA Enabled')`r`n" }
@@ -129,10 +129,10 @@ if ($clusterfails.Count -gt 0)
 # Host Checks
 ###############
 $hostfails = @()
-Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Checking cluster configurations..."
+Invoke-DfLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Checking cluster configurations..."
 foreach ($ESXHost in $ESXHosts)
 {
-    Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Processing $($ESXHost.Name)..."
+    Invoke-DfLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Processing $($ESXHost.Name)..."
     
     #Checking Build number
     $OSInfo = Get-View -ViewType HostSystem -Filter @{"Name"=$($ESXHost).Name} -Property Name,Config.Product | foreach {$_.Name, $_.Config.Product}
@@ -259,7 +259,7 @@ foreach ($ESXHost in $ESXHosts)
      -or $FCLoginRetryCount -eq "Wrong" `
      -or $FCDownRetry -eq "Wrong")
      {
-        Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Warn -LogString "$($ESXHost.Name) has a config problem."
+        Invoke-DfLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Warn -LogString "$($ESXHost.Name) has a config problem."
         $hostfails += New-Object PSObject -Property @{
             HostName = $ESXHost.Name
             BuildCheck = $BuildCheck
@@ -296,12 +296,12 @@ foreach ($ESXHost in $ESXHosts)
 
 if ($hostfails.Count -gt 0)
 {
-    Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Processing improperly configured clusters and building the email body..."
+    Invoke-DfLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Processing improperly configured clusters and building the email body..."
     $EmailBody = "The following hosts are misconfigured and their incorrect configuration settings are listed.`r`n`r`n"
 
     foreach ($hostfail in $hostfails)
     {
-        Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Adding $($hostfail.HostName) to the email..."
+        Invoke-DfLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Adding $($hostfail.HostName) to the email..."
         $EmailBody += "Host: $($hostfail.HostName)`r`n"
 
         if ($hostfail.BuildCheck -eq "Wrong") { $EmailBody += "Incorrect build number.`r`n" }
@@ -345,10 +345,10 @@ if ($hostfails.Count -gt 0)
 # vDS Checks
 ###############
 $vdsfails = @()
-Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Checking cluster configurations..."
+Invoke-DfLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Checking cluster configurations..."
 foreach ($DS in $ESXvDS)
 {
-    Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Processing $($DS.Name)..."
+    Invoke-DfLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Processing $($DS.Name)..."
 
     if ($DS.Mtu -ne 1500)
     {
@@ -361,12 +361,12 @@ foreach ($DS in $ESXvDS)
 
 if ($vdsfails.Count -gt 0)
 {
-    Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Processing improperly configured distributed switches and building the email body..."
+    Invoke-DfLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Processing improperly configured distributed switches and building the email body..."
     $EmailBody = "The following distributed switches are misconfigured and their incorrect configuration settings are listed.`r`n`r`n"
 
     foreach ($vdsfail in $vdsfails)
     {
-        Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Adding $($vdsfail.Name) to the email..."
+        Invoke-DfLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Adding $($vdsfail.Name) to the email..."
         $EmailBody += "Switch: $($vdsfail.Name)`r`n"
 
         if ($vdsfail.MTU -eq "Wrong") { $EmailBody += "MTU is not 1500." }

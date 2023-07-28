@@ -35,7 +35,7 @@ while ($true)
 {
     $TargetClusterStr = Read-Host "Please enter the name of the Cluster"
     $TargetCluster = Get-Cluster $TargetClusterStr
-    if ($TargetCluster -eq $null) { Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Warn -LogString "Cluster named '$TargetClusterStr' does not exist. Please try again..." }
+    if ($TargetCluster -eq $null) { Invoke-DfLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Warn -LogString "Cluster named '$TargetClusterStr' does not exist. Please try again..." }
     else { break }
 }
 

@@ -1,4 +1,4 @@
-function Connect-vCenter
+function Connect-DFvCenter
 {
     Param(
         [Parameter()] [string] $vCenter

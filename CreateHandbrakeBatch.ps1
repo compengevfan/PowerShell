@@ -35,7 +35,7 @@ switch ($DiskType) {
 }
 
 Set-Location "G:\Cloud\Dropbox\EpisodeTracker"
-$SeasonFile = Get-FileName -Filter "csv"
+$SeasonFile = Get-DfFileName -Filter "csv"
 Set-Location $ScriptPath
 $SeasonFileObject = Get-Item $SeasonFile
 $SeasonInfo = Import-Csv $SeasonFile
@@ -50,7 +50,7 @@ $DiskCounter = 1
 
 foreach ($Disk in $Disks)
 {
-    Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Processing disk: $($Disk.FullName)"
+    Invoke-DfLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Processing disk: $($Disk.FullName)"
 
     $Episodes = $SeasonInfo | Where-Object { $_.Disk -eq $DiskCounter }
 

@@ -14,13 +14,13 @@ $ScriptName = $MyInvocation.MyCommand.Name
 #if (!(Get-Module -Name DupreeFunctions)) { Import-Module DupreeFunctions }
 #if (!(Test-Path .\~Logs)) { New-Item -Name "~Logs" -ItemType Directory | Out-Null }
   
-#Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType 
+#Invoke-DfLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType 
 <#
 try { $CurrentJobLog = Get-Content "$GoAnywhereLogs\$($CurrentTime.ToString("yyyy-MM-dd"))\$($ActiveJob.jobNumber).log" }
 catch 
 {
     $String = "Error encountered is:`n`r$($Error[0])`n`rScript executed on $($env:computername)."
-    Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Err -LogString $String
+    Invoke-DfLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Err -LogString $String
     if ($SendEmail) { Send-MailMessage -smtpserver $emailServer -to $emailTo -from $emailFrom -subject "$ScriptName Encountered an Error" -Body $String }
     exit
 }
@@ -32,62 +32,62 @@ if (!(Get-Module -Name Azure)) { Import-Module AzureRM }
 try 
 {
     $AzureInfo = Get-AzureRmSubscription
-    if ($($AzureInfo).Id -eq "83d0d0ba-42d5-4c21-a019-3c1b250fbf15") { Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Already connected to correct subscription..." }
+    if ($($AzureInfo).Id -eq "83d0d0ba-42d5-4c21-a019-3c1b250fbf15") { Invoke-DfLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Already connected to correct subscription..." }
 }
 catch 
 {
-    Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Connecting to Azure..."
+    Invoke-DfLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Connecting to Azure..."
     Connect-AzureRmAccount
-    Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Setting default subscription..."
+    Invoke-DfLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Setting default subscription..."
     Select-AzureRmSubscription -Subscription "83d0d0ba-42d5-4c21-a019-3c1b250fbf15"    
 }
 
-Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Importing data file..."
+Invoke-DfLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Importing data file..."
 $DataFromFile = Import-Csv .\AzureDRTestPrep-Data.csv
 
-Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Obtaining a list of the ASR Vaults..."
+Invoke-DfLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Obtaining a list of the ASR Vaults..."
 $Vaults = Get-AzureRmRecoveryServicesVault
 
 foreach ($Vault in $Vaults)
 {
-    Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Setting vault context..."
+    Invoke-DfLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Setting vault context..."
     Set-AzureRmRecoveryServicesVaultContext -Vault $Vault
-    Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Getting backup containers..."
+    Invoke-DfLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Getting backup containers..."
     $Containers = Get-AzureRmRecoveryServicesBackupContainer -ContainerType AzureVM
 
     foreach ($Container in $Containers)
     {
-        Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Obtaining backup item..."
+        Invoke-DfLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Obtaining backup item..."
         $BackupItem = Get-AzureRmRecoveryServicesBackupItem -Container $Container -WorkloadType AzureVM
-        Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Getting latest recovery point..."
+        Invoke-DfLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Getting latest recovery point..."
         $RecoveryPoints = Get-AzureRmRecoveryServicesBackupRecoveryPoint -Item $BackupItem
 
-        Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Creating restore job for $($Container.FriendlyName)..."
+        Invoke-DfLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Creating restore job for $($Container.FriendlyName)..."
         try
         {
             $RestoreJob = Restore-AzureRmRecoveryServicesBackupItem -RecoveryPoint $RecoveryPoints[0] -StorageAccountName drtestfanstorage -StorageAccountResourceGroupName DRTEST -TargetResourceGroupName DRTEST -ErrorAction Stop
-            Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Waiting for restore job completion..."
+            Invoke-DfLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Waiting for restore job completion..."
             Wait-AzureRmRecoveryServicesBackupJob -Job $RestoreJob | Out-Null
             $RestoreJob = Get-AzureRmRecoveryServicesBackupJob -Job $RestoreJob
             $Details = Get-AzureRmRecoveryServicesBackupJobDetails -Job $RestoreJob
         }
         catch
         {
-            Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Restore job creation for $($Container.FriendlyName) failed!!! Script Exiting!!!"
+            Invoke-DfLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Restore job creation for $($Container.FriendlyName) failed!!! Script Exiting!!!"
             exit
         }
 
-        Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Creating VM from restored disks..."
+        Invoke-DfLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Creating VM from restored disks..."
         $StorageAccountName = $Details.Properties.'Target Storage Account Name'
         $ContainerName = $Details.Properties.'Config Blob Container Name'
         $ConfigBlobName = $Details.Properties.'Config Blob Name'
 
-        Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Setting the Azure storage context and restoring the JSON configuration file..."
+        Invoke-DfLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Setting the Azure storage context and restoring the JSON configuration file..."
         Set-AzureRmCurrentStorageAccount -Name $StorageAccountName -ResourceGroupName DRTest
         $BlobContent = Get-AzureStorageBlobContent -Container $containerName -Blob $configBlobName -Force
         $obj = ((Get-Content -Path .\$($BlobContent.Name) -Raw -Encoding Unicode)).TrimEnd([char]0x00) | ConvertFrom-Json
 
-        Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Building VM Configuration and attaching disks..."
+        Invoke-DfLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Building VM Configuration and attaching disks..."
         $NewVM = New-AzureRmVMConfig -VMSize $obj.'properties.hardwareProfile'.vmSize -VMName $("$($Container.FriendlyName)" + "-DRT")
         Set-AzureRmVMOSDisk -VM $NewVM -Name "osdisk" -VhdUri $obj.'properties.StorageProfile'.osDisk.vhd.Uri -CreateOption "Attach"
         $NewVM.StorageProfile.OsDisk.OsType = $obj.'properties.StorageProfile'.OsDisk.OsType
@@ -96,17 +96,17 @@ foreach ($Vault in $Vaults)
             $NewVM = Add-AzureRmVMDataDisk -VM $NewVM -Name "datadisk1" -VhdUri $dd.vhd.Uri -DiskSizeInGB 127 -Lun $dd.Lun -CreateOption "Attach"
         }
 
-        Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Setting network information..."
+        Invoke-DfLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Setting network information..."
         $vnet = Get-AzureRmVirtualNetwork -Name $($DataFromFile | Where-Object {$_.Server -eq "$($Container.FriendlyName)"}).VNet -ResourceGroupName $($DataFromFile | Where-Object {$_.Server -eq "$($Container.FriendlyName)"}).VNetRG
         $subnetindex=0
         $nic = New-AzureRmNetworkInterface -Name $("$($Container.FriendlyName)" + "-DRTNIC") -ResourceGroupName DRTEST -Location "eastus" -SubnetId $vnet.Subnets[$subnetindex].Id -PrivateIpAddress $($DataFromFile | Where-Object {$_.Server -eq "$($Container.FriendlyName)"}).AzureIP
         $NewVM=Add-AzureRmVMNetworkInterface -VM $NewVM -Id $nic.Id
 
-        Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Issuing command to build VM..."
+        Invoke-DfLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Issuing command to build VM..."
         New-AzureRmVM -ResourceGroupName DRTEST -Location "eastus" -VM $NewVM
     }
 }
 
-Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Removing JSON files created as part of the deploy process..."
+Invoke-DfLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Removing JSON files created as part of the deploy process..."
 Get-ChildItem .\config*.json | Remove-Item
-Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "DR Test VM Deploy Complete!!!"
+Invoke-DfLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "DR Test VM Deploy Complete!!!"

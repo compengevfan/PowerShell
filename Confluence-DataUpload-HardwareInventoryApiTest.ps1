@@ -28,35 +28,35 @@ if (!(Get-Module -Name DupreeFunctions)) { Import-Module DupreeFunctions }
 if (!(Test-Path .\~Logs)) { New-Item -Name "~Logs" -ItemType Directory | Out-Null }
 else { Get-ChildItem .\~Logs | Where-Object CreationTime -LT (Get-Date).AddDays(-30) | Remove-Item }
 
-Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Set URI variables..."
+Invoke-DfLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Set URI variables..."
 $BaseURI = "https://wiki.csx.com/rest/api/content/"
 $PageIndex = "199171460"
 $URI = $BaseURI + $PageIndex
 
-Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Get API Auth Token..."
+Invoke-DfLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Get API Auth Token..."
 $APIToken = ${Credential-Confluence-Dupree-LT550TECY7537X}.GetNetworkCredential().Password
 
-Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Get table column headers..."
+Invoke-DfLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Get table column headers..."
 $DataHeaders = $($(Get-Content C:\temp\AssetReportCombined.csv -First 1).Replace('"', '')).Split(",")
 
-Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Get full csv contents..."
+Invoke-DfLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Get full csv contents..."
 $Data = Import-Csv C:\temp\AssetReportCombined.csv
 
-Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Get current page version number and increment..."
+Invoke-DfLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Get current page version number and increment..."
 $Body = @{expand = "version"}
 $Header = @{Authorization = "Bearer $APIToken"}
 $Results = Invoke-RestMethod -Uri $URI -Method Get -Headers $Header -Body $Body
 $Version = $Results.version.number
 $NewVersion = $Version += 1
 
-Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Start building wiki page table contents by setting up headers..."
+Invoke-DfLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Start building wiki page table contents by setting up headers..."
 $NewContents = '<table class="wrapped fixed-table"><colgroup><col style="width: 200.0px;" /><col style="width: 200.0px;" /><col style="width: 200.0px;" /><col style="width: 200.0px;" /><col style="width: 200.0px;" /><col style="width: 200.0px;" /><col style="width: 200.0px;" /><col style="width: 200.0px;" /><col style="width: 200.0px;" /><col style="width: 200.0px;" /><col style="width: 200.0px;" /><col style="width: 200.0px;" /><col style="width: 200.0px;" /><col style="width: 200.0px;" /><col style="width: 200.0px;" /><col style="width: 200.0px;" /><col style="width: 200.0px;" /><col style="width: 200.0px;" /><col style="width: 200.0px;" /><col style="width: 200.0px;" /><col style="width: 200.0px;" /><col style="width: 200.0px;" /><col style="width: 200.0px;" /><col style="width: 200.0px;" /><col style="width: 200.0px;" /><col style="width: 200.0px;" /><col style="width: 200.0px;" /><col style="width: 200.0px;" /><col style="width: 200.0px;" /><col style="width: 200.0px;" /><col style="width: 200.0px;" /><col style="width: 200.0px;" /><col style="width: 200.0px;" /><col style="width: 1000.0px;" /></colgroup><tbody><tr>'
 foreach ($DataHeader in $DataHeaders) {
     $NewContents += "<th>$DataHeader</th>"
 }
 $NewContents += "</tr>"
 
-Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Add each server record to table contents..."
+Invoke-DfLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Add each server record to table contents..."
 foreach ($Server in $Data) {
     $NewContents += "<tr><td>$($Server.HostName)</td>"
     $NewContents += "<td>$($Server.Model)</td>"
@@ -94,10 +94,10 @@ foreach ($Server in $Data) {
     $NewContents += "<td>$($Server.Notes)</td></tr>"
 }
 
-Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Write end of table contents..."
+Invoke-DfLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Write end of table contents..."
 $NewContents += "</tbody></table>"
 
-Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Call rest API put to send data..."
+Invoke-DfLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Call rest API put to send data..."
 $PutBody = @{"version" = @{"number" = $NewVersion};"title" = "Hardware Inventory API Test";"type" = "page";"body" = @{"storage" = @{"value" = $NewContents;"representation" = "storage"}}}
 $PutBodyJSON = $PutBody | ConvertTo-JSON
 $Header = @{"Authorization" = "Bearer $APIToken";"Accept" = "application/json";"Content-Type" = "application/json"}

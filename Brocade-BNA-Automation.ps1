@@ -31,20 +31,20 @@ function Connect-Brocade
         $LoginHeader
     )
 
-    Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Logging in and obtaining session token..."
+    Invoke-DfLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Logging in and obtaining session token..."
     try {
         $Login = Invoke-WebRequest -Method Post -Uri $($BaseURI + "/login") -Headers $LoginHeader
         $WSToken = $Login.Headers.WStoken
     }
     catch {
         $String = "Error encountered is:`n`r$($Error[0])`n`rScript executed on $($env:computername). Script exiting!!!"
-        Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Err -LogString $String
+        Invoke-DfLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Err -LogString $String
         return 66
     }
 
-    Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Succ -LogString "Login successful."
+    Invoke-DfLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Succ -LogString "Login successful."
 
-    Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Setting up logged in header..."
+    Invoke-DfLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Setting up logged in header..."
     $ReturnHeader = @{
         'WStoken' = $WSToken
         'Accept' = $AcceptXML
@@ -107,19 +107,19 @@ function Add-Alias
 </ns3:ControlZoneTransactionRequest>
 "@
 
-        Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Checking session token..."
+        Invoke-DfLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Checking session token..."
         try
         {
             Invoke-WebRequest -Method Get -Uri $($BaseURI + "/resourcegroups/All/fcfabrics") -Headers $LoggedInHeader | Out-Null
-            Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Succ -LogString "Session token valid."
+            Invoke-DfLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Succ -LogString "Session token valid."
         }
         catch
         {
-            Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Warn -LogString "Session token invalid. Reconnecting..."
+            Invoke-DfLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Warn -LogString "Session token invalid. Reconnecting..."
             $LoggedInHeader = Connect-Brocade -BaseURI $BaseURI -LoginHeader $LoginHeader
         }
 
-        Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Locating WWN..."
+        Invoke-DfLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Locating WWN..."
         [xml]$FabricsXML = $(Invoke-WebRequest -Method Get -Uri $($BaseURI + "/resourcegroups/All/fcfabrics") -Headers $LoggedInHeader).Content
         $Fabrics = $FabricsXML.FcFabricsResponse.fcFabrics
         foreach ($Fabric in $Fabrics)
@@ -133,14 +133,14 @@ function Add-Alias
 
         if ($null -ne $FabricKey)
         {
-            Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Succ -LogString "WWN found on fabric $FabricName"
+            Invoke-DfLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Succ -LogString "WWN found on fabric $FabricName"
         }
-        else { Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Warn -LogString "WWN not found!!! Please verify WWN and try again." }
-        Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Creating a zone transaction..."
+        else { Invoke-DfLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Warn -LogString "WWN not found!!! Please verify WWN and try again." }
+        Invoke-DfLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Creating a zone transaction..."
         Invoke-WebRequest -Method Post -Uri $($BaseURI + "/resourcegroups/All/fcfabrics/$FabricKey/controlzonetransaction") -Headers $PostHeader -Body $ZoneTransaction
-<#      Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Creating a alias..."
+<#      Invoke-DfLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Creating a alias..."
         Invoke-WebRequest -Method Post -Uri $($BaseURI + "/resourcegroups/All/fcfabrics/$FabricKey/createzoningobject") -Headers $PostHeader -Body $AliasData
-        Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Committing a zone transaction..."
+        Invoke-DfLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Committing a zone transaction..."
         Invoke-WebRequest -Method Post -Uri $($BaseURI + "/resourcegroups/All/fcfabrics/$FabricKey/controlzonetransaction") -Headers $PostHeader -Body $ZoneTransaction
 #>
         return $LoggedInHeader
@@ -165,15 +165,15 @@ function Add-Zone
 </root>
 "@
 
-    Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Checking session token..."
+    Invoke-DfLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Checking session token..."
     try
     {
         Invoke-WebRequest -Method Get -Uri $($BaseURI + "/resourcegroups/All/fcfabrics") -Headers $LoggedInHeader | Out-Null
-        Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Succ -LogString "Session token valid."
+        Invoke-DfLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Succ -LogString "Session token valid."
     }
     catch
     {
-        Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Warn -LogString "Session token invalid. Reconnecting..."
+        Invoke-DfLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Warn -LogString "Session token invalid. Reconnecting..."
         $LoggedInHeader = Connect-Brocade -BaseURI $BaseURI -LoginHeader $LoginHeader
     }
 
@@ -184,16 +184,16 @@ function Add-Zone
 #End Functions#
 ###############
 
-Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Setting header variables..."
+Invoke-DfLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Setting header variables..."
 $BaseURI = "http://$BrocadeServer/rest"
 $AcceptXML = 'application/vnd.brocade.networkadvisor+xml;version=v1'
 #$AcceptJSON = 'application/vnd.brocade.networkadvisor+json;version="v1"'
 $ContentType = 'application/x-www-form-urlencoded'
 
-Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Obtaining credentials..."
+Invoke-DfLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Obtaining credentials..."
 $Credentials = Get-Credential -Message "Please provide the username and password for connecting to CMCNE"
 
-Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Setting up login header..."
+Invoke-DfLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Setting up login header..."
 $LoginHeader = @{
     'WSUsername' = $Credentials.username
     'WSPassword' = $Credentials.GetNetworkCredential().password
@@ -253,12 +253,12 @@ $ZoneAliasesSW1 = $ZoneAliasesSW1XML.ZoneAliasesResponse.zoneAliases
 [xml]$ZoneAliasesSW2XML = $(Invoke-WebRequest -Method Get -Uri $($BaseURI + "/resourcegroups/All/fcfabrics/$($Fabrics[1].key)/zonealiases") -Headers $LoggedInHeader).Content
 $ZoneAliasesSW2 = $ZoneAliasesSW1XML.ZoneAliasesResponse.zoneAliases
 
-Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Setting up logout header..."
+Invoke-DfLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Setting up logout header..."
 $LogoutHeader = @{
     WStoken = "WT30BLpw0hRB1WAmtAwsJjazMjA="
 }
 
-Invoke-Logging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Logging out..."
+Invoke-DfLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Logging out..."
 Invoke-WebRequest -Method Post -Uri $($BaseURI + "/logout") -Headers $LogoutHeader
 #>
 

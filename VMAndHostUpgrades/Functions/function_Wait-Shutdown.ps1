@@ -1,4 +1,4 @@
-function Wait-Shutdown
+function Wait-DfShutdown
 {
     while ($PowerState -eq "PoweredOn")
     {

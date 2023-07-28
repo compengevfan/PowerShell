@@ -81,7 +81,7 @@ if ($LocalComputerName -like "*.evorigin.com") {
 		Import-Module DupreeFunctions -Force -ErrorAction Stop
 
 		Write-Host "Importing credentials..." -ForegroundColor Gray
-		Import-Credentials
+		Import-DfCredentials
 	}
 	catch {
 		# Write-Host "DupreeFunctions NOT found." -ForegroundColor Red
