@@ -28,10 +28,10 @@ jobs:
         run: |
           git -C C:\git\PowerShell pull origin version
 
-      # - name: Update Version
-      #   shell: PowerShell
-      #   run: |
-      #     Update-DfModuleVersion
+      - name: Update Version
+        shell: PowerShell
+        run: |
+          Update-DfModuleVersion
 
       # Publish DupreeFunctions to PSG
       - name: Publish to PowerShell Gallery
