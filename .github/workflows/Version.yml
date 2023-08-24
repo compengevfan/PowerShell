@@ -40,3 +40,4 @@ jobs:
           git add C:\actions-runner\_work\PowerShell\PowerShell\DupreeFunctions\DupreeFunctions.psd1
           git commit
           git push
+      #V1
