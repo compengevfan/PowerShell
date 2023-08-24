@@ -34,9 +34,9 @@ jobs:
           Update-DfModuleVersion
 
       # Publish DupreeFunctions to PSG
-      - name: Publish to PowerShell Gallery
+      - name: Update Branch
         shell: cmd
         run: |
-          git add C:\git\PowerShell\DupreeFunctions\DupreeFunctions.psd1
+          git add C:\actions-runner\_work\PowerShell\PowerShell\DupreeFunctions\DupreeFunctions.psd1
           git commit
           git push
