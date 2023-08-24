@@ -363,4 +363,5 @@ Function Update-DfModuleVersion{
     $PsdContent = Get-Content C:\Git\PowerShell\DupreeFunctions\DupreeFunctions.psd1 -Raw
     $NewPsdContent = $PsdContent.Replace("$OldPsgModuleVersion","$NewPsgModuleVersion")
     $NewPsdContent | Out-File C:\Git\PowerShell\DupreeFunctions\DupreeFunctions.psd1 -Force
+    #T1
 }
