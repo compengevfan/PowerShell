@@ -354,3 +354,13 @@ Function Update-DfLabBoxes {
         }
     }
 }
+
+Function Update-DfModuleVersion{
+    $PsgModuleVersion = Find-Module DupreeFunctions
+    $OldPsgModuleVersion = $PsgModuleVersion.Version.Major.ToString() + "." + $PsgModuleVersion.Version.Minor.ToString() + "." + $PsgModuleVersion.Version.Build.ToString()
+    $NewPsgModuleVersion = $PsgModuleVersion.Version.Major.ToString() + "." + $PsgModuleVersion.Version.Minor.ToString() + "." + $(($PsgModuleVersion.Version.Build + 1)).ToString()
+
+    $PsdContent = Get-Content C:\Git\PowerShell\DupreeFunctions\DupreeFunctions.psd1 -Raw
+    $NewPsdContent = $PsdContent.Replace("$OldPsgModuleVersion","$NewPsgModuleVersion")
+    $NewPsdContent | Out-File C:\Git\PowerShell\DupreeFunctions\DupreeFunctions.psd1 -Force
+}
