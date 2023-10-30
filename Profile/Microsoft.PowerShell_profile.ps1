@@ -122,7 +122,10 @@ else { $DupreeFunctionInstallSuccess = $true } #>
 
 #Make it pretty
 function prompt {
-	$path = (Get-Location).Path
+	$FullPath = Get-Location
+	$SplitPath = $FullPath.Path.Split("\")
+	if ($SplitPath.Count -eq 1) { $PromptFolder = "root" }
+	else { $PromptFolder = $SplitPath[-1] }
 	$vCenter = $global:DefaultVIServers.Name
 	if (($vCenter -eq "") -or ($null -eq $vCenter)) { $vCenter = "NotConnected" }
 	# $path = ""
@@ -132,11 +135,11 @@ function prompt {
 	# } else {
 	# 	$path = $pathbits[$pathbits.length - 1]
 	# }
-	$userLocation = $env:username + '@' + [System.Environment]::UserDomainName + ' ' + $path
-	$WindowTitle = $userLocation + ' ' + $vCenter
-	$host.UI.RawUi.WindowTitle = $WindowTitle
-	Write-Host($userLocation) -nonewline -foregroundcolor Green 
+	$FullLocation = $env:username + ' ' + $FullPath + ' ' + $vCenter
+	$PartialLocation = $env:username + ' ' + $FullPath.Drive + ' ' + $PromptFolder + ' ' + $vCenter
+	$host.UI.RawUi.WindowTitle = $FullLocation
+	Write-Host($PartialLocation) -nonewline -foregroundcolor DarkYellow
 
-	Write-Host('>') -nonewline -foregroundcolor Green    
+	Write-Host('>') -nonewline -foregroundcolor DarkYellow    
 	return " "
 }
