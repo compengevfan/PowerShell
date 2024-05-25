@@ -4,13 +4,8 @@ Param(
     [Parameter()] [bool] $SendEmail = $false
 )
 
-<<<<<<< Updated upstream
-#Requires -Version 7.2
-$DupreeFunctionsMinVersion = "1.0.2"
-=======
 #requires -Version 7.2
 #requires -Modules DupreeFunctions
->>>>>>> Stashed changes
 
 $ScriptPath = $PSScriptRoot
 Set-Location $ScriptPath
