@@ -28,7 +28,7 @@ $uriK8s = "https://vault.evorigin.com:8200/v1/homelabsecrets/data/k8s/install"
 $resultsK8s = Invoke-RestMethod -Uri $uriK8s -Method Get -Headers $header
 
 #Modify install-config.yaml file
-New-Item -Path "/tmp" -Name "deploy" -ItemType "directory" -Force
+New-Item -Path "/tmp" -Name "deploy" -ItemType "directory" -Force | Out-Null
 
 Copy-Item $clusterPath/install-config.yaml /tmp/deploy/install-config.yaml -Force
 
