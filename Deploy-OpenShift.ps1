@@ -9,7 +9,7 @@ Param(
 if ($IsLinux) {
     $gitRoot = Get-Item -Path "~/git"
     $clusterPath = Get-Item -Path "~/git/k8s/clusterinstall/$clusterToDeploy"
-    $deployPath = Get-Item -Path "/tmp/deploy"
+    $deployPath = Get-Item -Path "/tmp/deploy" -ErrorAction SilentlyContinue
 }
 if ($IsWindows) {
     $gitRoot = Get-Item -Path "C:\Git"
