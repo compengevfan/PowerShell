@@ -15,4 +15,4 @@ if ($IsWindows) {
     $clusterPath = Get-Item -Path "C:/Git/k8s/clusterinstall/$clusterToDeploy"
 }
 
-Copy-Item $clusterPath/install-config.yaml /tmp/deploy/install-config.yaml
+Copy-Item $clusterPath/install-config.yaml /tmp/deploy/install-config.yaml -Force
