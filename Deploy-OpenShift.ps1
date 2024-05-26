@@ -39,3 +39,5 @@ $installContent = $installContent.Replace("[vcenteruser]",$resultsVcenter.data.d
 $installContent = $installContent.Replace("[pullsecret]",$resultsK8s.data.data.pullSecret)
 $installContent = $installContent.Replace("[sshkey]",$resultsK8s.data.data.sshKey)
 Set-Content -Value $installContent -Path /tmp/deploy/install-config.yaml -Force
+
+openshift-install create cluster --dir /tmp/deploy --log-level=debug
