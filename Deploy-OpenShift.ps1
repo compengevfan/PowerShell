@@ -44,4 +44,28 @@ $installContent = $installContent.Replace("[pullsecret]",$resultsK8s.data.data.p
 $installContent = $installContent.Replace("[sshkey]",$resultsK8s.data.data.sshKey)
 Set-Content -Value $installContent -Path /tmp/deploy/install-config.yaml -Force
 
+#Create Cluster
 openshift-install create cluster --dir /tmp/deploy --log-level=debug
+
+#Install Root CA and Replace Default Ingress Cert
+$success = Read-Host "Was cluster creation successful? (y|n)"
+
+if ($success -eq "y" -and $clusterToDeploy -eq "phoenix") {
+    $rootpassword = Get-Content /tmp/deploy/auth/kubeadmin-password
+    oc login -u kubeadmin -p $rootpassword --server=https://api.phoenix.evorigin.com:6443
+    
+    oc create configmap evorigin-ca --from-file=ca-bundle.crt=/home/ladmin/install_phoenix/certs/ca.crt -n openshift-config
+    oc patch proxy/cluster --type=merge --patch='{"spec":{"trustedCA":{"name":"evorigin-ca"}}}'
+    oc create secret tls cluster-ingress --cert=/home/ladmin/install_phoenix/certs/Openshift-Phoenix-Ingress.crt --key=/home/ladmin/install_phoenix/certs/Openshift-Phoenix-Ingress-Decrypted.key -n openshift-ingress
+    oc patch ingresscontroller.operator default --type=merge -p '{"spec":{"defaultCertificate": {"name": "cluster-ingress"}}}' -n openshift-ingress-operator
+}
+
+if ($success -eq "y" -and $clusterToDeploy -eq "avrora") {
+    $rootpassword = Get-Content /tmp/deploy/auth/kubeadmin-password
+    oc login -u kubeadmin -p $rootpassword --server=https://api.avrora.evorigin.com:6443
+
+    oc create configmap evorigin-ca --from-file=ca-bundle.crt=/home/ladmin/install_avrora/certs/ca.crt -n openshift-config
+    oc patch proxy/cluster --type=merge --patch='{"spec":{"trustedCA":{"name":"evorigin-ca"}}}'
+    oc create secret tls cluster-ingress --cert=/home/ladmin/install_avrora/certs/Openshift-Avrora-Ingress.crt --key=/home/ladmin/install_avrora/certs/Openshift-Avrora-Ingress-Decrypted.key -n openshift-ingress
+    oc patch ingresscontroller.operator default --type=merge -p '{"spec":{"defaultCertificate": {"name": "cluster-ingress"}}}' -n openshift-ingress-operator
+}
