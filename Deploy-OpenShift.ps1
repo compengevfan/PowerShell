@@ -54,7 +54,7 @@ if ($success -eq "y" -and $clusterToDeploy -eq "phoenix") {
     $rootpassword = Get-Content /tmp/deploy/auth/kubeadmin-password
     oc login -u kubeadmin -p $rootpassword --server=https://api.phoenix.evorigin.com:6443
     
-    oc create configmap evorigin-ca --from-file=ca-bundle.crt=/home/ladmin/install_phoenix/certs/ca.crt -n openshift-config
+    oc create configmap evorigin-ca --from-file=ca.crt=/home/ladmin/install_phoenix/certs/ca.crt -n openshift-config
     oc patch proxy/cluster --type=merge --patch='{"spec":{"trustedCA":{"name":"evorigin-ca"}}}'
     oc create secret tls cluster-ingress --cert=/home/ladmin/install_phoenix/certs/Openshift-Phoenix-Ingress.crt --key=/home/ladmin/install_phoenix/certs/Openshift-Phoenix-Ingress-Decrypted.key -n openshift-ingress
     oc patch ingresscontroller.operator default --type=merge -p '{"spec":{"defaultCertificate": {"name": "cluster-ingress"}}}' -n openshift-ingress-operator
