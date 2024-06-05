@@ -5,11 +5,13 @@ Param(
 
 #Requires -Version 7
 
+$timeStamp = Get-Date -Format "yyyy-MM-dd-HH-mm-ss"
+
 #Determine Paths
 if ($IsLinux) {
     $gitRoot = Get-Item -Path "~/git"
     $clusterPath = Get-Item -Path "~/git/k8s/clusterinstall/$clusterToDeploy"
-    $deployPath = Get-Item -Path "/tmp/deploy" -ErrorAction SilentlyContinue
+    $deployPath = New-Item -Path "~/k8s-deploy" -Name "$timeStamp" -ItemType "directory"
 }
 if ($IsWindows) {
     $gitRoot = Get-Item -Path "C:\Git"
@@ -29,29 +31,24 @@ $uriK8s = "https://vault.evorigin.com:8200/v1/homelabsecrets/data/k8s/install"
 $resultsK8s = Invoke-RestMethod -Uri $uriK8s -Method Get -Headers $header
 
 #Modify install-config.yaml file
-if ($deployPath){
-    Remove-Item /tmp/deploy/ -Recurse -Confirm:$false
-}
-New-Item -Path "/tmp" -Name "deploy" -ItemType "directory" | Out-Null
+Copy-Item $clusterPath/install-config.yaml $deployPath/install-config.yaml -Force
 
-Copy-Item $clusterPath/install-config.yaml /tmp/deploy/install-config.yaml -Force
-
-$installContent = Get-Content /tmp/deploy/install-config.yaml
+$installContent = Get-Content $deployPath/install-config.yaml
 $installContent = $installContent.Replace("[vcenterserver]",$resultsVcenter.data.data.servername)
 $installContent = $installContent.Replace("[vcenterpassword]",$resultsVcenter.data.data.password)
 $installContent = $installContent.Replace("[vcenteruser]",$resultsVcenter.data.data.domain + "\" + $resultsVcenter.data.data.username)
 $installContent = $installContent.Replace("[pullsecret]",$resultsK8s.data.data.pullSecret)
 $installContent = $installContent.Replace("[sshkey]",$resultsK8s.data.data.sshKey)
-Set-Content -Value $installContent -Path /tmp/deploy/install-config.yaml -Force
+Set-Content -Value $installContent -Path $deployPath/install-config.yaml -Force
 
 #Create Cluster
-openshift-install create cluster --dir /tmp/deploy --log-level=debug
+openshift-install create cluster --dir $deployPath --log-level=debug
 
 #Install Root CA and Replace Default Ingress Cert
 $success = Read-Host "Was cluster creation successful? (y|n)"
 
 if ($success -eq "y" -and $clusterToDeploy -eq "phoenix") {
-    $rootpassword = Get-Content /tmp/deploy/auth/kubeadmin-password
+    $rootpassword = Get-Content $deployPath/auth/kubeadmin-password
     oc login -u kubeadmin -p $rootpassword --server=https://api.phoenix.evorigin.com:6443
     
     oc create configmap evorigin-ca --from-file=ca.crt=/home/ladmin/install_phoenix/certs/ca.crt -n openshift-config
@@ -61,7 +58,7 @@ if ($success -eq "y" -and $clusterToDeploy -eq "phoenix") {
 }
 
 if ($success -eq "y" -and $clusterToDeploy -eq "avrora") {
-    $rootpassword = Get-Content /tmp/deploy/auth/kubeadmin-password
+    $rootpassword = Get-Content $deployPath/auth/kubeadmin-password
     oc login -u kubeadmin -p $rootpassword --server=https://api.avrora.evorigin.com:6443
 
     oc create configmap evorigin-ca --from-file=ca.crt=/home/ladmin/install_avrora/certs/ca.crt -n openshift-config
