@@ -19,7 +19,7 @@ Function Invoke-DfLoggingPO
     )
 
     $TimeStamp = Get-Date -Format 'yyyy-MM-dd HH:mm:ss'
-    "$TimeStamp $LogString" | Out-File .\~Logs\"$ScriptName $ScriptStarted.log" -append
+    "$TimeStamp $LogString" | Out-File C:\Scripts\~Logs\"$ScriptName $ScriptStarted.log" -append
 
     Write-Host -F DarkGray "[" -NoNewLine
     Write-Host -F Green "*" -NoNewLine
@@ -33,44 +33,44 @@ Function Invoke-DfLoggingPO
     }
 }
 
-if (!(Test-Path .\~Logs)) { New-Item -Name "~Logs" -ItemType Directory | Out-Null } else { Get-ChildItem .\~Logs | Where-Object CreationTime -LT (Get-Date).AddDays(-30) | Remove-Item }
+if (!(Test-Path C:\Scripts\~Logs)) { New-Item -Name "~Logs" -ItemType Directory | Out-Null } else { Get-ChildItem C:\Scripts\~Logs | Where-Object CreationTime -LT (Get-Date).AddDays(-30) | Remove-Item }
   
 #Invoke-DfLoggingPO -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Script Started..."
-Get-Date -Format 'yyyy-MM-dd HH:mm:ss' | Out-File .\~Logs\PowerOutage-MinuteChecker.txt
-"Script Started..." | Out-File .\~Logs\PowerOutage-MinuteChecker.txt -Append
+Get-Date -Format 'yyyy-MM-dd HH:mm:ss' | Out-File C:\Scripts\~Logs\PowerOutage-MinuteChecker.txt
+"Script Started..." | Out-File C:\Scripts\~Logs\PowerOutage-MinuteChecker.txt -Append
 
 #Invoke-DfLoggingPO -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Checking PC power state..."
-"Checking PC power state..." | Out-File .\~Logs\PowerOutage-MinuteChecker.txt -Append
+"Checking PC power state..." | Out-File C:\Scripts\~Logs\PowerOutage-MinuteChecker.txt -Append
 $PowerStatusCheck = $(Get-WmiObject win32_battery).BatteryStatus
 if ($PowerStatusCheck -eq 2 -and !($Testing)) {
     #Invoke-DfLoggingPO -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "PC found to be on utility power. Setting counter to 0 and script exiting."
-    "PC found to be on utility power. Setting counter to 0 and script exiting." | Out-File .\~Logs\PowerOutage-MinuteChecker.txt -Append
-    $i = 0 ; $i | Out-File .\PowerOutage-Data.txt -Force
-    Get-Date -Format 'yyyy-MM-dd HH:mm:ss' | Out-File .\~Logs\PowerOutage-MinuteChecker.txt -Append
+    "PC found to be on utility power. Setting counter to 0 and script exiting." | Out-File C:\Scripts\~Logs\PowerOutage-MinuteChecker.txt -Append
+    $i = 0 ; $i | Out-File C:\git\PowerShell\ShutdownScripts\PowerOutage-Data.txt -Force
+    Get-Date -Format 'yyyy-MM-dd HH:mm:ss' | Out-File C:\Scripts\~Logs\PowerOutage-MinuteChecker.txt -Append
     exit
 }
 
 if ($PowerStatusCheck -ne 2 -and $Testing) {
     #Invoke-DfLoggingPO -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "PC found to be on utility power. Setting counter to 0 and script exiting."
-    "PC found to be on utility power. Setting counter to 0 and script exiting." | Out-File .\~Logs\PowerOutage-MinuteChecker.txt -Append
-    $i = 0 ; $i | Out-File .\PowerOutage-Data.txt -Force
-    Get-Date -Format 'yyyy-MM-dd HH:mm:ss' | Out-File .\~Logs\PowerOutage-MinuteChecker.txt -Append
+    "PC found to be on utility power. Setting counter to 0 and script exiting." | Out-File C:\Scripts\~Logs\PowerOutage-MinuteChecker.txt -Append
+    $i = 0 ; $i | Out-File C:\git\PowerShell\ShutdownScripts\PowerOutage-Data.txt -Force
+    Get-Date -Format 'yyyy-MM-dd HH:mm:ss' | Out-File C:\Scripts\~Logs\PowerOutage-MinuteChecker.txt -Append
     exit
 }
 
 #Invoke-DfLoggingPO -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Warn -LogString "PC found to be on battery. Checking to see how many times this has been found..."
-"PC found to be on battery. Checking to see how many times this has been found..." | Out-File .\~Logs\PowerOutage-MinuteChecker.txt -Append
-$Content = Get-Content .\PowerOutage-Data.txt
+"PC found to be on battery. Checking to see how many times this has been found..." | Out-File C:\Scripts\~Logs\PowerOutage-MinuteChecker.txt -Append
+$Content = Get-Content C:\git\PowerShell\ShutdownScripts\PowerOutage-Data.txt
 $i = [int]$Content
 if ($i -le 2){
     #Invoke-DfLoggingPO -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Warn -LogString "PC has not been on battery long enough to initiate system shut down. Incrementing counter and script exiting."
-    "PC has not been on battery long enough to initiate system shut down. Incrementing counter and script exiting." | Out-File .\~Logs\PowerOutage-MinuteChecker.txt -Append
-    $i++ ; $i | Out-File .\PowerOutage-Data.txt -Force
-    Get-Date -Format 'yyyy-MM-dd HH:mm:ss' | Out-File .\~Logs\PowerOutage-MinuteChecker.txt -Append
+    "PC has not been on battery long enough to initiate system shut down. Incrementing counter and script exiting." | Out-File C:\Scripts\~Logs\PowerOutage-MinuteChecker.txt -Append
+    $i++ ; $i | Out-File C:\git\PowerShell\ShutdownScripts\PowerOutage-Data.txt -Force
+    Get-Date -Format 'yyyy-MM-dd HH:mm:ss' | Out-File C:\Scripts\~Logs\PowerOutage-MinuteChecker.txt -Append
     exit
 }
 
-"Initiating system shut down!!!" | Out-File .\~Logs\PowerOutage-MinuteChecker.txt -Append
+"Initiating system shut down!!!" | Out-File C:\Scripts\~Logs\PowerOutage-MinuteChecker.txt -Append
 Invoke-DfLoggingPO -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Err -LogString "Initiating system shut down!!!"
 
 Invoke-DfLoggingPO -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Err -LogString "Importing Credentials..."

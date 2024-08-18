@@ -24,10 +24,10 @@ $vaultCred = Import-Clixml ~/credentials/vaulttoken.xml
 $apiToken = $vaultCred.GetNetworkCredential().Password
 $header = @{"X-Vault-Token"="$apiToken"}
 #Get vCenter secrets
-$uriVcenter = "https://vault.evorigin.com:8200/v1/homelabsecrets/data/vmware/vcenter"
+$uriVcenter = "https://vault.evorigin.com:8200/v1/HomeLabSecrets/data/vmware/vcenter"
 $resultsVcenter = Invoke-RestMethod -Uri $uriVcenter -Method Get -Headers $header
 #Get k8s secrets
-$uriK8s = "https://vault.evorigin.com:8200/v1/homelabsecrets/data/k8s/install"
+$uriK8s = "https://vault.evorigin.com:8200/v1/HomeLabSecrets/data/k8s/install"
 $resultsK8s = Invoke-RestMethod -Uri $uriK8s -Method Get -Headers $header
 
 #Modify install-config.yaml file
