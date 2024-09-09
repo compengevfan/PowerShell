@@ -319,7 +319,7 @@ Function Invoke-DfPatchESXHost {
         [Parameter(Mandatory = $true)] [VMware.VimAutomation.ViCore.Impl.V1.Inventory.VMHostImpl]$HostToPatch,
         [Parameter()][ValidateSet("DRS", "DrainHost")] [string]$EvacType = "DrainHost",
         [bool]$AutoExitMm = $false,
-        [string]$emailTo = ([DC.Automation]::TeamEmail)
+        [string]$emailTo
     )
 
     $ErrorActionPreference = "Stop"
@@ -417,7 +417,7 @@ Function Invoke-DfPatchESXCluster {
     param (
         [Parameter()] [VMware.VimAutomation.ViCore.Impl.V1.Inventory.ClusterImpl]$ClusterToPatch,
         [Parameter()][ValidateSet("DRS", "DrainHost")] [string]$EvacType = "DrainHost",
-        [string]$emailTo = ([DC.Automation]::TeamEmail)
+        [string]$emailTo
     )
 
     $ErrorActionPreference = "Stop"
