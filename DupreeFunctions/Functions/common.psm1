@@ -168,7 +168,10 @@ Function Import-DfCredentials {
 
         Write-Host "$CredCount Credential(s) Imported."
     }
-    else { Write-Host "DupreeFunctions AppData folder not found." }
+    else { 
+        Write-Host "DupreeFunctions AppData folder not found. Creating..." 
+        New-Item -path $env:LOCALAPPDATA -Name "DupreeFunctions" -ItemType Directory
+    }
 }
 
 Function Show-DfCredentials {
