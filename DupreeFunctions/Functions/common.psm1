@@ -376,7 +376,7 @@ Function Invoke-UserSetup {
     #Display PowerShell Version
     Write-Host "`nPowerShell Version:"
     $PSVersion = $PSVersionTable.PSVersion
-    $Hostname = $env:COMPUTERNAME
+    # $Hostname = $env:COMPUTERNAME
     $DomainName = $env:USERDNSDOMAIN
 
     try {
