@@ -406,6 +406,8 @@ Function Invoke-UserSetup {
         git clone https://github.com/compengevfan/vmbuildfiles.git $GitPath\vmbuildfiles
 
         #Copy powershell profile appropriate location from PowerShell Repo
+        if ($PSVersion.Major -eq 5) {}
+        if ($PSVersion.Major -eq 7) {}
     }
     catch [System.Management.Automation.CommandNotFoundException] {
         Write-Host "Git install not found" -ForegroundColor red
