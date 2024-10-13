@@ -45,10 +45,15 @@ $PortGroupArray = @("JAX-EvOrigin", "Test")
 $PortGroupArray = $Ram | ForEach-Object { [PSCustomObject]@{ PortGroup = $_ } }
 $PortGroupSelection = Invoke-DfMenu -Objects $PortGroupArray -MenuColumn PortGroup -SelectionText "Select a Portgroup" -ClearScreen:$true
 
-$DatastoreArray = @()
-$DatastoreArray = Get-Datastore | Where-Object {$_.Name -notlike "Local-*"} | Sort-Object Name
-$DatastoreSelection = Invoke-DfMenu -Objects $DatastoreArray -MenuColumn Name -SelectionText "Select a Datastore" -ClearScreen:$true
-
+$Datastores = @(
+    "iSCSI-Storage1-NVMe"
+    "iSCSI-Storage1-SSD"
+    "iSCSI-Storage2-NVMe"
+    "iSCSI-Storage2-SSD"
+    "iSCSI-Storage3"
+)
+$DatastoreArray = $Datastores | ForEach-Object { [PSCustomObject]@{ Datastore = $_ } }
+$DatastoreSelection = Invoke-DfMenu -Objects $DatastoreArray -MenuColumn Datastore -SelectionText "Select a Datastore" -ClearScreen:$true
 
 
 Invoke-DfLogging $LoggingInfoSplat -LogString "Script Completed Succesfully."

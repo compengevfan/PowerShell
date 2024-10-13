@@ -367,3 +367,51 @@ Function Update-DfModuleVersion{
     $NewPsdContent = $PsdContent.Replace("$OldPsgModuleVersion","$NewPsgModuleVersion")
     $NewPsdContent | Out-File C:\actions-runner\_work\PowerShell\PowerShell\DupreeFunctions\DupreeFunctions.psd1 -Force
 }
+
+Function Invoke-UserSetup {
+    [CmdletBinding()]
+    Param(
+    )
+
+    #Display PowerShell Version
+    Write-Host "`nPowerShell Version:"
+    $PSVersion = $PSVersionTable.PSVersion
+    $Hostname = $env:COMPUTERNAME
+    $DomainName = $env:USERDNSDOMAIN
+
+    try {
+        git | Out-Null
+        Write-Host "Git is installed" -ForegroundColor Green
+
+        #Check for/create git folder and set githome environment variable
+        if ($env:githome) { Write-Host "Git environment variable found." -ForegroundColor Green }
+        else {
+            if ($DomainName -eq "EVORIGIN.COM") {
+                Write-Host "HomeLab Computer Detected."
+                $GitPath = "C:\git"
+                if ($null -eq $(Test-Path $GitPath)) { New-Item -Path $GitPath -ItemType Directory }
+            }
+            else {
+                Write-Host "Work Computer Detected."
+                $GitPath = "E:\Dupree\git"
+                if ($null -eq $(Test-Path $GitPath)) { New-Item -Path $GitPath -ItemType Directory }
+            }
+            [System.Environment]::SetEnvironmentVariable('githome', $GitPath, [System.EnvironmentVariableTarget]::User)
+        }
+        
+        #Clone repos to git folder
+        git clone https://github.com/compengevfan/Ansible.git $GitPath\Ansible
+        git clone https://github.com/compengevfan/k8s.git $GitPath\k8s
+        git clone https://github.com/compengevfan/PowerShell.git $GitPath\PowerShell
+        git clone https://github.com/compengevfan/vmbuildfiles.git $GitPath\vmbuildfiles
+
+        #Copy powershell profile appropriate location from PowerShell Repo
+    }
+    catch [System.Management.Automation.CommandNotFoundException] {
+        Write-Host "Git install not found" -ForegroundColor red
+    }
+    catch {
+        Write-Host "An error occurred:"
+        Write-Host $_
+    }
+}
