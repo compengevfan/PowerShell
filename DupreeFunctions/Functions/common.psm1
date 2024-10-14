@@ -412,25 +412,26 @@ Function Invoke-UserSetup {
         #Copy powershell profile appropriate location from PowerShell Repo
         if ($PSVersion.Major -eq 5) {}
         if ($PSVersion.Major -eq 7) {
-            if ($null -eq $(Test-Path $env:UserProfile\PowerShell\Microsoft.PowerShell_profile.ps1)){
+            if ($null -eq $(Test-Path $env:UserProfile\PowerShell\Microsoft.PowerShell_profile.ps1)) {
                 Write-Host "Copying primary profile script to PowerShell 7 Destination." -ForegroundColor Green
                 Copy-Item -Path $GitPath\PowerShell\Profile\Microsoft.PowerShell_profile.ps1 -Destination $PROFILE
             }
-            if ($null -eq $(Test-Path $env:UserProfile\PowerShell\Microsoft.PowerShellISE_profile.ps1)){
+            if ($null -eq $(Test-Path $env:UserProfile\PowerShell\Microsoft.PowerShellISE_profile.ps1)) {
                 Write-Host "Creating ISE profile script to PowerShell 7 Destination." -ForegroundColor Green
                 Copy-Item -Path $PROFILE -Destination $PROFILE.Replace("Microsoft.PowerShell_profile.ps1", "Microsoft.PowerShellISE_profile.ps1")
             }
-            if ($null -eq $(Test-Path $env:UserProfile\PowerShell\Microsoft.VSCode_profile.ps1)){
+            if ($null -eq $(Test-Path $env:UserProfile\PowerShell\Microsoft.VSCode_profile.ps1)) {
                 Write-Host "Creating VS Code profile script to PowerShell 7 Destination." -ForegroundColor Green
                 Copy-Item -Path $PROFILE -Destination $PROFILE.Replace("Microsoft.PowerShell_profile.ps1", "Microsoft.VSCode_profile.ps1")
             }
         }
 
         #Check for/create DupreeFunctions appdata folder
-        if ($null -eq $(Test-Path $env:LOCALAPPDATA\DupreeFunctions)){ 
+        if ($null -eq $(Test-Path $env:LOCALAPPDATA\DupreeFunctions)) { 
             Write-Host "Creating DupreeFunctions AppData folder."
-            New-Item -path $env:LOCALAPPDATA -Name "DupreeFunctions" -ItemType Directory }
-        else { Write-Host "DupreeFunctions AppData folder found."}
+            New-Item -path $env:LOCALAPPDATA -Name "DupreeFunctions" -ItemType Directory 
+        }
+        else { Write-Host "DupreeFunctions AppData folder found." }
     }
     catch [System.Management.Automation.CommandNotFoundException] {
         Write-Host "Git install not found" -ForegroundColor red
