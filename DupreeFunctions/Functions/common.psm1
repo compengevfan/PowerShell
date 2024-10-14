@@ -400,14 +400,32 @@ Function Invoke-UserSetup {
         }
         
         #Clone repos to git folder
-        git clone https://github.com/compengevfan/Ansible.git $GitPath\Ansible
-        git clone https://github.com/compengevfan/k8s.git $GitPath\k8s
-        git clone https://github.com/compengevfan/PowerShell.git $GitPath\PowerShell
-        git clone https://github.com/compengevfan/vmbuildfiles.git $GitPath\vmbuildfiles
-
+        if ($null -eq $(Test-Path $GitPath\Ansible)) { git clone https://github.com/compengevfan/Ansible.git $GitPath\Ansible }
+        else { Write-Host "Ansible repo already cloned to this machine." }
+        if ($null -eq $(Test-Path $GitPath\k8s)) { git clone https://github.com/compengevfan/Ansible.git $GitPath\k8s }
+        else { Write-Host "k8s repo already cloned to this machine." }
+        if ($null -eq $(Test-Path $GitPath\PowerShell)) { git clone https://github.com/compengevfan/Ansible.git $GitPath\PowerShell }
+        else { Write-Host "PowerShell repo already cloned to this machine." }
+        if ($null -eq $(Test-Path $GitPath\vmbuildfiles)) { git clone https://github.com/compengevfan/Ansible.git $GitPath\vmbuildfiles }
+        else { Write-Host "vmbuildfiles repo already cloned to this machine." }
+        
         #Copy powershell profile appropriate location from PowerShell Repo
         if ($PSVersion.Major -eq 5) {}
-        if ($PSVersion.Major -eq 7) {}
+        if ($PSVersion.Major -eq 7) {
+            if ($null -eq $(Test-Path $env:UserProfile\PowerShell\Microsoft.PowerShell_profile.ps1)){
+                Write-Host "Copying primary profile script to PowerShell 7 Destination." -ForegroundColor Green
+                Copy-Item -Path $GitPath\PowerShell\Profile\Microsoft.PowerShell_profile.ps1 -Destination $PROFILE
+                Write-Host "Creating ISE profile script to PowerShell 7 Destination." -ForegroundColor Green
+                Copy-Item -Path $PROFILE -Destination $PROFILE.Replace("Microsoft.PowerShell_profile.ps1", "Microsoft.PowerShellISE_profile.ps1")
+                Write-Host "Creating VS Code profile script to PowerShell 7 Destination." -ForegroundColor Green
+                Copy-Item -Path $PROFILE -Destination $PROFILE.Replace("Microsoft.PowerShell_profile.ps1", "Microsoft.VSCode_profile.ps1")
+            }
+        }
+
+        #Check for/create DupreeFunctions appdata folder
+        if (Test-Path $env:LOCALAPPDATA\DupreeFunctions){
+            if ($null -eq $(Test-Path $env:LOCALAPPDATA\DupreeFunctions)) { New-Item -path $env:LOCALAPPDATA -Name "DupreeFunctions" -ItemType Directory }
+        }
     }
     catch [System.Management.Automation.CommandNotFoundException] {
         Write-Host "Git install not found" -ForegroundColor red
