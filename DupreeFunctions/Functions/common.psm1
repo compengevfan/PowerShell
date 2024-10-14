@@ -427,9 +427,10 @@ Function Invoke-UserSetup {
         }
 
         #Check for/create DupreeFunctions appdata folder
-        if (Test-Path $env:LOCALAPPDATA\DupreeFunctions){
-            if ($null -eq $(Test-Path $env:LOCALAPPDATA\DupreeFunctions)) { New-Item -path $env:LOCALAPPDATA -Name "DupreeFunctions" -ItemType Directory }
-        }
+        if ($null -eq $(Test-Path $env:LOCALAPPDATA\DupreeFunctions)){ 
+            Write-Host "Creating DupreeFunctions AppData folder."
+            New-Item -path $env:LOCALAPPDATA -Name "DupreeFunctions" -ItemType Directory }
+        else { Write-Host "DupreeFunctions AppData folder found."}
     }
     catch [System.Management.Automation.CommandNotFoundException] {
         Write-Host "Git install not found" -ForegroundColor red
