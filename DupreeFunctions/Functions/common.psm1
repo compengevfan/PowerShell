@@ -375,7 +375,7 @@ Function Invoke-UserSetup {
 
     #Display PowerShell Version
     Write-Host "`nPowerShell Version:"
-    $PSVersion = $PSVersionTable.PSVersion
+    $CurrentPsVersion = $PSVersionTable.PSVersion
     # $Hostname = $env:COMPUTERNAME
     $DomainName = $env:USERDNSDOMAIN
 
@@ -383,19 +383,20 @@ Function Invoke-UserSetup {
         git | Out-Null
         Write-Host "Git is installed" -ForegroundColor Green
 
-        #Check for/create git folder and set githome environment variable
-        if ($env:githome) { Write-Host "Git environment variable found." -ForegroundColor Green }
+        if ($DomainName -eq "EVORIGIN.COM") {
+            Write-Host "HomeLab Computer Detected."
+            $GitPath = "C:\git"
+        }
         else {
-            if ($DomainName -eq "EVORIGIN.COM") {
-                Write-Host "HomeLab Computer Detected."
-                $GitPath = "C:\git"
-                if ($null -eq $(Test-Path $GitPath)) { New-Item -Path $GitPath -ItemType Directory }
-            }
-            else {
-                Write-Host "Work Computer Detected."
-                $GitPath = "E:\Dupree\git"
-                if ($null -eq $(Test-Path $GitPath)) { New-Item -Path $GitPath -ItemType Directory }
-            }
+            Write-Host "Work Computer Detected."
+            $GitPath = "E:\Dupree\git"
+        }
+        if ($null -eq $(Test-Path $GitPath)) { New-Item -Path $GitPath -ItemType Directory }
+
+        #Check for/create git folder and set githome environment variable
+        if ($env:githome) { Write-Host "githome environment variable found." -ForegroundColor Green }
+        else {
+            Write-Host "Creating githome Environment Variable" -ForegroundColor Yellow
             [System.Environment]::SetEnvironmentVariable('githome', $GitPath, [System.EnvironmentVariableTarget]::User)
         }
         
@@ -410,24 +411,37 @@ Function Invoke-UserSetup {
         else { Write-Host "vmbuildfiles repo already cloned to this machine." }
         
         #Copy powershell profile appropriate location from PowerShell Repo
-        if ($PSVersion.Major -eq 5) {}
-        if ($PSVersion.Major -eq 7) {
-            if ($null -eq $(Test-Path $env:UserProfile\PowerShell\Microsoft.PowerShell_profile.ps1)) {
-                Write-Host "Copying primary profile script to PowerShell 7 Destination." -ForegroundColor Green
+        if ($CurrentPsVersion.Major -eq 5) {
+            if (!($(Test-Path $PROFILE))) {
+                Write-Host "Copying primary profile script to PowerShell 5.1 Destination." -ForegroundColor Green
                 Copy-Item -Path $GitPath\PowerShell\Profile\Microsoft.PowerShell_profile.ps1 -Destination $PROFILE
             }
-            if ($null -eq $(Test-Path $env:UserProfile\PowerShell\Microsoft.PowerShellISE_profile.ps1)) {
+            if (!($(Test-Path "$env:UserProfile\PowerShell\Microsoft.PowerShellISE_profile.ps1"))) {
+                Write-Host "Creating ISE profile script to PowerShell 5.1 Destination." -ForegroundColor Green
+                Copy-Item -Path $PROFILE -Destination $PROFILE.Replace("Microsoft.PowerShell_profile.ps1", "Microsoft.PowerShellISE_profile.ps1")
+            }
+            if (!($(Test-Path "$env:UserProfile\PowerShell\Microsoft.VSCode_profile.ps1"))) {
+                Write-Host "Creating VS Code profile script to PowerShell 5.1 Destination." -ForegroundColor Green
+                Copy-Item -Path $PROFILE -Destination $PROFILE.Replace("Microsoft.PowerShell_profile.ps1", "Microsoft.VSCode_profile.ps1")
+            }
+        }
+        if ($CurrentPsVersion.Major -eq 7) {
+            if (!($(Test-Path $PROFILE))) {
+                Write-Host "Copying primary profile script to PowerShell 7 Destination." -ForegroundColor Green
+                Copy-Item -Path "$GitPath\PowerShell\Profile\Microsoft.PowerShell_profile.ps1" -Destination $PROFILE
+            }
+            if (!($(Test-Path "$env:UserProfile\PowerShell\Microsoft.PowerShellISE_profile.ps1"))) {
                 Write-Host "Creating ISE profile script to PowerShell 7 Destination." -ForegroundColor Green
                 Copy-Item -Path $PROFILE -Destination $PROFILE.Replace("Microsoft.PowerShell_profile.ps1", "Microsoft.PowerShellISE_profile.ps1")
             }
-            if ($null -eq $(Test-Path $env:UserProfile\PowerShell\Microsoft.VSCode_profile.ps1)) {
+            if (!($(Test-Path "$env:UserProfile\PowerShell\Microsoft.VSCode_profile.ps1"))) {
                 Write-Host "Creating VS Code profile script to PowerShell 7 Destination." -ForegroundColor Green
                 Copy-Item -Path $PROFILE -Destination $PROFILE.Replace("Microsoft.PowerShell_profile.ps1", "Microsoft.VSCode_profile.ps1")
             }
         }
 
         #Check for/create DupreeFunctions appdata folder
-        if ($null -eq $(Test-Path $env:LOCALAPPDATA\DupreeFunctions)) { 
+        if ($null -eq $(Test-Path "$env:LOCALAPPDATA\DupreeFunctions")) { 
             Write-Host "Creating DupreeFunctions AppData folder."
             New-Item -path $env:LOCALAPPDATA -Name "DupreeFunctions" -ItemType Directory 
         }
