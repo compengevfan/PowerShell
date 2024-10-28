@@ -46,11 +46,9 @@ $NetworkArray = $NetworkArray | ForEach-Object { [PSCustomObject]@{ Network = $_
 $NetworkSelection = Invoke-DfMenu -Objects $NetworkArray -MenuColumn Network -SelectionText "Select a Network" -ClearScreen:$true
 
 $Datastores = @(
-    "iSCSI-Storage1-NVMe"
-    "iSCSI-Storage1-SSD"
-    "iSCSI-Storage2-NVMe"
-    "iSCSI-Storage2-SSD"
-    "iSCSI-Storage3"
+    "Storage1-NVMe"
+    "Storage1-SSD"
+    "Storage3-iSCSI"
 )
 $DatastoreArray = $Datastores | ForEach-Object { [PSCustomObject]@{ Datastore = $_ } }
 $DatastoreSelection = Invoke-DfMenu -Objects $DatastoreArray -MenuColumn Datastore -SelectionText "Select a Datastore" -ClearScreen:$true
