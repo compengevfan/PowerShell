@@ -53,12 +53,29 @@ $Datastores = @(
 $DatastoreArray = $Datastores | ForEach-Object { [PSCustomObject]@{ Datastore = $_ } }
 $DatastoreSelection = Invoke-DfMenu -Objects $DatastoreArray -MenuColumn Datastore -SelectionText "Select a Datastore" -ClearScreen:$true
 
+$vCenterFolders = @(
+    "DC1/EvOrigin/DCs"
+    "DC1/EvOrigin/Media Servers"
+    "DC1/EvOrigin/Workers"
+)
+$vCenterFolderArray = $vCenterFolders | ForEach-Object { [PSCustomObject]@{ vCenterFolder = $_ } }
+$vCenterFolderSelection = Invoke-DfMenu -Objects $vCenterFolderArray -MenuColumn vCenterFolder -SelectionText "Select a vCenter Folder" -ClearScreen:$true
+
+$OUs = @(
+    "evorigin.com/Virtual Servers"
+    "evorigin.com/Virtual Workstations"
+)
+$OuArray = $OUs | ForEach-Object { [PSCustomObject]@{ Ou = $_ } }
+$OuSelection = Invoke-DfMenu -Objects $OuArray -MenuColumn Ou -SelectionText "Select an OU" -ClearScreen:$true
+
 $JsonTemplateContent = Get-Content $githome\vmbuildfiles\V2\~Template.json -Raw
 $NewJsonContent = $JsonTemplateContent.Replace("[OperatingSystem]",$OperatingSystemSelection.OperatingSystem)
 $NewJsonContent = $NewJsonContent.Replace("[vCPUs]",$vCpuSelection.vCPUs)
 $NewJsonContent = $NewJsonContent.Replace("[RAM]",$RamSelection.RAM)
 $NewJsonContent = $NewJsonContent.Replace("[Network]",$NetworkSelection.Network)
 $NewJsonContent = $NewJsonContent.Replace("[Datastore]",$DatastoreSelection.Datastore)
+$NewJsonContent = $NewJsonContent.Replace("[vCenterFolderPath]",$vCenterFolderSelection.vCenterFolder)
+$NewJsonContent = $NewJsonContent.Replace("[OU]",$OuSelection.Ou)
 $NewJsonContent | Out-File "$githome\vmbuildfiles\V2\$VMName.json" -Force
 
 # Invoke-DfLogging $LoggingInfoSplat -LogString "Script Completed Succesfully."
