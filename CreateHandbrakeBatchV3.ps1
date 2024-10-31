@@ -24,7 +24,7 @@ foreach ($Folder in $Folders)
     foreach ($file in $files)
     {
         $InputLocation = '"' + $file + '"'
-        $OutputLocation = '-o "\\storage3\Media\TV Shows\' + "$ShowName\Season $FolderCounter\" + "$($file.Name.Substring(0,14))"
+        $OutputLocation = '-o "\\storage3\Media\TV Shows\' + "$ShowName\Season $FolderCounter\" + "$($file.Name.Substring(0,$SubStringCount))"
         $BatchFileOutput += "$BeginCommand $InputLocation $($Episode.Title) $OutputLocation$EndCommand`r`n"
     }
 
