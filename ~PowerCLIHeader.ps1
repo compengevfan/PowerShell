@@ -1,7 +1,6 @@
 [CmdletBinding()]
 Param(
-    [Parameter()] [string] $InputFile,
-    [Parameter()] [bool] $SendEmail = $false
+    [Parameter()] [string] $InputFile
 )
 
 #requires -Version 7.2
@@ -12,31 +11,19 @@ Set-Location $ScriptPath
   
 $ScriptStarted = Get-Date -Format MM-dd-yyyy_HH-mm-ss
 $ScriptName = $MyInvocation.MyCommand.Name
-  
-#$ErrorActionPreference = "SilentlyContinue"
 
-if (!(Get-Module -Name DupreeFunctions)) { Import-Module DupreeFunctions }
+$LoggingSuccSplat = @{ScriptStarted = $ScriptStarted; ScriptName = $ScriptName; LogType = "Succ" }
+$LoggingInfoSplat = @{ScriptStarted = $ScriptStarted; ScriptName = $ScriptName; LogType = "Info" }
+$LoggingWarnSplat = @{ScriptStarted = $ScriptStarted; ScriptName = $ScriptName; LogType = "Warn" }
+$LoggingErrSplat = @{ScriptStarted = $ScriptStarted; ScriptName = $ScriptName; LogType = "Err" }
+
 if (!(Test-Path .\~Logs)) { New-Item -Name "~Logs" -ItemType Directory | Out-Null }
 else { Get-ChildItem .\~Logs | Where-Object CreationTime -LT (Get-Date).AddDays(-30) | Remove-Item }
   
 Import-DfPowerCLI
- 
-if ($null -ne $CredFile)
-{
-    Remove-Variable Credential_To_Use -ErrorAction Ignore
-    New-Variable -Name Credential_To_Use -Value $(Import-Clixml $($CredFile))
-}
 
-#Email Variables
-#emailTo is a comma separated list of strings eg. "email1","email2"
-# $emailFrom = ""
-# $emailTo = ""
-# $emailServer = ""
-
-Invoke-DfLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Script Started..."
-
+Invoke-DfLogging $LoggingInfoSplat -LogString "Script Started..."
 Connect-DFvCenter -vCenter $vCenter -vCenterCredential $Credential_To_Use
 
 
-
-Invoke-DfLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Succ -LogString "Script Completed Succesfully."
+Invoke-DfLogging $LoggingInfoSplat -LogString "Script Completed Succesfully."

@@ -168,7 +168,10 @@ Function Import-DfCredentials {
 
         Write-Host "$CredCount Credential(s) Imported."
     }
-    else { Write-Host "DupreeFunctions AppData folder not found." }
+    else { 
+        Write-Host "DupreeFunctions AppData folder not found. Creating..." 
+        New-Item -path $env:LOCALAPPDATA -Name "DupreeFunctions" -ItemType Directory
+    }
 }
 
 Function Show-DfCredentials {
@@ -363,4 +366,92 @@ Function Update-DfModuleVersion{
     $PsdContent = Get-Content C:\Git\PowerShell\DupreeFunctions\DupreeFunctions.psd1 -Raw
     $NewPsdContent = $PsdContent.Replace("$OldPsgModuleVersion","$NewPsgModuleVersion")
     $NewPsdContent | Out-File C:\actions-runner\_work\PowerShell\PowerShell\DupreeFunctions\DupreeFunctions.psd1 -Force
+}
+
+Function Invoke-UserSetup {
+    [CmdletBinding()]
+    Param(
+    )
+
+    #Display PowerShell Version
+    Write-Host "`nPowerShell Version:"
+    $CurrentPsVersion = $PSVersionTable.PSVersion
+    # $Hostname = $env:COMPUTERNAME
+    $DomainName = $env:USERDNSDOMAIN
+
+    try {
+        git | Out-Null
+        Write-Host "Git is installed" -ForegroundColor Green
+
+        if ($DomainName -eq "EVORIGIN.COM") {
+            Write-Host "HomeLab Computer Detected."
+            $GitPath = "C:\git"
+        }
+        else {
+            Write-Host "Work Computer Detected."
+            $GitPath = "E:\Dupree\git"
+        }
+        if ($null -eq $(Test-Path $GitPath)) { New-Item -Path $GitPath -ItemType Directory }
+
+        #Check for/create git folder and set githome environment variable
+        if ($env:githome) { Write-Host "githome environment variable found." -ForegroundColor Green }
+        else {
+            Write-Host "Creating githome Environment Variable" -ForegroundColor Yellow
+            [System.Environment]::SetEnvironmentVariable('githome', $GitPath, [System.EnvironmentVariableTarget]::User)
+        }
+        
+        #Clone repos to git folder
+        if ($null -eq $(Test-Path $GitPath\Ansible)) { git clone https://github.com/compengevfan/Ansible.git $GitPath\Ansible }
+        else { Write-Host "Ansible repo already cloned to this machine." }
+        if ($null -eq $(Test-Path $GitPath\k8s)) { git clone https://github.com/compengevfan/Ansible.git $GitPath\k8s }
+        else { Write-Host "k8s repo already cloned to this machine." }
+        if ($null -eq $(Test-Path $GitPath\PowerShell)) { git clone https://github.com/compengevfan/Ansible.git $GitPath\PowerShell }
+        else { Write-Host "PowerShell repo already cloned to this machine." }
+        if ($null -eq $(Test-Path $GitPath\vmbuildfiles)) { git clone https://github.com/compengevfan/Ansible.git $GitPath\vmbuildfiles }
+        else { Write-Host "vmbuildfiles repo already cloned to this machine." }
+        
+        #Copy powershell profile appropriate location from PowerShell Repo
+        if ($CurrentPsVersion.Major -eq 5) {
+            if (!($(Test-Path $PROFILE))) {
+                Write-Host "Copying primary profile script to PowerShell 5.1 Destination." -ForegroundColor Green
+                Copy-Item -Path $GitPath\PowerShell\Profile\Microsoft.PowerShell_profile.ps1 -Destination $PROFILE
+            }
+            if (!($(Test-Path "$env:UserProfile\PowerShell\Microsoft.PowerShellISE_profile.ps1"))) {
+                Write-Host "Creating ISE profile script to PowerShell 5.1 Destination." -ForegroundColor Green
+                Copy-Item -Path $PROFILE -Destination $PROFILE.Replace("Microsoft.PowerShell_profile.ps1", "Microsoft.PowerShellISE_profile.ps1")
+            }
+            if (!($(Test-Path "$env:UserProfile\PowerShell\Microsoft.VSCode_profile.ps1"))) {
+                Write-Host "Creating VS Code profile script to PowerShell 5.1 Destination." -ForegroundColor Green
+                Copy-Item -Path $PROFILE -Destination $PROFILE.Replace("Microsoft.PowerShell_profile.ps1", "Microsoft.VSCode_profile.ps1")
+            }
+        }
+        if ($CurrentPsVersion.Major -eq 7) {
+            if (!($(Test-Path $PROFILE))) {
+                Write-Host "Copying primary profile script to PowerShell 7 Destination." -ForegroundColor Green
+                Copy-Item -Path "$GitPath\PowerShell\Profile\Microsoft.PowerShell_profile.ps1" -Destination $PROFILE
+            }
+            if (!($(Test-Path "$env:UserProfile\PowerShell\Microsoft.PowerShellISE_profile.ps1"))) {
+                Write-Host "Creating ISE profile script to PowerShell 7 Destination." -ForegroundColor Green
+                Copy-Item -Path $PROFILE -Destination $PROFILE.Replace("Microsoft.PowerShell_profile.ps1", "Microsoft.PowerShellISE_profile.ps1")
+            }
+            if (!($(Test-Path "$env:UserProfile\PowerShell\Microsoft.VSCode_profile.ps1"))) {
+                Write-Host "Creating VS Code profile script to PowerShell 7 Destination." -ForegroundColor Green
+                Copy-Item -Path $PROFILE -Destination $PROFILE.Replace("Microsoft.PowerShell_profile.ps1", "Microsoft.VSCode_profile.ps1")
+            }
+        }
+
+        #Check for/create DupreeFunctions appdata folder
+        if ($null -eq $(Test-Path "$env:LOCALAPPDATA\DupreeFunctions")) { 
+            Write-Host "Creating DupreeFunctions AppData folder."
+            New-Item -path $env:LOCALAPPDATA -Name "DupreeFunctions" -ItemType Directory 
+        }
+        else { Write-Host "DupreeFunctions AppData folder found." }
+    }
+    catch [System.Management.Automation.CommandNotFoundException] {
+        Write-Host "Git install not found" -ForegroundColor red
+    }
+    catch {
+        Write-Host "An error occurred:"
+        Write-Host $_
+    }
 }
