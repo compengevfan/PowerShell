@@ -62,8 +62,8 @@ $vCenterFolderArray = $vCenterFolders | ForEach-Object { [PSCustomObject]@{ vCen
 $vCenterFolderSelection = Invoke-DfMenu -Objects $vCenterFolderArray -MenuColumn vCenterFolder -SelectionText "Select a vCenter Folder" -ClearScreen:$true
 
 $OUs = @(
-    "evorigin.com/Virtual Servers"
-    "evorigin.com/Virtual Workstations"
+    "OU=Virtual Servers,DC=evorigin,DC=com"
+    "OU=Virtual Workstations,DC=evorigin,DC=com"
 )
 $OuArray = $OUs | ForEach-Object { [PSCustomObject]@{ Ou = $_ } }
 $OuSelection = Invoke-DfMenu -Objects $OuArray -MenuColumn Ou -SelectionText "Select an OU" -ClearScreen:$true
