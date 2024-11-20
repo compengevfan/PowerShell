@@ -6,18 +6,8 @@ Param(
 #requires -Version 7
 #requires -Modules DupreeFunctions
 
-$ScriptStarted = Get-Date -Format MM-dd-yyyy_HH-mm-ss
-$ScriptName = $MyInvocation.MyCommand.Name
-
-# $LoggingSuccSplat = @{ScriptStarted = $ScriptStarted; ScriptName = $ScriptName; LogType = "Succ" }
-# $LoggingInfoSplat = @{ScriptStarted = $ScriptStarted; ScriptName = $ScriptName; LogType = "Info" }
-# $LoggingWarnSplat = @{ScriptStarted = $ScriptStarted; ScriptName = $ScriptName; LogType = "Warn" }
-# $LoggingErrSplat = @{ScriptStarted = $ScriptStarted; ScriptName = $ScriptName; LogType = "Err" }
-
 if (!(Test-Path .\~Logs)) { New-Item -Name "~Logs" -ItemType Directory | Out-Null }
 else { Get-ChildItem .\~Logs | Where-Object CreationTime -LT (Get-Date).AddDays(-30) | Remove-Item }
-
-# Invoke-DfLogging $LoggingInfoSplat -LogString "Script Started..."
 
 #Set VM Name to Uppercase
 $VMName = $VMName.ToUpper()
@@ -77,5 +67,3 @@ $NewJsonContent = $NewJsonContent.Replace("[Datastore]",$DatastoreSelection.Data
 $NewJsonContent = $NewJsonContent.Replace("[vCenterFolderPath]",$vCenterFolderSelection.vCenterFolder)
 $NewJsonContent = $NewJsonContent.Replace("[OU]",$OuSelection.Ou)
 $NewJsonContent | Out-File "$githome\vmbuildfiles\V2\$VMName.json" -Force
-
-# Invoke-DfLogging $LoggingInfoSplat -LogString "Script Completed Succesfully."
