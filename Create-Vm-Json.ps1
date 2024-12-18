@@ -36,20 +36,12 @@ $NetworkArray = $NetworkArray | ForEach-Object { [PSCustomObject]@{ Network = $_
 $NetworkSelection = Invoke-DfMenu -Objects $NetworkArray -MenuColumn Network -SelectionText "Select a Network" -ClearScreen:$true
 
 $Datastores = @(
-    "Storage1-NVMe"
-    "Storage1-SSD"
-    "Storage3-iSCSI"
+    "storage1-nvme"
+    "storage1-ssd"
+    "storage3-nfs"
 )
 $DatastoreArray = $Datastores | ForEach-Object { [PSCustomObject]@{ Datastore = $_ } }
 $DatastoreSelection = Invoke-DfMenu -Objects $DatastoreArray -MenuColumn Datastore -SelectionText "Select a Datastore" -ClearScreen:$true
-
-$vCenterFolders = @(
-    "DC1/EvOrigin/DCs"
-    "DC1/EvOrigin/Media Servers"
-    "DC1/EvOrigin/Workers"
-)
-$vCenterFolderArray = $vCenterFolders | ForEach-Object { [PSCustomObject]@{ vCenterFolder = $_ } }
-$vCenterFolderSelection = Invoke-DfMenu -Objects $vCenterFolderArray -MenuColumn vCenterFolder -SelectionText "Select a vCenter Folder" -ClearScreen:$true
 
 $OUs = @(
     "OU=Virtual Servers,DC=evorigin,DC=com"
@@ -64,6 +56,5 @@ $NewJsonContent = $NewJsonContent.Replace("[vCPUs]",$vCpuSelection.vCPUs)
 $NewJsonContent = $NewJsonContent.Replace("[RAM]",$RamSelection.RAM)
 $NewJsonContent = $NewJsonContent.Replace("[Network]",$NetworkSelection.Network)
 $NewJsonContent = $NewJsonContent.Replace("[Datastore]",$DatastoreSelection.Datastore)
-$NewJsonContent = $NewJsonContent.Replace("[vCenterFolderPath]",$vCenterFolderSelection.vCenterFolder)
 $NewJsonContent = $NewJsonContent.Replace("[OU]",$OuSelection.Ou)
 $NewJsonContent | Out-File "$githome\vmbuildfiles\V2\$VMName.json" -Force
