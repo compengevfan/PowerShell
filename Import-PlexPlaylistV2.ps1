@@ -45,8 +45,7 @@ foreach ($Entry in $Playlist) {
 }
 
 write-host "ratingKeys found: $($Tracks.Count)"
-Write-Debug "List of ratingKeys found:"
-Write-Debug $Tracks
+# Write-Debug "List of ratingKeys found: $Tracks"
 
 #Confirm before proceeding
 $Proceed = Read-Host "Proceed with creating playlist? (y/n)"
