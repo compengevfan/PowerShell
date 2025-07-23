@@ -48,8 +48,8 @@ write-host "List of ratingKeys found: $($Tracks.Count)"
 Write-Debug "Tracks found:"
 $Tracks
 
-$Proceed = Read-Host "Proceed with creating playlist? (Y/N)"
-if ($Proceed -ne 'Y') {
+$Proceed = Read-Host "Proceed with creating playlist? (y/n)"
+if ($Proceed -ne 'y') {
     Write-Host "Aborting playlist creation."
     return
 }
