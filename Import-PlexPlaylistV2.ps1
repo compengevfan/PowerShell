@@ -67,5 +67,5 @@ $PlaylistKey = $Response.MediaContainer.Playlist.ratingKey
 #Add the tracks to the playlist
 Write-Host "Adding tracks to playlist '$PlaylistName'"
 foreach ($Track in $Tracks) {
-    $Response = Invoke-PlexRequest -Method "Put" -Endpoint "/playlists/$PlaylistKey/items?uri=server://$MachineID/com.plexapp.plugins.library/library/metadata/$($Track.ratingKey)"
+    $Response = Invoke-PlexRequest -Method "Put" -Endpoint "/playlists/$PlaylistKey/items?uri=server://$MachineID/com.plexapp.plugins.library/library/metadata/$Track"
 }    
