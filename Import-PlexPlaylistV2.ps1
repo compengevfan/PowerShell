@@ -1,7 +1,7 @@
 [CmdletBinding()]
 Param(
     [Parameter(Mandatory = $true)] [string] $csvfile,
-    [Parameter(Mandatory = $true)] [string] $PlexUrl,
+    [Parameter(Mandatory = $true)] [string] $PlexServer,
     [Parameter(Mandatory = $true)] [string] $PlexToken
 )
 
@@ -16,7 +16,8 @@ function Invoke-PlexRequest {
         $headers.Add("Accept", "application/json")
         $headers.Add("Content-Type", "application/json")
     }
-    Invoke-RestMethod -Method $Method -Uri "$PlexUrl$Endpoint" -Headers $headers
+    $PlexURL = "http://" + $PlexServer + ":32400"
+    Invoke-RestMethod -Method $Method -Uri "$PlexURL$Endpoint" -Headers $headers
 }
 
 #Get data from the csv file
@@ -30,22 +31,16 @@ $MusicLibrary = Invoke-PlexRequest -Method "Get" -Endpoint "/library/sections/4/
 $Tracks = @()
 foreach ($Entry in $Playlist) {
     # Filter and extract ratingKeys
-    $matchingKeys = $MusicLibrary.MediaContainer.Metadata | Where-Object { $_.grandparentTitle -eq $Entry.artist -and $_.title -eq $Entry.song } | Select-Object -ExpandProperty ratingKey
+    $matchingKeys = $MusicLibrary.MediaContainer.Metadata | Where-Object { $_.grandparentTitle -eq $Entry.artist -and $_.title -eq $Entry.song -and $_.parentTitle -eq $Entry.album } | Select-Object -ExpandProperty ratingKey
 
-    if ($matchingKeys.count -eq 0) { Write-Host "No match found for artist '$($Entry.artist)' and song '$($Entry.song)'" }
+    if ($matchingKeys.count -eq 0) { Write-Host "No match found for artist '$($Entry.artist)' and song '$($Entry.song)' on '$($Entry.album)'"}
     if ($matchingKeys.count -gt 1) { Write-Host "Found $($matchingKeys.count) matches for artist '$($Entry.artist)' and song '$($Entry.song)'" }
 
-    # switch ($matchingKeys.count) {
-    #     0 { Write-Host "No match found for artist '$($Entry.artist)' and song '$($Entry.song)'" }
-    #     1 { Write-Host "Found 1 match for artist '$($Entry.artist)' and song '$($Entry.song)'" }
-    #     default { Write-Host "Found $($matchingKeys.count) matches for artist '$($Entry.artist)' and song '$($Entry.song)'" }
-    # }
-    
     # $Tracks += $matchingKeys
 }
 
-write-host "List of ratingKeys found: "
-$Tracks
+write-host "List of ratingKeys found: $($Tracks.Count)"
+# $Tracks
 # #Get the Machine ID
 # $Response = Invoke-PlexRequest -Method "Get" -Endpoint "/identity"
 # $MachineID = $Response.MediaContainer.MachineIdentifier
