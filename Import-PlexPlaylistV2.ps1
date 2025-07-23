@@ -35,8 +35,7 @@ foreach ($Entry in $Playlist) {
 
     if ($matchingKeys.count -eq 0) { Write-Host "No match found for artist '$($Entry.artist)' and song '$($Entry.song)' on '$($Entry.album)'"}
     if ($matchingKeys.count -gt 1) { Write-Host "Found $($matchingKeys.count) matches for artist '$($Entry.artist)' and song '$($Entry.song)'" }
-
-    # $Tracks += $matchingKeys
+    if ($matchingKeys.count -eq 1) { $Tracks += $matchingKeys }
 }
 
 write-host "List of ratingKeys found: $($Tracks.Count)"
