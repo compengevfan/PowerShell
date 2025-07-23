@@ -44,10 +44,11 @@ foreach ($Entry in $Playlist) {
     }
 }
 
-write-host "List of ratingKeys found: $($Tracks.Count)"
-Write-Debug "Tracks found:"
-$Tracks
+write-host "ratingKeys found: $($Tracks.Count)"
+Write-Debug "List of ratingKeys found:"
+Write-Debug $Tracks
 
+#Confirm before proceeding
 $Proceed = Read-Host "Proceed with creating playlist? (y/n)"
 if ($Proceed -ne 'y') {
     Write-Host "Aborting playlist creation."
