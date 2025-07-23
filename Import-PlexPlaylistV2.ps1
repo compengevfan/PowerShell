@@ -21,13 +21,16 @@ function Invoke-PlexRequest {
 }
 
 #Get data from the csv file
+Write-Host "Reading playlist from $csvfile"
 $Playlist = Import-Csv $csvfile
 $PlaylistName = (Split-Path $csvfile -Leaf).Split(".")[0]
 
 #Get all the music from plex
+Write-Host "Fetching music library from Plex server $PlexServer"
 $MusicLibrary = Invoke-PlexRequest -Method "Get" -Endpoint "/library/sections/4/all?type=10"
 
 #Find all the ratingKeys for the files
+Write-Host "Matching tracks from playlist to Plex library"
 $Tracks = @()
 foreach ($Entry in $Playlist) {
     # Filter and extract ratingKeys
@@ -35,20 +38,34 @@ foreach ($Entry in $Playlist) {
 
     if ($matchingKeys.count -eq 0) { Write-Host "No match found for artist '$($Entry.artist)' and song '$($Entry.song)' on '$($Entry.album)'"}
     if ($matchingKeys.count -gt 1) { Write-Host "Found $($matchingKeys.count) matches for artist '$($Entry.artist)' and song '$($Entry.song)'" }
-    if ($matchingKeys.count -eq 1) { $Tracks += $matchingKeys }
+    if ($matchingKeys.count -eq 1) { 
+        Write-Debug "ratingKey found for artist '$($Entry.artist)' and song '$($Entry.song)': $($matchingKeys[0])"
+        $Tracks += $matchingKeys
+    }
 }
 
 write-host "List of ratingKeys found: $($Tracks.Count)"
-# $Tracks
-# #Get the Machine ID
-# $Response = Invoke-PlexRequest -Method "Get" -Endpoint "/identity"
-# $MachineID = $Response.MediaContainer.MachineIdentifier
+Write-Debug "Tracks found:"
+$Tracks
 
-# #Create the playlist
-# $Response = Invoke-PlexRequest -Method "Post" -Endpoint "/playlists?type=audio&title=$PlaylistName&smart=0&uri=server://$MachineID/com.plexapp.plugins.library"
-# $PlaylistKey = $Response.MediaContainer.Playlist.ratingKey
+$Proceed = Read-Host "Proceed with creating playlist? (Y/N)"
+if ($Proceed -ne 'Y') {
+    Write-Host "Aborting playlist creation."
+    return
+}
 
-# #Add the tracks to the playlist
-# foreach ($Track in $Tracks) {
-#     $Response = Invoke-PlexRequest -Method "Put" -Endpoint "/playlists/$PlaylistKey/items?uri=server://$MachineID/com.plexapp.plugins.library/library/metadata/$($Track.ratingKey)"
-# }    
+#Get the Machine ID
+Write-Host "Fetching Machine ID from Plex server"
+$Response = Invoke-PlexRequest -Method "Get" -Endpoint "/identity"
+$MachineID = $Response.MediaContainer.MachineIdentifier
+
+#Create the playlist
+Write-Host "Creating playlist '$PlaylistName' on Plex server"
+$Response = Invoke-PlexRequest -Method "Post" -Endpoint "/playlists?type=audio&title=$PlaylistName&smart=0&uri=server://$MachineID/com.plexapp.plugins.library"
+$PlaylistKey = $Response.MediaContainer.Playlist.ratingKey
+
+#Add the tracks to the playlist
+Write-Host "Adding tracks to playlist '$PlaylistName'"
+foreach ($Track in $Tracks) {
+    $Response = Invoke-PlexRequest -Method "Put" -Endpoint "/playlists/$PlaylistKey/items?uri=server://$MachineID/com.plexapp.plugins.library/library/metadata/$($Track.ratingKey)"
+}    
