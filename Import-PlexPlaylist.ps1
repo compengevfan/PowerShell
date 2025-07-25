@@ -1,7 +1,7 @@
 [CmdletBinding()]
 Param(
     [Parameter(Mandatory = $true)] [string] $m3ufile,
-    [Parameter(Mandatory = $true)] [string] $PlexUrl,
+    [Parameter(Mandatory = $true)] [string] $PlexServer,
     [Parameter(Mandatory = $true)] [string] $PlexToken
 )
 
@@ -16,6 +16,7 @@ function Invoke-PlexRequest {
         $headers.Add("Accept", "application/json")
         $headers.Add("Content-Type", "application/json")
     }
+    $PlexURL = "http://" + $PlexServer + ":32400"
     Invoke-RestMethod -Method $Method -Uri "$PlexUrl$Endpoint" -Headers $headers
 }
 
