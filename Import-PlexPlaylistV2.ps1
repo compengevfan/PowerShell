@@ -22,7 +22,7 @@ function Invoke-PlexRequest {
 
 #Get data from the csv file
 Write-Host "Reading playlist from $csvfile"
-$Playlist = Import-Csv $csvfile
+$Playlist = Import-Csv "C:\Cloud\Dropbox\Music Playlists\$csvfile"
 $PlaylistName = (Split-Path $csvfile -Leaf).Split(".")[0]
 
 #Get all the music from plex
