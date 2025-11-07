@@ -455,3 +455,13 @@ Function Invoke-UserSetup {
         Write-Host $_
     }
 }
+
+Function Get-SnmpData {
+    [CmdletBinding()]
+    Param(
+        [Parameter(Mandatory = $true)] [string] $ServerName,
+        [Parameter(Mandatory = $true)] [string] $OIDFileName
+    )
+
+    
+}
