@@ -463,5 +463,7 @@ Function Get-SnmpData {
         [Parameter(Mandatory = $true)] [string] $OIDFileName
     )
 
+    $OIDs = Import-Csv ~./snmp_files/$OIDFileName
+
     
 }
