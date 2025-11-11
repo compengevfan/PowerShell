@@ -55,7 +55,7 @@ $storage1Data = [PSCustomObject]@{
     }
 }
 
-$storage1Data | ConvertTo-Json -Depth 3 | Set-Content -Path "storage1_data.json"
+$storage1Data | ConvertTo-Json -Depth 3 | Set-Content -Path "~/snmp_files/storage1_data.json"
 
 #Storage3
 #Volume1 - NFS
