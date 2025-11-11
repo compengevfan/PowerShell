@@ -4,7 +4,7 @@ Param(
 
 #Storage1
 #NVMe - NFS
-$Storage1_NVMe_Health = snmpget -v 2c -c public -Oqv storage1.evorigin.com .1.3.6.1.4.1.50536.1.1.1.1.3.4
+$Storage1_NVMe_Health = (snmpget -v 2c -c public -Oqv storage1.evorigin.com .1.3.6.1.4.1.50536.1.1.1.1.3.4).Replace('"','')
 $Storage1_NVMe_AvailableSpace = [int64](snmpget -v 2c -c public -Oqv storage1.evorigin.com .1.3.6.1.4.1.50536.1.2.1.1.4.4)
 $Storage1_NVMe_UsedSpace = [int64](snmpget -v 2c -c public -Oqv storage1.evorigin.com .1.3.6.1.4.1.50536.1.2.1.1.3.4)
 $Storage1_NVMe_UsedPercent = (($Storage1_NVMe_UsedSpace / ($Storage1_NVMe_AvailableSpace + $Storage1_NVMe_UsedSpace)) * 100)
