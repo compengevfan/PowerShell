@@ -557,5 +557,5 @@ Function Get-SnmpData {
         }
     }
 
-    $storageData | ConvertTo-Json -Depth 3 | Set-Content -Path "~/snmp_files/storage3_data.json"
+    $storage3Data | ConvertTo-Json -Depth 3 | Set-Content -Path "~/snmp_files/storage3_data.json"
 }
