@@ -486,6 +486,36 @@ Function Get-SnmpData {
     $Storage1_HDD2_UsedSpace = [int64](snmpget -v 2c -c public -Oqv storage1.evorigin.com .1.3.6.1.4.1.50536.1.2.1.1.3.3)
     $Storage1_HDD2_UsedPercent = (($Storage1_HDD2_UsedSpace / ($Storage1_HDD2_AvailableSpace + $Storage1_HDD2_UsedSpace)) * 100)
 
+    $storage1Data = [PSCustomObject]@{
+        Timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
+        NVMe = @{
+            Health = $Storage1_NVMe_Health
+            AvailableSpace = $Storage1_NVMe_AvailableSpace
+            UsedSpace = $Storage1_NVMe_UsedSpace
+            UsedPercent = [math]::Round($Storage1_NVMe_UsedPercent, 2)
+        }
+        SSD = @{
+            Health = $Storage1_SSD_Health
+            AvailableSpace = $Storage1_SSD_AvailableSpace
+            UsedSpace = $Storage1_SSD_UsedSpace
+            UsedPercent = [math]::Round($Storage1_SSD_UsedPercent, 2)
+        }
+        HDD = @{
+            Health = $Storage1_HDD_Health
+            AvailableSpace = $Storage1_HDD_AvailableSpace
+            UsedSpace = $Storage1_HDD_UsedSpace
+            UsedPercent = [math]::Round($Storage1_HDD_UsedPercent, 2)
+        }
+        HDD2 = @{
+            Health = $Storage1_HDD2_Health
+            AvailableSpace = $Storage1_HDD2_AvailableSpace
+            UsedSpace = $Storage1_HDD2_UsedSpace
+            UsedPercent = [math]::Round($Storage1_HDD2_UsedPercent, 2)
+        }
+    }
+
+    $storage1Data | ConvertTo-Json -Depth 3 | Set-Content -Path "storage1_data.json"
+
     #Storage3
     #Volume1 - NFS
     $Storage3_Vol1_Health = snmpget -v 2c -c public -Oqv storage3.evorigin.com .1.3.6.1.4.1.44738.5.1.1.4.1
@@ -504,4 +534,28 @@ Function Get-SnmpData {
     $Storage3_Vol3_TotalSize = [int64](snmpget -v 2c -c public -Oqv storage3.evorigin.com .1.3.6.1.4.1.44738.5.1.1.6.3)
     $Storage3_Vol3_FreeSize = [int64](snmpget -v 2c -c public -Oqv storage3.evorigin.com .1.3.6.1.4.1.44738.5.1.1.7.3)
     $Storage3_Vol3_UsedPercent = ((($Storage3_Vol3_TotalSize - $Storage3_Vol3_FreeSize) / $Storage3_Vol3_TotalSize) * 100)
+
+    $storage3Data = [PSCustomObject]@{
+        Timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
+        Volume1 = @{
+            Health = $Storage3_Vol1_Health
+            TotalSize = $Storage3_Vol1_TotalSize
+            FreeSize = $Storage3_Vol1_FreeSize
+            UsedPercent = [math]::Round($Storage3_Vol1_UsedPercent, 2)
+        }
+        Volume2 = @{
+            Health = $Storage3_Vol2_Health
+            TotalSize = $Storage3_Vol2_TotalSize
+            FreeSize = $Storage3_Vol2_FreeSize
+            UsedPercent = [math]::Round($Storage3_Vol2_UsedPercent, 2)
+        }
+        Volume3 = @{
+            Health = $Storage3_Vol3_Health
+            TotalSize = $Storage3_Vol3_TotalSize
+            FreeSize = $Storage3_Vol3_FreeSize
+            UsedPercent = [math]::Round($Storage3_Vol3_UsedPercent, 2)
+        }
+    }
+
+    $storageData | ConvertTo-Json -Depth 3 | Set-Content -Path "~/snmp_files/storage3_data.json"
 }
