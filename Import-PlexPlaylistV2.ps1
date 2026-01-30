@@ -34,7 +34,7 @@ Write-Host "Matching tracks from playlist to Plex library"
 $Tracks = @()
 foreach ($Entry in $Playlist) {
     # Filter and extract ratingKeys
-    if ($Entry.TrackNo -ne "") { $matchingKeys = $MusicLibrary.MediaContainer.Metadata | Where-Object { $_.grandparentTitle -eq $Entry.artist -and $_.title -eq $Entry.song -and $_.parentTitle -eq $Entry.album -and $_.index -eq $Entry.TrackNo } | Select-Object -ExpandProperty ratingKey }
+    if ($null -ne $Entry.TrackNo) { $matchingKeys = $MusicLibrary.MediaContainer.Metadata | Where-Object { $_.grandparentTitle -eq $Entry.artist -and $_.title -eq $Entry.song -and $_.parentTitle -eq $Entry.album -and $_.index -eq $Entry.TrackNo } | Select-Object -ExpandProperty ratingKey }
     else { $matchingKeys = $MusicLibrary.MediaContainer.Metadata | Where-Object { $_.grandparentTitle -eq $Entry.artist -and $_.title -eq $Entry.song -and $_.parentTitle -eq $Entry.album } | Select-Object -ExpandProperty ratingKey }
     $matchingKeys = $MusicLibrary.MediaContainer.Metadata | Where-Object { $_.grandparentTitle -eq $Entry.artist -and $_.title -eq $Entry.song -and $_.parentTitle -eq $Entry.album } | Select-Object -ExpandProperty ratingKey
 
