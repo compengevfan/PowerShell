@@ -19,11 +19,26 @@ function Invoke-ProxmoxRequest {
     Invoke-RestMethod -Method $Method -Uri "$ProxmoxUrl$Endpoint" -Headers $headers -SkipHeaderValidation
 }
 
-$ProxmoxNodes = Invoke-ProxmoxRequest -ProxmoxServer "pmx1.evorigin.com" -Method "GET" -Endpoint "/api2/json/nodes"
+$response = Invoke-ProxmoxRequest -ProxmoxServer "pmx1.evorigin.com" -Method "GET" -Endpoint "/api2/json/nodes"
+$ProxmoxNodes = $response.data
+$ProxmoxNodesSorted = $ProxmoxNodes | Sort-Object -Property mem
 
-foreach ($node in $ProxmoxNodes.data) {
-    write-host "Node: $($node.node)"
-}
+$leastMemNode = $ProxmoxNodesSorted[0]
+$mostMemNode  = $ProxmoxNodesSorted[-1]
+
+Write-Host "Least Memory Node: $($leastMemNode.node) with $([math]::Round($leastMemNode.mem / 1GB, 2)) GB used"
+Write-Host "Most Memory Node: $($mostMemNode.node) with $([math]::Round($mostMemNode.mem / 1GB, 2)) GB used"
+
+# #Figure out if balancing needs to occur
+# $Space1 = $HostMostUsed.MemoryUsageGB
+# $Space2 = $HostLeastUsed.MemoryUsageGB
+# $Diff = $Space1 - $Space2
+# if ($Diff -gt 4 -and $HostsToBalance.Count -gt 1) { $RunAgain = $true }
+# else
+# {
+#     $RunAgain = $false
+#     Write-Host ("Exiting script. Cluster is either balanced or only has 1 host")
+# }
 
 # $ScriptPath = $PSScriptRoot
 # Set-Location $ScriptPath
@@ -37,21 +52,11 @@ foreach ($node in $ProxmoxNodes.data) {
 # if (!(Get-Module -Name DupreeFunctions)) { Import-Module DupreeFunctions }
 # if (!(Test-Path .\~Logs)) { New-Item -Name "~Logs" -ItemType Directory | Out-Null }
 
-# $Cluster = Read-Host -Prompt ("Please enter the name of the cluster to be balanced")
-# #Retrieve hosts from cluster
-# $HostsToBalance = Get-Cluster $Cluster | Get-VMHost | Where-Object {$_.ConnectionState -eq "Connected"} | Sort-Object MemoryUsageGB
-# if ($null -ne $HostsToBalance) { Invoke-DfLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Balancing Cluster $Cluster..." }
-# else { Invoke-DfLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Err -LogString "$Cluster does not exist!!! Script Exiting!!!"; exit }
-
-# #Find datastore with least and most free space
-# $HostLeastUsed = $HostsToBalance | Select-Object -First 1
-# $HostMostUsed = $HostsToBalance | Select-Object -Last 1
-
 # #Figure out if balancing needs to occur
 # $Space1 = $HostMostUsed.MemoryUsageGB
 # $Space2 = $HostLeastUsed.MemoryUsageGB
 # $Diff = $Space1 - $Space2
-# if ($Diff -gt 8 -and $HostsToBalance.Count -gt 1) { $RunAgain = $true }
+# if ($Diff -gt 4 -and $HostsToBalance.Count -gt 1) { $RunAgain = $true }
 # else
 # {
 #     $RunAgain = $false
