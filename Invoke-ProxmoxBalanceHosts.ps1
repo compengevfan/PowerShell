@@ -19,7 +19,12 @@ function Invoke-ProxmoxRequest {
     Invoke-RestMethod -Method $Method -Uri "$ProxmoxUrl$Endpoint" -Headers $headers -SkipHeaderValidation
 }
 
-Invoke-ProxmoxRequest -ProxmoxServer "pmx1.evorigin.com" -Method "GET" -Endpoint "/api2/json/nodes"
+$ProxmoxNodes = Invoke-ProxmoxRequest -ProxmoxServer "pmx1.evorigin.com" -Method "GET" -Endpoint "/api2/json/nodes"
+
+foreach ($node in $ProxmoxNodes.data) {
+    write-host "Node: $($node.node)"
+}
+
 # $ScriptPath = $PSScriptRoot
 # Set-Location $ScriptPath
   
