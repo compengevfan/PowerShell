@@ -19,27 +19,6 @@ function Invoke-ProxmoxRequest {
     Invoke-RestMethod -Method $Method -Uri "$ProxmoxUrl$Endpoint" -Headers $headers -SkipHeaderValidation
 }
 
-$response = Invoke-ProxmoxRequest -ProxmoxServer "pmx1.evorigin.com" -Method "GET" -Endpoint "/api2/json/nodes"
-$ProxmoxNodes = $response.data
-$ProxmoxNodesSorted = $ProxmoxNodes | Sort-Object -Property mem
-
-$leastMemNode = $ProxmoxNodesSorted[0]
-$mostMemNode  = $ProxmoxNodesSorted[-1]
-
-Write-Host "Least Memory Node: $($leastMemNode.node) with $([math]::Round($leastMemNode.mem / 1GB, 2)) GB used"
-Write-Host "Most Memory Node: $($mostMemNode.node) with $([math]::Round($mostMemNode.mem / 1GB, 2)) GB used"
-
-# #Figure out if balancing needs to occur
-# $Space1 = $HostMostUsed.MemoryUsageGB
-# $Space2 = $HostLeastUsed.MemoryUsageGB
-# $Diff = $Space1 - $Space2
-# if ($Diff -gt 4 -and $HostsToBalance.Count -gt 1) { $RunAgain = $true }
-# else
-# {
-#     $RunAgain = $false
-#     Write-Host ("Exiting script. Cluster is either balanced or only has 1 host")
-# }
-
 # $ScriptPath = $PSScriptRoot
 # Set-Location $ScriptPath
   
@@ -52,42 +31,55 @@ Write-Host "Most Memory Node: $($mostMemNode.node) with $([math]::Round($mostMem
 # if (!(Get-Module -Name DupreeFunctions)) { Import-Module DupreeFunctions }
 # if (!(Test-Path .\~Logs)) { New-Item -Name "~Logs" -ItemType Directory | Out-Null }
 
-# #Figure out if balancing needs to occur
-# $Space1 = $HostMostUsed.MemoryUsageGB
-# $Space2 = $HostLeastUsed.MemoryUsageGB
-# $Diff = $Space1 - $Space2
-# if ($Diff -gt 4 -and $HostsToBalance.Count -gt 1) { $RunAgain = $true }
-# else
-# {
-#     $RunAgain = $false
-#     Write-Host ("Exiting script. Cluster is either balanced or only has 1 host")
-# }
+$response = Invoke-ProxmoxRequest -ProxmoxServer "pmx1.evorigin.com" -Method "GET" -Endpoint "/api2/json/nodes"
+$ProxmoxNodes = $response.data
+$ProxmoxNodesSorted = $ProxmoxNodes | Sort-Object -Property mem
 
-# while ($RunAgain)
-# {
-#     #Get list of VM on DS with least space and pick a random VM
-#     $SourceVMs = Get-VMHost $HostMostUsed | Get-VM | Where-Object { $_.PowerState -eq "PoweredOn" } | Sort-Object Name
-#     $SourceVMCount = $SourceVMs.Count
-#     $RandomNumber = Get-Random -Maximum $SourceVMCount
+$leastMemNode = $ProxmoxNodesSorted[0]
+$mostMemNode  = $ProxmoxNodesSorted[-1]
 
-#     $VMtoMove = $SourceVMs[$RandomNumber]
+Write-Host "Least Memory Node: $($leastMemNode.node) with $([math]::Round($leastMemNode.mem / 1GB, 2)) GB used"
+Write-Host "Most Memory Node: $($mostMemNode.node) with $([math]::Round($mostMemNode.mem / 1GB, 2)) GB used"
 
-#     Move-VM -VM $VMtoMove -Destination $HostLeastUsed.Name -Confirm:$false | Out-Null
-#     Invoke-DfLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Migrated $($VMtoMove.Name) from $($HostMostUsed.Name) to $($HostLeastUsed.Name)."
+#Figure out if balancing needs to occur
+$Space1 = $mostMemNode.mem
+$Space2 = $leastMemNode.mem
+$Diff = $Space1 - $Space2
+if ($Diff -gt 4294967296) { $RunAgain = $true }
+else
+{
+    $RunAgain = $false
+    Write-Host ("Exiting script. Cluster is balanced.")
+}
 
-#     $HostsToBalance = Get-Cluster $Cluster | Get-VMHost | Where-Object {$_.ConnectionState -eq "Connected"} | Sort-Object MemoryUsageGB
+while ($RunAgain)
+{
+    #Get list of VMs on host with most memory used and pick a random VM
+    $SourceVMs = (Invoke-ProxmoxRequest -ProxmoxServer "pmx1.evorigin.com" -Method "GET" -Endpoint "/api2/json/nodes/$($mostMemNode.node)/qemu").data | Where-Object { $_.status -eq "running" }
+    $RandomNumber = Get-Random -Maximum $($SourceVMs.Count)
 
-#     $HostLeastUsed = $HostsToBalance | Select-Object -First 1
-#     $HostMostUsed = $HostsToBalance | Select-Object -Last 1
+    $VMtoMove = $SourceVMs[$RandomNumber]
+    
+    Invoke-ProxmoxRequest -ProxmoxServer "pmx1.evorigin.com" -Method "Post" -Endpoint "/api2/json/nodes/$($mostMemNode.node)/qemu/$($VMtoMove.vmid)/migrate?target=$($leastMemNode.node)&online=1"
+    Write-Host "Migrated VM ID $($VMtoMove.vmid) from $($mostMemNode.node) to $($leastMemNode.node)."
 
-#     #Figure out if balancing needs to occur
-#     $Space1 = $HostMostUsed.MemoryUsageGB
-#     $Space2 = $HostLeastUsed.MemoryUsageGB
-#     $Diff = $Space1 - $Space2
-#     if ($Diff -lt 8)
-#     {
-#         $RunAgain = $false
-#         Invoke-DfLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Script complete. Cluster is now balanced."
-#         #Write-Host ("Script complete. Cluster is now balanced.")
-#     }
-# }
+    # Move-VM -VM $VMtoMove -Destination $HostLeastUsed.Name -Confirm:$false | Out-Null
+    # Invoke-DfLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Migrated $($VMtoMove.Name) from $($HostMostUsed.Name) to $($HostLeastUsed.Name)."
+
+    # $HostsToBalance = Get-Cluster $Cluster | Get-VMHost | Where-Object {$_.ConnectionState -eq "Connected"} | Sort-Object MemoryUsageGB
+
+    # $HostLeastUsed = $HostsToBalance | Select-Object -First 1
+    # $HostMostUsed = $HostsToBalance | Select-Object -Last 1
+
+    # #Figure out if balancing needs to occur
+    # $Space1 = $HostMostUsed.MemoryUsageGB
+    # $Space2 = $HostLeastUsed.MemoryUsageGB
+    # $Diff = $Space1 - $Space2
+    # if ($Diff -lt 8)
+    # {
+    #     $RunAgain = $false
+    #     Invoke-DfLogging -ScriptStarted $ScriptStarted -ScriptName $ScriptName -LogType Info -LogString "Script complete. Cluster is now balanced."
+    #     #Write-Host ("Script complete. Cluster is now balanced.")
+    # }
+    $RunAgain = $false
+}
