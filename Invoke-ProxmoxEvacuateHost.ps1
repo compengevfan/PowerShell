@@ -5,21 +5,20 @@ Param(
 
 function Invoke-ProxmoxRequest {
     param (
-        [string]$ProxmoxServer,
+        [string]$Server,
         [string]$Method,
         [string]$Endpoint
     )
     $headers = New-Object "System.Collections.Generic.Dictionary[[String],[String]]"
-    $headers.add("Authorization", "$ProxmoxToken")
-    if ($Method -eq "Get") {
-        $headers.Add("Accept", "*/*")
-        $headers.Add("Accept-Encoding", "gzip, deflate, br")
-    }
+    $headers.add('Authorization', $ProxmoxToken)
+    # if ($Method -eq "Get") {
+    #     $headers.Add("Accept", "application/json")
+    #     $headers.Add("Content-Type", "application/json")
+    # }
     $ProxmoxURL = "https://" + $ProxmoxServer + ":8006"
-    Invoke-RestMethod -Method $Method -Uri "$ProxmoxUrl$Endpoint" -Headers $headers -SkipHeaderValidation
+    Invoke-RestMethod -Method $Method -Uri "$ProxmoxUrl$Endpoint" -Headers $headers
 }
-
-Invoke-ProxmoxRequest -ProxmoxServer "pmx1.evorigin.com" -Method "GET" -Endpoint "/api2/json/nodes"
+ 
 # $ScriptPath = $PSScriptRoot
 # Set-Location $ScriptPath
   
