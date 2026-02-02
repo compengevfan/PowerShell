@@ -32,8 +32,8 @@ function Invoke-ProxmoxRequest {
 # if (!(Test-Path .\~Logs)) { New-Item -Name "~Logs" -ItemType Directory | Out-Null }
 
 #Determine if cluster needs balancing
-$response = Invoke-ProxmoxRequest -ProxmoxServer "pmx1.evorigin.com" -Method "GET" -Endpoint "/api2/json/nodes"
-$ProxmoxNodes = $response.data
+$clusterResponse = Invoke-ProxmoxRequest -ProxmoxServer "pmx1.evorigin.com" -Method "GET" -Endpoint "/api2/json/nodes"
+$ProxmoxNodes = $clusterResponse.data
 $ProxmoxNodesSorted = $ProxmoxNodes | Sort-Object -Property mem
 
 $leastMemNode = $ProxmoxNodesSorted[0]
@@ -60,8 +60,21 @@ while ($RunAgain)
 
     $VMtoMove = $SourceVMs[$RandomNumber]
     
-    Invoke-ProxmoxRequest -ProxmoxServer "pmx1.evorigin.com" -Method "Post" -Endpoint "/api2/json/nodes/$($mostMemNode.node)/qemu/$($VMtoMove.vmid)/migrate?target=$($leastMemNode.node)&online=1"
-    Write-Host "Migrated VM ID $($VMtoMove.vmid) from $($mostMemNode.node) to $($leastMemNode.node)."
+    Write-Host "Migrating VM ID $($VMtoMove.vmid) from $($mostMemNode.node) to $($leastMemNode.node)."
+    $migrateResponse = Invoke-ProxmoxRequest -ProxmoxServer "pmx1.evorigin.com" -Method "Post" -Endpoint "/api2/json/nodes/$($mostMemNode.node)/qemu/$($VMtoMove.vmid)/migrate?target=$($leastMemNode.node)&online=1"
+
+    Write-Host "Waiting for migration task to complete."
+    $migrationStatus = "notDone"
+    while ($migrationStatus -eq "notDone"){
+        Start-Sleep 5
+        $taskResponse = Invoke-ProxmoxRequest -ProxmoxServer "pmx1.evorigin.com" -Method "Get" -Endpoint "/api2/json/nodes/$($mostMemNode.node)/tasks/$($migrateResponse.data)/status"
+        if ( $taskResponse.data.status -eq "stopped" ) { $migrationStatus = "Done" }
+    }
+
+    if ($taskResponse.data.exitstatus -eq "OK") {Write-Host "VM migration completed successfully."}
+    else {Write-Host "VM migration encountered a problem. Exit status: $($taskResponse.data.exitstatus)" -ForegroundColor Red; throw}
+
+    Start-Sleep 5
 
     #Determine if cluster still needs balancing
     $response = Invoke-ProxmoxRequest -ProxmoxServer "pmx1.evorigin.com" -Method "GET" -Endpoint "/api2/json/nodes"
@@ -83,5 +96,5 @@ while ($RunAgain)
         $RunAgain = $false
         Write-Host ("Exiting script. Cluster is balanced.")
     }
-    $RunAgain = $false
+    # $RunAgain = $false
 }
