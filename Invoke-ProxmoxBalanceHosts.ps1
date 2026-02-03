@@ -5,9 +5,10 @@ Param(
 
 function Invoke-ProxmoxRequest {
     param (
-        [string]$ProxmoxServer,
-        [string]$Method,
-        [string]$Endpoint
+        [Parameter(Mandatory = $true)] [string]$ProxmoxServer,
+        [Parameter(Mandatory = $true)] [string]$ProxmoxToken,
+        [Parameter(Mandatory = $true)] [string]$Method,
+        [Parameter(Mandatory = $true)] [string]$Endpoint
     )
     $headers = New-Object "System.Collections.Generic.Dictionary[[String],[String]]"
     $headers.add("Authorization", "$ProxmoxToken")
@@ -37,7 +38,7 @@ $ProxmoxNodes = $clusterResponse.data
 $ProxmoxNodesSorted = $ProxmoxNodes | Sort-Object -Property mem
 
 $leastMemNode = $ProxmoxNodesSorted[0]
-$mostMemNode  = $ProxmoxNodesSorted[-1]
+$mostMemNode = $ProxmoxNodesSorted[-1]
 
 Write-Host "Least Memory Node: $($leastMemNode.node) with $([math]::Round($leastMemNode.mem / 1GB, 2)) GB used"
 Write-Host "Most Memory Node: $($mostMemNode.node) with $([math]::Round($mostMemNode.mem / 1GB, 2)) GB used"
@@ -46,14 +47,12 @@ $Space1 = $mostMemNode.mem
 $Space2 = $leastMemNode.mem
 $Diff = $Space1 - $Space2
 if ($Diff -gt 4294967296) { $RunAgain = $true }
-else
-{
+else {
     $RunAgain = $false
     Write-Host ("Exiting script. Cluster is balanced.")
 }
 
-while ($RunAgain)
-{
+while ($RunAgain) {
     #Get list of VMs on host with most memory used and pick a random VM
     $SourceVMs = (Invoke-ProxmoxRequest -ProxmoxServer "pmx1.evorigin.com" -Method "GET" -Endpoint "/api2/json/nodes/$($mostMemNode.node)/qemu").data | Where-Object { $_.status -eq "running" }
     $RandomNumber = Get-Random -Maximum $($SourceVMs.Count)
@@ -65,14 +64,14 @@ while ($RunAgain)
 
     Write-Host "Waiting for migration task to complete."
     $migrationStatus = "notDone"
-    while ($migrationStatus -eq "notDone"){
+    while ($migrationStatus -eq "notDone") {
         Start-Sleep 5
         $taskResponse = Invoke-ProxmoxRequest -ProxmoxServer "pmx1.evorigin.com" -Method "Get" -Endpoint "/api2/json/nodes/$($mostMemNode.node)/tasks/$($migrateResponse.data)/status"
         if ( $taskResponse.data.status -eq "stopped" ) { $migrationStatus = "Done" }
     }
 
-    if ($taskResponse.data.exitstatus -eq "OK") {Write-Host "VM migration completed successfully."}
-    else {Write-Host "VM migration encountered a problem. Exit status: $($taskResponse.data.exitstatus)" -ForegroundColor Red; throw}
+    if ($taskResponse.data.exitstatus -eq "OK") { Write-Host "VM migration completed successfully." }
+    else { Write-Host "VM migration encountered a problem. Exit status: $($taskResponse.data.exitstatus)" -ForegroundColor Red; throw }
 
     Start-Sleep 5
 
@@ -82,7 +81,7 @@ while ($RunAgain)
     $ProxmoxNodesSorted = $ProxmoxNodes | Sort-Object -Property mem
 
     $leastMemNode = $ProxmoxNodesSorted[0]
-    $mostMemNode  = $ProxmoxNodesSorted[-1]
+    $mostMemNode = $ProxmoxNodesSorted[-1]
 
     Write-Host "Least Memory Node: $($leastMemNode.node) with $([math]::Round($leastMemNode.mem / 1GB, 2)) GB used"
     Write-Host "Most Memory Node: $($mostMemNode.node) with $([math]::Round($mostMemNode.mem / 1GB, 2)) GB used"
@@ -91,8 +90,7 @@ while ($RunAgain)
     $Space2 = $leastMemNode.mem
     $Diff = $Space1 - $Space2
     if ($Diff -gt 4294967296) { $RunAgain = $true }
-    else
-    {
+    else {
         $RunAgain = $false
         Write-Host ("Exiting script. Cluster is balanced.")
     }
