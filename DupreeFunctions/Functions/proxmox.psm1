@@ -1,4 +1,4 @@
-function Invoke-ProxmoxRequest {
+function Invoke-DfProxmoxRequest {
     param (
         [Parameter(Mandatory = $true)] [string]$ProxmoxServer,
         [Parameter(Mandatory = $true)] [string]$ProxmoxToken,
@@ -15,7 +15,7 @@ function Invoke-ProxmoxRequest {
     Invoke-RestMethod -Method $Method -Uri "$ProxmoxUrl$Endpoint" -Headers $headers -SkipHeaderValidation
 }
 
-function Invoke-ProxmoxBalanceHosts {
+function Invoke-DfProxmoxBalanceHosts {
     [CmdletBinding()]
     Param(
         [Parameter(Mandatory = $true)] [string] $ProxmoxToken
@@ -34,7 +34,7 @@ function Invoke-ProxmoxBalanceHosts {
     # if (!(Test-Path .\~Logs)) { New-Item -Name "~Logs" -ItemType Directory | Out-Null }
 
     #Determine if cluster needs balancing
-    $clusterResponse = Invoke-ProxmoxRequest -ProxmoxServer "pmx1.evorigin.com" -Method "GET" -Endpoint "/api2/json/nodes"
+    $clusterResponse = Invoke-DfProxmoxRequest -ProxmoxServer "pmx1.evorigin.com" -ProxmoxToken $ProxmoxToken -Method "GET" -Endpoint "/api2/json/nodes"
     $ProxmoxNodes = $clusterResponse.data
     $ProxmoxNodesSorted = $ProxmoxNodes | Sort-Object -Property mem
 
@@ -55,19 +55,19 @@ function Invoke-ProxmoxBalanceHosts {
 
     while ($RunAgain) {
         #Get list of VMs on host with most memory used and pick a random VM
-        $SourceVMs = (Invoke-ProxmoxRequest -ProxmoxServer "pmx1.evorigin.com" -Method "GET" -Endpoint "/api2/json/nodes/$($mostMemNode.node)/qemu").data | Where-Object { $_.status -eq "running" }
+        $SourceVMs = (Invoke-DfProxmoxRequest -ProxmoxServer "pmx1.evorigin.com" -ProxmoxToken $ProxmoxToken -Method "GET" -Endpoint "/api2/json/nodes/$($mostMemNode.node)/qemu").data | Where-Object { $_.status -eq "running" }
         $RandomNumber = Get-Random -Maximum $($SourceVMs.Count)
 
         $VMtoMove = $SourceVMs[$RandomNumber]
         
         Write-Host "Migrating VM ID $($VMtoMove.vmid) from $($mostMemNode.node) to $($leastMemNode.node)."
-        $migrateResponse = Invoke-ProxmoxRequest -ProxmoxServer "pmx1.evorigin.com" -Method "Post" -Endpoint "/api2/json/nodes/$($mostMemNode.node)/qemu/$($VMtoMove.vmid)/migrate?target=$($leastMemNode.node)&online=1"
+        $migrateResponse = Invoke-DfProxmoxRequest -ProxmoxServer "pmx1.evorigin.com" -ProxmoxToken $ProxmoxToken -Method "Post" -Endpoint "/api2/json/nodes/$($mostMemNode.node)/qemu/$($VMtoMove.vmid)/migrate?target=$($leastMemNode.node)&online=1"
 
         Write-Host "Waiting for migration task to complete."
         $migrationStatus = "notDone"
         while ($migrationStatus -eq "notDone") {
             Start-Sleep 5
-            $taskResponse = Invoke-ProxmoxRequest -ProxmoxServer "pmx1.evorigin.com" -Method "Get" -Endpoint "/api2/json/nodes/$($mostMemNode.node)/tasks/$($migrateResponse.data)/status"
+            $taskResponse = Invoke-DfProxmoxRequest -ProxmoxServer "pmx1.evorigin.com" -ProxmoxToken $ProxmoxToken -Method "Get" -Endpoint "/api2/json/nodes/$($mostMemNode.node)/tasks/$($migrateResponse.data)/status"
             if ( $taskResponse.data.status -eq "stopped" ) { $migrationStatus = "Done" }
         }
 
@@ -77,7 +77,7 @@ function Invoke-ProxmoxBalanceHosts {
         Start-Sleep 5
 
         #Determine if cluster still needs balancing
-        $response = Invoke-ProxmoxRequest -ProxmoxServer "pmx1.evorigin.com" -Method "GET" -Endpoint "/api2/json/nodes"
+        $response = Invoke-DfProxmoxRequest -ProxmoxServer "pmx1.evorigin.com" -ProxmoxToken $ProxmoxToken -Method "GET" -Endpoint "/api2/json/nodes"
         $ProxmoxNodes = $response.data
         $ProxmoxNodesSorted = $ProxmoxNodes | Sort-Object -Property mem
 
@@ -97,4 +97,13 @@ function Invoke-ProxmoxBalanceHosts {
         }
         # $RunAgain = $false
     }
+}
+
+function Invoke-DfProxmoxEvacuateHost {
+    [CmdletBinding()]
+    Param(
+        [Parameter(Mandatory = $true)] [string] $ProxmoxToken
+    )
+
+    
 }
