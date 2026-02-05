@@ -1,7 +1,7 @@
 function Invoke-DfProxmoxSelectHost {
     param (
         )
-    $Hosts = @("pmx1", "pmx2", "pmx3")
+    $Hosts = @("pmx1.evorigin.com", "pmx2.evorigin.com", "pmx3.evorigin.com")
     $Found = $false
     while (-not $Found) {
         $RandomIndex = Get-Random -Maximum $Hosts.Count
