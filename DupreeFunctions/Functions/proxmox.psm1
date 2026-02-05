@@ -1,3 +1,15 @@
+function Invoke-DfProxmoxSelectHost {
+    param (
+        )
+    $Hosts = @("pmx1", "pmx2", "pmx3")
+    $Found = $false
+    while (-not $Found) {
+        $RandomIndex = Get-Random -Maximum $Hosts.Count
+        $Found = Test-Connection -ComputerName $Hosts[$RandomIndex] -Count 1 -Timeoutsecond 1 -Quiet
+    }
+    return $Hosts[$RandomIndex]
+}
+
 function Invoke-DfProxmoxRequest {
     param (
         [Parameter(Mandatory = $true)] [string]$ProxmoxServer,
@@ -32,11 +44,12 @@ function Invoke-DfProxmoxBalanceHosts {
     # if (!(Get-Module -ListAvailable -Name DupreeFunctions)) { Write-Host "'DupreeFunctions' module not available!!! Please check with Dupree!!! Script exiting!!!" -ForegroundColor Red; exit }
     # if (!(Get-Module -Name DupreeFunctions)) { Import-Module DupreeFunctions }
     # if (!(Test-Path .\~Logs)) { New-Item -Name "~Logs" -ItemType Directory | Out-Null }
+    $ProxmoxServer = Invoke-DfProxmoxSelectHost
     $balanced = $false
 
     while (!$balanced) {
         #Determine if cluster still needs balancing
-        $response = Invoke-DfProxmoxRequest -ProxmoxServer "pmx1.evorigin.com" -ProxmoxToken $ProxmoxToken -Method "GET" -Endpoint "/api2/json/nodes"
+        $response = Invoke-DfProxmoxRequest -ProxmoxServer $ProxmoxServer -ProxmoxToken $ProxmoxToken -Method "GET" -Endpoint "/api2/json/nodes"
         $ProxmoxNodes = $response.data
         $ProxmoxNodesSorted = $ProxmoxNodes | Sort-Object -Property mem
 
@@ -85,9 +98,10 @@ function Invoke-DfProxmoxEvacuateHost {
         [Parameter(Mandatory = $true)][ValidateSet("pmx1", "pmx2", "pmx3")] [string] $HostToDrain,
         [Parameter(Mandatory = $true)] [string] $ProxmoxToken
     )
+    $ProxmoxServer = Invoke-DfProxmoxSelectHost
 
-    $VMsToMigrate = (Invoke-DfProxmoxRequest -ProxmoxServer "pmx1.evorigin.com" -ProxmoxToken $ProxmoxToken -Method "GET" -Endpoint "/api2/json/nodes/$HostToDrain/qemu").data | Where-Object { $_.status -eq "running" }
-    $MigrationTargets = (Invoke-DfProxmoxRequest -ProxmoxServer "pmx1.evorigin.com" -ProxmoxToken $ProxmoxToken -Method "GET" -Endpoint "/api2/json/nodes").data | Where-Object { $_.node -ne $HostToDrain }
+    $VMsToMigrate = (Invoke-DfProxmoxRequest -ProxmoxServer $ProxmoxServer -ProxmoxToken $ProxmoxToken -Method "GET" -Endpoint "/api2/json/nodes/$HostToDrain/qemu").data | Where-Object { $_.status -eq "running" }
+    $MigrationTargets = (Invoke-DfProxmoxRequest -ProxmoxServer $ProxmoxServer -ProxmoxToken $ProxmoxToken -Method "GET" -Endpoint "/api2/json/nodes").data | Where-Object { $_.node -ne $HostToDrain }
 
     foreach ($VM in $VMsToMigrate) {
         #Select target with most free memory
