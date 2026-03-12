@@ -5,18 +5,18 @@ Param(
 
 #Requires -Version 7
 
-$timeStamp = Get-Date -Format "yyyy-MM-dd-HH-mm-ss"
+# $timeStamp = Get-Date -Format "yyyy-MM-dd-HH-mm-ss"
 
-#Determine Paths
-if ($IsLinux) {
-    $gitRoot = Get-Item -Path "~/git"
-    $clusterPath = Get-Item -Path "~/git/k8s/clusterinstall/$clusterToDeploy"
-    $deployPath = New-Item -Path "~/k8s-deploy" -Name "$timeStamp" -ItemType "directory"
+#Verify Prerequisites
+#Ensure vault token cred file exists
+
+#Setup cluster install folder and copy generic yaml file
+$genericYamlFile = Get-Item -Path "/root/git/okd/clusterinstall/install-config.yaml"
+if (Test-Path "/root/$clusterToDeploy-install") {
+    Remove-Item -Path "/root/$clusterToDeploy-install" -Recurse -Force
 }
-if ($IsWindows) {
-    $gitRoot = Get-Item -Path "C:\Git"
-    $clusterPath = Get-Item -Path "C:/Git/k8s/clusterinstall/$clusterToDeploy"
-}
+$deployPath = New-Item -Path "/root" -Name "$clusterToDeploy-install" -ItemType "directory"
+Copy-Item $genericYamlFile "/root/$clusterToDeploy-install"
 
 #Get Info From Vault
 #Set Common Info
