@@ -11,12 +11,12 @@ Param(
 #Ensure vault token cred file exists
 
 #Setup cluster install folder and copy generic yaml file
-$genericYamlFile = Get-Item -Path "/root/git/okd/clusterinstall/install-config.yaml"
-if (Test-Path "/root/$clusterToDeploy-install") {
-    Remove-Item -Path "/root/$clusterToDeploy-install" -Recurse -Force
+$genericYamlFile = Get-Item -Path "~/git/okd/clusterinstall/install-config.yaml"
+if (Test-Path "~/$clusterToDeploy-install") {
+    Remove-Item -Path "~/$clusterToDeploy-install" -Recurse -Force
 }
-$deployPath = New-Item -Path "/root" -Name "$clusterToDeploy-install" -ItemType "directory"
-Copy-Item $genericYamlFile "/root/$clusterToDeploy-install"
+$deployPath = New-Item -Path "~" -Name "$clusterToDeploy-install" -ItemType "directory"
+Copy-Item $genericYamlFile "~/$clusterToDeploy-install"
 
 #Get Info From Vault
 #Set Common Info
