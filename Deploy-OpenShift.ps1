@@ -16,33 +16,36 @@ if (Test-Path "~/$clusterToDeploy-install") {
     Remove-Item -Path "~/$clusterToDeploy-install" -Recurse -Force
 }
 $deployPath = New-Item -Path "~" -Name "$clusterToDeploy-install" -ItemType "directory"
-Copy-Item $genericYamlFile "~/$clusterToDeploy-install"
+Copy-Item $genericYamlFile $deployPath
 
 #Get Info From Vault
 #Set Common Info
-$vaultCred = Import-Clixml ~/credentials/vaulttoken.xml
-$apiToken = $vaultCred.GetNetworkCredential().Password
+Import-DfCredentials
+$apiToken = $Credvaulttoken.GetNetworkCredential().Password
 $header = @{"X-Vault-Token"="$apiToken"}
-#Get vCenter secrets
-$uriVcenter = "https://vault.evorigin.com:8200/v1/homelabsecrets/data/vmware/vcenter"
-$resultsVcenter = Invoke-RestMethod -Uri $uriVcenter -Method Get -Headers $header
-#Get k8s secrets
-$uriK8s = "https://vault.evorigin.com:8200/v1/homelabsecrets/data/k8s/install"
-$resultsK8s = Invoke-RestMethod -Uri $uriK8s -Method Get -Headers $header
-
-#Modify install-config.yaml file
-Copy-Item $clusterPath/install-config.yaml $deployPath/install-config.yaml -Force
+#Get Proxmox secrets
+$uriProxmox = "https://vault.evorigin.com:8200/v1/HomeLabSecrets/data/proxmox/root"
+$resultsProxmox = Invoke-RestMethod -Uri $uriProxmox -Method Get -Headers $header -SkipCertificateCheck
+#Get okd secrets
+$uriK8s = "https://vault.evorigin.com:8200/v1/HomeLabSecrets/data/okd/install"
+$resultsK8s = Invoke-RestMethod -Uri $uriK8s -Method Get -Headers $header -SkipCertificateCheck
 
 $installContent = Get-Content $deployPath/install-config.yaml
-$installContent = $installContent.Replace("[vcenterserver]",$resultsVcenter.data.data.servername)
-$installContent = $installContent.Replace("[vcenterpassword]",$resultsVcenter.data.data.password)
-$installContent = $installContent.Replace("[vcenteruser]",$resultsVcenter.data.data.domain + "\" + $resultsVcenter.data.data.username)
 $installContent = $installContent.Replace("[pullsecret]",$resultsK8s.data.data.pullSecret)
-$installContent = $installContent.Replace("[sshkey]",$resultsK8s.data.data.sshKey)
+$installContent = $installContent.Replace("[sshkey]",$resultsK8s.data.data.sshKey_public)
 Set-Content -Value $installContent -Path $deployPath/install-config.yaml -Force
 
-#Create Cluster
-openshift-install create cluster --dir $deployPath --log-level=debug
+#Create Manifests
+openshift-install create manifests --dir="$deployPath"
+Start-Sleep 5
+
+#Create Ignition Files
+openshift-install create ignition-configs --dir="$deployPath"
+Start-Sleep 5
+
+# Copy the SCOS ISO to the install folder
+Copy-Item ~/scos*.iso $deployPath/scos-original.iso
+Start-Sleep 5
 
 #Install Root CA and Replace Default Ingress Cert
 $success = Read-Host "Was cluster creation successful? (y|n)"
