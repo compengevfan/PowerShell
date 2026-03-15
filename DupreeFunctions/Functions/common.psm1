@@ -56,7 +56,8 @@ Function Import-DfDupreeFunctionsClean {
         }
         "Git" { 
             Write-Host "Importing DupreeFunctions From Git Location"
-            Import-Module $githome\PowerShell\DupreeFunctions\DupreeFunctions.psd1 -Global -force 
+            if ($IsWindows) { Import-Module C:\Git\PowerShell\DupreeFunctions\DupreeFunctions.psd1 -Global -force  }
+            else { Import-Module "/root/git/PowerShell/DupreeFunctions/DupreeFunctions.psd1" -Global -force }
         }
         Default { Write-Host "Something unexpected happened." }
     }
