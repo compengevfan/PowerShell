@@ -25,7 +25,7 @@ function Invoke-DfProxmoxRequest {
         $headers.Add("Accept-Encoding", "gzip, deflate, br")
     }
     $ProxmoxURL = "https://" + $ProxmoxServer + ":8006"
-    Invoke-RestMethod -Method $Method -Uri "$ProxmoxUrl$Endpoint" -Headers $headers -Body $Body -SkipHeaderValidation
+    Invoke-RestMethod -Method $Method -Uri "$ProxmoxUrl$Endpoint" -Headers $headers -Body $Body -SkipHeaderValidation -SkipCertificateCheck
 }
 
 function Invoke-DfProxmoxBalanceHosts {
