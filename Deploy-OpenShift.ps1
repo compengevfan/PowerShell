@@ -26,8 +26,23 @@ Import-DfCredentials
 $apiToken = $Credvaulttoken.GetNetworkCredential().Password
 $header = @{"X-Vault-Token"="$apiToken"}
 #Get Proxmox secrets
+#Root
 $uriProxmox = "https://vault.evorigin.com:8200/v1/HomeLabSecrets/data/proxmox/root"
-$resultsProxmox = Invoke-RestMethod -Uri $uriProxmox -Method Get -Headers $header -SkipCertificateCheck
+$resultsProxmoxRoot = Invoke-RestMethod -Uri $uriProxmox -Method Get -Headers $header -SkipCertificateCheck
+#Create Proxmox Token
+$proxmoxToken = "PVEAPIToken=$($resultsProxmoxRoot.data.data.apitokenid)=$($resultsProxmoxRoot.data.data.apisecret)"
+#Bootstrap VM info
+$uriProxmox = "https://vault.evorigin.com:8200/v1/HomeLabSecrets/data/okd/vms/okd-$clusterToDeploy-bs1"
+$resultsProxmoxBs = Invoke-RestMethod -Uri $uriProxmox -Method Get -Headers $header -SkipCertificateCheck
+#Control Plane VM Info
+$uriProxmox = "https://vault.evorigin.com:8200/v1/HomeLabSecrets/data/okd/vms/okd-$clusterToDeploy-cp1"
+$resultsProxmoxCp = Invoke-RestMethod -Uri $uriProxmox -Method Get -Headers $header -SkipCertificateCheck
+#Worker1 VM Info
+$uriProxmox = "https://vault.evorigin.com:8200/v1/HomeLabSecrets/data/okd/vms/okd-$clusterToDeploy-wk1"
+$resultsProxmoxWk1 = Invoke-RestMethod -Uri $uriProxmox -Method Get -Headers $header -SkipCertificateCheck
+#Worker2 VM Info
+$uriProxmox = "https://vault.evorigin.com:8200/v1/HomeLabSecrets/data/okd/vms/okd-$clusterToDeploy-wk1"
+$resultsProxmoxWk2 = Invoke-RestMethod -Uri $uriProxmox -Method Get -Headers $header -SkipCertificateCheck
 #Get okd secrets
 $uriK8s = "https://vault.evorigin.com:8200/v1/HomeLabSecrets/data/okd/install"
 $resultsK8s = Invoke-RestMethod -Uri $uriK8s -Method Get -Headers $header -SkipCertificateCheck
@@ -49,6 +64,32 @@ Start-Sleep 5
 # Copy the SCOS ISO to the install folder
 Copy-Item ~/scos*.iso $deployPath/scos-original.iso
 Start-Sleep 5
+
+#Shutdown and Delete VMs if they exist
+$allVms = Invoke-DfProxmoxRequest -ProxmoxServer "pmx1.evorigin.com" -ProxmoxToken $proxmoxToken -Method "GET" -Endpoint "/api2/json/cluster/resources?type=vm"
+$clusterVms = $allVms.data | Where-Object {$_.name -like "*$clusterToDeploy*"}
+foreach ($Vm in $clusterVms) {
+    if ($Vm.status -eq "running") { 
+        Invoke-DfProxmoxRequest -ProxmoxServer "pmx1.evorigin.com" -ProxmoxToken $proxmoxToken -Method "POST" -Endpoint "/api2/json/nodes/$($Vm.node)/qemu/$($Vm.vmid)/status/stop"
+        while ($Check.data.status -ne "stopped") {start-sleep 10; $Check = Invoke-DfProxmoxRequest -ProxmoxServer "pmx1.evorigin.com" -ProxmoxToken $proxmoxToken -Method "GET" -Endpoint "/api2/json/nodes/$($Vm.node)/qemu/$($Vm.vmid)/status/current" } 
+    }
+    Invoke-DfProxmoxRequest -ProxmoxServer "pmx1.evorigin.com" -ProxmoxToken $proxmoxToken -Method "DELETE" -Endpoint "/api2/json/nodes/$($Vm.node)/qemu/$($Vm.vmid)"
+}
+
+#Inject ignition files
+Set-Location $deployPath
+podman run --privileged --rm -v .:/data -w /data quay.io/coreos/coreos-installer:release iso customize --dest-device /dev/sda --dest-ignition bootstrap.ign -o scos-bootstrap.iso scos-original.iso
+podman run --privileged --rm -v .:/data -w /data quay.io/coreos/coreos-installer:release iso customize --dest-device /dev/sda --dest-ignition master.ign -o scos-master.iso scos-original.iso
+podman run --privileged --rm -v .:/data -w /data quay.io/coreos/coreos-installer:release iso customize --dest-device /dev/sda --dest-ignition worker.ign -o scos-worker.iso scos-original.iso
+Set-Location /root
+
+#Create New VMs
+$nextVmid = Invoke-DfProxmoxRequest -ProxmoxServer "pmx1.evorigin.com" -ProxmoxToken $proxmoxToken -Method "GET" -Endpoint "/api2/json/cluster/nextid"
+$PutBody = @{"vmid" = "$nextVmid";"node" = "$resultsProxmoxBs.data.data.host"}
+$bootstrapVm = Invoke-DfProxmoxRequest -ProxmoxServer "pmx1.evorigin.com" -ProxmoxToken $proxmoxToken -Method "POST" -Body $PutBody -Endpoint "/api2/json/nodes/$($resultsProxmoxBs.data.data.host)/qemu"
+$controlPlaneVm = Invoke-DfProxmoxRequest -ProxmoxServer "pmx1.evorigin.com" -ProxmoxToken $proxmoxToken -Method "POST" -Endpoint "/api2/json/nodes/$($resultsProxmoxCp.data.data.host)/qemu"
+$worker1Vm = Invoke-DfProxmoxRequest -ProxmoxServer "pmx1.evorigin.com" -ProxmoxToken $proxmoxToken -Method "POST" -Endpoint "/api2/json/nodes/$($resultsProxmoxWk1.data.data.host)/qemu"
+$worker2Vm = Invoke-DfProxmoxRequest -ProxmoxServer "pmx1.evorigin.com" -ProxmoxToken $proxmoxToken -Method "POST" -Endpoint "/api2/json/nodes/$($resultsProxmoxWk2.data.data.host)/qemu"
 
 #Install Root CA and Replace Default Ingress Cert
 $success = Read-Host "Was cluster creation successful? (y|n)"

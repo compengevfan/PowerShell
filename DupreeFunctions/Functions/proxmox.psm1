@@ -15,6 +15,7 @@ function Invoke-DfProxmoxRequest {
         [Parameter(Mandatory = $true)] [string]$ProxmoxServer,
         [Parameter(Mandatory = $true)] [string]$ProxmoxToken,
         [Parameter(Mandatory = $true)] [string]$Method,
+        [Parameter(Mandatory = $true)] [string]$Body,
         [Parameter(Mandatory = $true)] [string]$Endpoint
     )
     $headers = New-Object "System.Collections.Generic.Dictionary[[String],[String]]"
@@ -24,7 +25,7 @@ function Invoke-DfProxmoxRequest {
         $headers.Add("Accept-Encoding", "gzip, deflate, br")
     }
     $ProxmoxURL = "https://" + $ProxmoxServer + ":8006"
-    Invoke-RestMethod -Method $Method -Uri "$ProxmoxUrl$Endpoint" -Headers $headers -SkipHeaderValidation
+    Invoke-RestMethod -Method $Method -Uri "$ProxmoxUrl$Endpoint" -Headers $headers -Body $Body -SkipHeaderValidation
 }
 
 function Invoke-DfProxmoxBalanceHosts {
