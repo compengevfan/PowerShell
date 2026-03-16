@@ -85,7 +85,19 @@ Set-Location /root
 
 #Create New VMs
 $nextVmid = Invoke-DfProxmoxRequest -ProxmoxServer "pmx1.evorigin.com" -ProxmoxToken $proxmoxToken -Method "GET" -Endpoint "/api2/json/cluster/nextid"
-$PutBody = @{"vmid" = "$($nextVmid.data)";"node" = "$($resultsProxmoxBs.data.data.host)"}
+$PutBody = @{
+    vmid=$nextVmid
+    node="pmx1"
+    name="okd-$clusterToDeploy-bs1"
+    ostype="l26"
+    machine="q35"
+    bios="ovmf"
+    scsihw="virtio-scsi-pci"
+    agent=1
+    cores=4
+    memory=16384
+    ide2="ISOs_Linux:iso/scos-bootstrap.iso,media=cdrom"
+}
 $bootstrapVm = Invoke-DfProxmoxRequest -ProxmoxServer "pmx1.evorigin.com" -ProxmoxToken $proxmoxToken -Method "POST" -Body $PutBody -Endpoint "/api2/json/nodes/$($resultsProxmoxBs.data.data.host)/qemu"
 $controlPlaneVm = Invoke-DfProxmoxRequest -ProxmoxServer "pmx1.evorigin.com" -ProxmoxToken $proxmoxToken -Method "POST" -Endpoint "/api2/json/nodes/$($resultsProxmoxCp.data.data.host)/qemu"
 $worker1Vm = Invoke-DfProxmoxRequest -ProxmoxServer "pmx1.evorigin.com" -ProxmoxToken $proxmoxToken -Method "POST" -Endpoint "/api2/json/nodes/$($resultsProxmoxWk1.data.data.host)/qemu"

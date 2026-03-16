@@ -15,7 +15,7 @@ function Invoke-DfProxmoxRequest {
         [Parameter(Mandatory = $true)] [string]$ProxmoxServer,
         [Parameter(Mandatory = $true)] [string]$ProxmoxToken,
         [Parameter(Mandatory = $true)] [string]$Method,
-        [Parameter] $Body,
+        [Parameter] [object] $Body,
         [Parameter(Mandatory = $true)] [string]$Endpoint
     )
     $headers = New-Object "System.Collections.Generic.Dictionary[[String],[String]]"
