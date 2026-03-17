@@ -143,6 +143,6 @@ function Wait-DfProxmoxTask {
         if ( $taskResponse.data.status -eq "stopped" ) { $taskStatus = "Done" }
     }
 
-    if ($taskResponse.data.exitstatus -eq "OK") { Write-Host "VM migration completed successfully." }
-    else { Write-Host "VM migration encountered a problem. Exit status: $($taskResponse.data.exitstatus)" -ForegroundColor Red; throw }
+    if ($taskResponse.data.exitstatus -eq "OK") { Write-Host "Task completed successfully." }
+    else { Write-Host "Task encountered a problem. Exit status: $($taskResponse.data.exitstatus)" -ForegroundColor Red; throw }
 }
