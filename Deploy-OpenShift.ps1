@@ -108,6 +108,7 @@ Remove-Variable PutBody
 Wait-DfProxmoxTask -proxmoxTask $bootstrapVm -proxmoxToken $proxmoxToken
 
 #Control Plane
+Start-Sleep 30
 $nextVmid = Invoke-DfProxmoxRequest -ProxmoxServer "pmx1.evorigin.com" -ProxmoxToken $proxmoxToken -Method "GET" -Endpoint "/api2/json/cluster/nextid"
 $PutBody = @{
     vmid        =$($nextVmid.data)
@@ -129,6 +130,7 @@ Remove-Variable PutBody
 Wait-DfProxmoxTask -proxmoxTask $controlPlaneVm -proxmoxToken $proxmoxToken
 
 #Worker1
+Start-Sleep 30
 $nextVmid = Invoke-DfProxmoxRequest -ProxmoxServer "pmx1.evorigin.com" -ProxmoxToken $proxmoxToken -Method "GET" -Endpoint "/api2/json/cluster/nextid"
 $PutBody = @{
     vmid        =$($nextVmid.data)
@@ -142,7 +144,7 @@ $PutBody = @{
     cores       =4
     memory      =16384
     ide2        ="ISOs_Linux:iso/scos-worker.iso,media=cdrom"
-    scsi0       ="local-nvme:120,format=raw,ssd=0,backup=0"
+    scsi0       ="storage1-nvme:120,format=raw,ssd=0,backup=0"
     net0        ="model=virtio,bridge=vmbr0,firewall=0,macaddr=$($resultsProxmoxWk1.data.data.mac)"
 }
 $worker1Vm = Invoke-DfProxmoxRequest -ProxmoxServer "pmx1.evorigin.com" -ProxmoxToken $proxmoxToken -Method "POST" -Endpoint "/api2/json/nodes/$($resultsProxmoxWk1.data.data.host)/qemu"
@@ -150,6 +152,7 @@ Remove-Variable PutBody
 Wait-DfProxmoxTask -proxmoxTask $worker1Vm -proxmoxToken $proxmoxToken
 
 #Worker2
+Start-Sleep 30
 $nextVmid = Invoke-DfProxmoxRequest -ProxmoxServer "pmx1.evorigin.com" -ProxmoxToken $proxmoxToken -Method "GET" -Endpoint "/api2/json/cluster/nextid"
 $PutBody = @{
     vmid        =$($nextVmid.data)
@@ -163,7 +166,7 @@ $PutBody = @{
     cores       =4
     memory      =16384
     ide2        ="ISOs_Linux:iso/scos-worker.iso,media=cdrom"
-    scsi0       ="local-nvme:120,format=raw,ssd=0,backup=0"
+    scsi0       ="storage1-nvme:120,format=raw,ssd=0,backup=0"
     net0        ="model=virtio,bridge=vmbr0,firewall=0,macaddr=$($resultsProxmoxWk2.data.data.mac)"
 }
 $worker2Vm = Invoke-DfProxmoxRequest -ProxmoxServer "pmx1.evorigin.com" -ProxmoxToken $proxmoxToken -Method "POST" -Endpoint "/api2/json/nodes/$($resultsProxmoxWk2.data.data.host)/qemu"
