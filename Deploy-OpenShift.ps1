@@ -84,6 +84,7 @@ podman run --privileged --rm -v .:/data -w /data quay.io/coreos/coreos-installer
 Set-Location /root
 
 #Create New VMs
+#Bootstrap
 $nextVmid = Invoke-DfProxmoxRequest -ProxmoxServer "pmx1.evorigin.com" -ProxmoxToken $proxmoxToken -Method "GET" -Endpoint "/api2/json/cluster/nextid"
 $PutBody = @{
     vmid        =$($nextVmid.data)
@@ -97,12 +98,72 @@ $PutBody = @{
     cores       =4
     memory      =16384
     ide2        ="ISOs_Linux:iso/scos-bootstrap.iso,media=cdrom"
+    scsi0       ="local-nvme:120,format=raw,ssd=1,backup=0"
+    net0        ="model=virtio,bridge=vmbr0,firewall=0,macaddr=$($resultsProxmoxBs.data.data.mac)"
 }
 $bootstrapVm = Invoke-DfProxmoxRequest -ProxmoxServer "pmx1.evorigin.com" -ProxmoxToken $proxmoxToken -Method "POST" -Body $PutBody -Endpoint "/api2/json/nodes/$($resultsProxmoxBs.data.data.host)/qemu"
 Remove-Variable PutBody
+Wait-DfProxmoxTask -proxmoxTask $bootstrapVm -proxmoxToken $proxmoxToken
+
+#Control Plane
+$nextVmid = Invoke-DfProxmoxRequest -ProxmoxServer "pmx1.evorigin.com" -ProxmoxToken $proxmoxToken -Method "GET" -Endpoint "/api2/json/cluster/nextid"
+$PutBody = @{
+    vmid        =$($nextVmid.data)
+    node        ="pmx1"
+    name        ="okd-$clusterToDeploy-cp1"
+    ostype      ="l26"
+    machine     ="q35"
+    bios        ="ovmf"
+    scsihw      ="virtio-scsi-pci"
+    agent       =1
+    cores       =4
+    memory      =16384
+    ide2        ="ISOs_Linux:iso/scos-master.iso,media=cdrom"
+    scsi0       ="local-nvme:120,format=raw,ssd=1,backup=0"
+    net0        ="model=virtio,bridge=vmbr0,firewall=0,macaddr=$($resultsProxmoxCp.data.data.mac)"
+}
 $controlPlaneVm = Invoke-DfProxmoxRequest -ProxmoxServer "pmx1.evorigin.com" -ProxmoxToken $proxmoxToken -Method "POST" -Endpoint "/api2/json/nodes/$($resultsProxmoxCp.data.data.host)/qemu"
+Remove-Variable PutBody
+
+#Worker1
+$nextVmid = Invoke-DfProxmoxRequest -ProxmoxServer "pmx1.evorigin.com" -ProxmoxToken $proxmoxToken -Method "GET" -Endpoint "/api2/json/cluster/nextid"
+$PutBody = @{
+    vmid        =$($nextVmid.data)
+    node        ="pmx1"
+    name        ="okd-$clusterToDeploy-wk1"
+    ostype      ="l26"
+    machine     ="q35"
+    bios        ="ovmf"
+    scsihw      ="virtio-scsi-pci"
+    agent       =1
+    cores       =4
+    memory      =16384
+    ide2        ="ISOs_Linux:iso/scos-worker.iso,media=cdrom"
+    scsi0       ="local-nvme:120,format=raw,ssd=1,backup=0"
+    net0        ="model=virtio,bridge=vmbr0,firewall=0,macaddr=$($resultsProxmoxWk1.data.data.mac)"
+}
 $worker1Vm = Invoke-DfProxmoxRequest -ProxmoxServer "pmx1.evorigin.com" -ProxmoxToken $proxmoxToken -Method "POST" -Endpoint "/api2/json/nodes/$($resultsProxmoxWk1.data.data.host)/qemu"
+Remove-Variable PutBody
+
+#Worker2
+$nextVmid = Invoke-DfProxmoxRequest -ProxmoxServer "pmx1.evorigin.com" -ProxmoxToken $proxmoxToken -Method "GET" -Endpoint "/api2/json/cluster/nextid"
+$PutBody = @{
+    vmid        =$($nextVmid.data)
+    node        ="pmx1"
+    name        ="okd-$clusterToDeploy-wk2"
+    ostype      ="l26"
+    machine     ="q35"
+    bios        ="ovmf"
+    scsihw      ="virtio-scsi-pci"
+    agent       =1
+    cores       =4
+    memory      =16384
+    ide2        ="ISOs_Linux:iso/scos-worker.iso,media=cdrom"
+    scsi0       ="local-nvme:120,format=raw,ssd=1,backup=0"
+    net0        ="model=virtio,bridge=vmbr0,firewall=0,macaddr=$($resultsProxmoxWk2.data.data.mac)"
+}
 $worker2Vm = Invoke-DfProxmoxRequest -ProxmoxServer "pmx1.evorigin.com" -ProxmoxToken $proxmoxToken -Method "POST" -Endpoint "/api2/json/nodes/$($resultsProxmoxWk2.data.data.host)/qemu"
+Remove-Variable PutBody
 
 #Install Root CA and Replace Default Ingress Cert
 $success = Read-Host "Was cluster creation successful? (y|n)"
