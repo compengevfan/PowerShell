@@ -41,7 +41,7 @@ $resultsProxmoxCp = Invoke-RestMethod -Uri $uriProxmox -Method Get -Headers $hea
 $uriProxmox = "https://vault.evorigin.com:8200/v1/HomeLabSecrets/data/okd/vms/okd-$clusterToDeploy-wk1"
 $resultsProxmoxWk1 = Invoke-RestMethod -Uri $uriProxmox -Method Get -Headers $header -SkipCertificateCheck
 #Worker2 VM Info
-$uriProxmox = "https://vault.evorigin.com:8200/v1/HomeLabSecrets/data/okd/vms/okd-$clusterToDeploy-wk1"
+$uriProxmox = "https://vault.evorigin.com:8200/v1/HomeLabSecrets/data/okd/vms/okd-$clusterToDeploy-wk2"
 $resultsProxmoxWk2 = Invoke-RestMethod -Uri $uriProxmox -Method Get -Headers $header -SkipCertificateCheck
 #Get okd secrets
 $uriK8s = "https://vault.evorigin.com:8200/v1/HomeLabSecrets/data/okd/install"
