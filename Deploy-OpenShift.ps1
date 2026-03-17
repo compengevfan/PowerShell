@@ -144,7 +144,7 @@ $PutBody = @{
     cores       =4
     memory      =16384
     ide2        ="ISOs_Linux:iso/scos-worker.iso,media=cdrom"
-    scsi0       ="storage1-nvme:120,format=raw,ssd=0,backup=0"
+    scsi0       ="storage1-nvme:120,format=qcow2,ssd=0,backup=0"
     net0        ="model=virtio,bridge=vmbr0,firewall=0,macaddr=$($resultsProxmoxWk1.data.data.mac)"
 }
 $worker1Vm = Invoke-DfProxmoxRequest -ProxmoxServer "pmx1.evorigin.com" -ProxmoxToken $proxmoxToken -Method "POST" -Body $PutBody -Endpoint "/api2/json/nodes/$($resultsProxmoxWk1.data.data.host)/qemu"
@@ -166,7 +166,7 @@ $PutBody = @{
     cores       =4
     memory      =16384
     ide2        ="ISOs_Linux:iso/scos-worker.iso,media=cdrom"
-    scsi0       ="storage1-nvme:120,format=raw,ssd=0,backup=0"
+    scsi0       ="storage1-nvme:120,format=qcow2,ssd=0,backup=0"
     net0        ="model=virtio,bridge=vmbr0,firewall=0,macaddr=$($resultsProxmoxWk2.data.data.mac)"
 }
 $worker2Vm = Invoke-DfProxmoxRequest -ProxmoxServer "pmx1.evorigin.com" -ProxmoxToken $proxmoxToken -Method "POST" -Body $PutBody -Endpoint "/api2/json/nodes/$($resultsProxmoxWk2.data.data.host)/qemu"
