@@ -83,10 +83,10 @@ foreach ($Vm in $clusterVms) {
     }
     Invoke-DfProxmoxRequest -ProxmoxServer "pmx1.evorigin.com" -ProxmoxToken $proxmoxToken -Method "DELETE" -Endpoint "/api2/json/nodes/$($Vm.node)/qemu/$($Vm.vmid)"
 }
+Start-Sleep 10
 
 #Create New VMs
 #Bootstrap
-Start-Sleep 30
 $bsVmid = Invoke-DfProxmoxRequest -ProxmoxServer "pmx1.evorigin.com" -ProxmoxToken $proxmoxToken -Method "GET" -Endpoint "/api2/json/cluster/nextid"
 $PutBody = @{
     vmid        =$($bsVmid.data)
@@ -108,7 +108,6 @@ Remove-Variable PutBody
 Wait-DfProxmoxTask -proxmoxTask $bootstrapVm -proxmoxToken $proxmoxToken
 
 #Control Plane
-Start-Sleep 30
 $cpVmid = Invoke-DfProxmoxRequest -ProxmoxServer "pmx1.evorigin.com" -ProxmoxToken $proxmoxToken -Method "GET" -Endpoint "/api2/json/cluster/nextid"
 $PutBody = @{
     vmid        =$($cpVmid.data)
@@ -130,7 +129,6 @@ Remove-Variable PutBody
 Wait-DfProxmoxTask -proxmoxTask $controlPlaneVm -proxmoxToken $proxmoxToken
 
 #Worker1
-Start-Sleep 30
 $wk1Vmid = Invoke-DfProxmoxRequest -ProxmoxServer "pmx1.evorigin.com" -ProxmoxToken $proxmoxToken -Method "GET" -Endpoint "/api2/json/cluster/nextid"
 $PutBody = @{
     vmid        =$($wk1Vmid.data)
@@ -152,7 +150,6 @@ Remove-Variable PutBody
 Wait-DfProxmoxTask -proxmoxTask $worker1Vm -proxmoxToken $proxmoxToken
 
 #Worker2
-Start-Sleep 30
 $wk2Vmid = Invoke-DfProxmoxRequest -ProxmoxServer "pmx1.evorigin.com" -ProxmoxToken $proxmoxToken -Method "GET" -Endpoint "/api2/json/cluster/nextid"
 $PutBody = @{
     vmid        =$($wk2Vmid.data)
