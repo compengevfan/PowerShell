@@ -66,11 +66,12 @@ Copy-Item ~/scos*.iso $deployPath/scos-original.iso
 Start-Sleep 5
 
 #Inject ignition files
+$saveLocation = Get-Location
 Set-Location $deployPath
 podman run --privileged --rm -v .:/data -w /data quay.io/coreos/coreos-installer:release iso customize --dest-device /dev/sda --dest-ignition bootstrap.ign -o scos-bootstrap.iso scos-original.iso
 podman run --privileged --rm -v .:/data -w /data quay.io/coreos/coreos-installer:release iso customize --dest-device /dev/sda --dest-ignition master.ign -o scos-master.iso scos-original.iso
 podman run --privileged --rm -v .:/data -w /data quay.io/coreos/coreos-installer:release iso customize --dest-device /dev/sda --dest-ignition worker.ign -o scos-worker.iso scos-original.iso
-Set-Location /root
+Set-Location $saveLocation
 
 #Shutdown and Delete VMs if they exist
 $allVms = Invoke-DfProxmoxRequest -ProxmoxServer "pmx1.evorigin.com" -ProxmoxToken $proxmoxToken -Method "GET" -Endpoint "/api2/json/cluster/resources?type=vm"
@@ -89,7 +90,7 @@ Start-Sleep 30
 $nextVmid = Invoke-DfProxmoxRequest -ProxmoxServer "pmx1.evorigin.com" -ProxmoxToken $proxmoxToken -Method "GET" -Endpoint "/api2/json/cluster/nextid"
 $PutBody = @{
     vmid        =$($nextVmid.data)
-    node        ="pmx1"
+    node        =$($resultsProxmoxBs.data.data.host)
     name        ="okd-$clusterToDeploy-bs1"
     ostype      ="l26"
     machine     ="q35"
@@ -110,7 +111,7 @@ Wait-DfProxmoxTask -proxmoxTask $bootstrapVm -proxmoxToken $proxmoxToken
 $nextVmid = Invoke-DfProxmoxRequest -ProxmoxServer "pmx1.evorigin.com" -ProxmoxToken $proxmoxToken -Method "GET" -Endpoint "/api2/json/cluster/nextid"
 $PutBody = @{
     vmid        =$($nextVmid.data)
-    node        ="pmx1"
+    node        =$($resultsProxmoxCp.data.data.host)
     name        ="okd-$clusterToDeploy-cp1"
     ostype      ="l26"
     machine     ="q35"
@@ -131,7 +132,7 @@ Wait-DfProxmoxTask -proxmoxTask $controlPlaneVm -proxmoxToken $proxmoxToken
 $nextVmid = Invoke-DfProxmoxRequest -ProxmoxServer "pmx1.evorigin.com" -ProxmoxToken $proxmoxToken -Method "GET" -Endpoint "/api2/json/cluster/nextid"
 $PutBody = @{
     vmid        =$($nextVmid.data)
-    node        ="pmx1"
+    node        =$($resultsProxmoxWk1.data.data.host)
     name        ="okd-$clusterToDeploy-wk1"
     ostype      ="l26"
     machine     ="q35"
@@ -141,7 +142,7 @@ $PutBody = @{
     cores       =4
     memory      =16384
     ide2        ="ISOs_Linux:iso/scos-worker.iso,media=cdrom"
-    scsi0       ="local-nvme:120,format=raw,ssd=1,backup=0"
+    scsi0       ="local-nvme:120,format=raw,ssd=0,backup=0"
     net0        ="model=virtio,bridge=vmbr0,firewall=0,macaddr=$($resultsProxmoxWk1.data.data.mac)"
 }
 $worker1Vm = Invoke-DfProxmoxRequest -ProxmoxServer "pmx1.evorigin.com" -ProxmoxToken $proxmoxToken -Method "POST" -Endpoint "/api2/json/nodes/$($resultsProxmoxWk1.data.data.host)/qemu"
@@ -152,7 +153,7 @@ Wait-DfProxmoxTask -proxmoxTask $worker1Vm -proxmoxToken $proxmoxToken
 $nextVmid = Invoke-DfProxmoxRequest -ProxmoxServer "pmx1.evorigin.com" -ProxmoxToken $proxmoxToken -Method "GET" -Endpoint "/api2/json/cluster/nextid"
 $PutBody = @{
     vmid        =$($nextVmid.data)
-    node        ="pmx1"
+    node        =$($resultsProxmoxWk2.data.data.host)
     name        ="okd-$clusterToDeploy-wk2"
     ostype      ="l26"
     machine     ="q35"
@@ -162,7 +163,7 @@ $PutBody = @{
     cores       =4
     memory      =16384
     ide2        ="ISOs_Linux:iso/scos-worker.iso,media=cdrom"
-    scsi0       ="local-nvme:120,format=raw,ssd=1,backup=0"
+    scsi0       ="local-nvme:120,format=raw,ssd=0,backup=0"
     net0        ="model=virtio,bridge=vmbr0,firewall=0,macaddr=$($resultsProxmoxWk2.data.data.mac)"
 }
 $worker2Vm = Invoke-DfProxmoxRequest -ProxmoxServer "pmx1.evorigin.com" -ProxmoxToken $proxmoxToken -Method "POST" -Endpoint "/api2/json/nodes/$($resultsProxmoxWk2.data.data.host)/qemu"
