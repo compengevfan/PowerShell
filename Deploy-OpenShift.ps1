@@ -87,9 +87,10 @@ foreach ($Vm in $clusterVms) {
 #Create New VMs
 #Bootstrap
 Start-Sleep 30
-$nextVmid = Invoke-DfProxmoxRequest -ProxmoxServer "pmx1.evorigin.com" -ProxmoxToken $proxmoxToken -Method "GET" -Endpoint "/api2/json/cluster/nextid"
+$bsVmid = Invoke-DfProxmoxRequest -ProxmoxServer "pmx1.evorigin.com" -ProxmoxToken $proxmoxToken -Method "GET" -Endpoint "/api2/json/cluster/nextid"
+Write-Host "Bootstrap VMID = $bsVmid" -ForegroundColor Yellow
 $PutBody = @{
-    vmid        =$($nextVmid.data)
+    vmid        =$($bsVmid.data)
     node        =$($resultsProxmoxBs.data.data.host)
     name        ="okd-$clusterToDeploy-bs1"
     ostype      ="l26"
@@ -109,9 +110,10 @@ Wait-DfProxmoxTask -proxmoxTask $bootstrapVm -proxmoxToken $proxmoxToken
 
 #Control Plane
 Start-Sleep 30
-$nextVmid = Invoke-DfProxmoxRequest -ProxmoxServer "pmx1.evorigin.com" -ProxmoxToken $proxmoxToken -Method "GET" -Endpoint "/api2/json/cluster/nextid"
+$cpVmid = Invoke-DfProxmoxRequest -ProxmoxServer "pmx1.evorigin.com" -ProxmoxToken $proxmoxToken -Method "GET" -Endpoint "/api2/json/cluster/nextid"
+Write-Host "Control Plane VMID = $cpVmid" -ForegroundColor Yellow
 $PutBody = @{
-    vmid        =$($nextVmid.data)
+    vmid        =$($cpVmid.data)
     node        =$($resultsProxmoxCp.data.data.host)
     name        ="okd-$clusterToDeploy-cp1"
     ostype      ="l26"
@@ -131,9 +133,10 @@ Wait-DfProxmoxTask -proxmoxTask $controlPlaneVm -proxmoxToken $proxmoxToken
 
 #Worker1
 Start-Sleep 30
-$nextVmid = Invoke-DfProxmoxRequest -ProxmoxServer "pmx1.evorigin.com" -ProxmoxToken $proxmoxToken -Method "GET" -Endpoint "/api2/json/cluster/nextid"
+$wk1Vmid = Invoke-DfProxmoxRequest -ProxmoxServer "pmx1.evorigin.com" -ProxmoxToken $proxmoxToken -Method "GET" -Endpoint "/api2/json/cluster/nextid"
+Write-Host "Worker1 VMID = $wk1Vmid" -ForegroundColor Yellow
 $PutBody = @{
-    vmid        =$($nextVmid.data)
+    vmid        =$($wk1Vmid.data)
     node        =$($resultsProxmoxWk1.data.data.host)
     name        ="okd-$clusterToDeploy-wk1"
     ostype      ="l26"
@@ -153,9 +156,10 @@ Wait-DfProxmoxTask -proxmoxTask $worker1Vm -proxmoxToken $proxmoxToken
 
 #Worker2
 Start-Sleep 30
-$nextVmid = Invoke-DfProxmoxRequest -ProxmoxServer "pmx1.evorigin.com" -ProxmoxToken $proxmoxToken -Method "GET" -Endpoint "/api2/json/cluster/nextid"
+$wk2Vmid = Invoke-DfProxmoxRequest -ProxmoxServer "pmx1.evorigin.com" -ProxmoxToken $proxmoxToken -Method "GET" -Endpoint "/api2/json/cluster/nextid"
+Write-Host "Worker2 VMID = $wk2Vmid" -ForegroundColor Yellow
 $PutBody = @{
-    vmid        =$($nextVmid.data)
+    vmid        =$($wk2Vmid.data)
     node        =$($resultsProxmoxWk2.data.data.host)
     name        ="okd-$clusterToDeploy-wk2"
     ostype      ="l26"
