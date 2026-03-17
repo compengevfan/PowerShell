@@ -88,7 +88,6 @@ foreach ($Vm in $clusterVms) {
 #Bootstrap
 Start-Sleep 30
 $bsVmid = Invoke-DfProxmoxRequest -ProxmoxServer "pmx1.evorigin.com" -ProxmoxToken $proxmoxToken -Method "GET" -Endpoint "/api2/json/cluster/nextid"
-Write-Host "Bootstrap VMID = $bsVmid" -ForegroundColor Yellow
 $PutBody = @{
     vmid        =$($bsVmid.data)
     node        =$($resultsProxmoxBs.data.data.host)
@@ -111,7 +110,6 @@ Wait-DfProxmoxTask -proxmoxTask $bootstrapVm -proxmoxToken $proxmoxToken
 #Control Plane
 Start-Sleep 30
 $cpVmid = Invoke-DfProxmoxRequest -ProxmoxServer "pmx1.evorigin.com" -ProxmoxToken $proxmoxToken -Method "GET" -Endpoint "/api2/json/cluster/nextid"
-Write-Host "Control Plane VMID = $cpVmid" -ForegroundColor Yellow
 $PutBody = @{
     vmid        =$($cpVmid.data)
     node        =$($resultsProxmoxCp.data.data.host)
@@ -127,14 +125,13 @@ $PutBody = @{
     scsi0       ="local-nvme:120,format=raw,ssd=1,backup=0"
     net0        ="model=virtio,bridge=vmbr0,firewall=0,macaddr=$($resultsProxmoxCp.data.data.mac)"
 }
-$controlPlaneVm = Invoke-DfProxmoxRequest -ProxmoxServer "pmx1.evorigin.com" -ProxmoxToken $proxmoxToken -Method "POST" -Endpoint "/api2/json/nodes/$($resultsProxmoxCp.data.data.host)/qemu"
+$controlPlaneVm = Invoke-DfProxmoxRequest -ProxmoxServer "pmx1.evorigin.com" -ProxmoxToken $proxmoxToken -Method "POST" -Body $PutBody -Endpoint "/api2/json/nodes/$($resultsProxmoxCp.data.data.host)/qemu"
 Remove-Variable PutBody
 Wait-DfProxmoxTask -proxmoxTask $controlPlaneVm -proxmoxToken $proxmoxToken
 
 #Worker1
 Start-Sleep 30
 $wk1Vmid = Invoke-DfProxmoxRequest -ProxmoxServer "pmx1.evorigin.com" -ProxmoxToken $proxmoxToken -Method "GET" -Endpoint "/api2/json/cluster/nextid"
-Write-Host "Worker1 VMID = $wk1Vmid" -ForegroundColor Yellow
 $PutBody = @{
     vmid        =$($wk1Vmid.data)
     node        =$($resultsProxmoxWk1.data.data.host)
@@ -150,14 +147,13 @@ $PutBody = @{
     scsi0       ="storage1-nvme:120,format=raw,ssd=0,backup=0"
     net0        ="model=virtio,bridge=vmbr0,firewall=0,macaddr=$($resultsProxmoxWk1.data.data.mac)"
 }
-$worker1Vm = Invoke-DfProxmoxRequest -ProxmoxServer "pmx1.evorigin.com" -ProxmoxToken $proxmoxToken -Method "POST" -Endpoint "/api2/json/nodes/$($resultsProxmoxWk1.data.data.host)/qemu"
+$worker1Vm = Invoke-DfProxmoxRequest -ProxmoxServer "pmx1.evorigin.com" -ProxmoxToken $proxmoxToken -Method "POST" -Body $PutBody -Endpoint "/api2/json/nodes/$($resultsProxmoxWk1.data.data.host)/qemu"
 Remove-Variable PutBody
 Wait-DfProxmoxTask -proxmoxTask $worker1Vm -proxmoxToken $proxmoxToken
 
 #Worker2
 Start-Sleep 30
 $wk2Vmid = Invoke-DfProxmoxRequest -ProxmoxServer "pmx1.evorigin.com" -ProxmoxToken $proxmoxToken -Method "GET" -Endpoint "/api2/json/cluster/nextid"
-Write-Host "Worker2 VMID = $wk2Vmid" -ForegroundColor Yellow
 $PutBody = @{
     vmid        =$($wk2Vmid.data)
     node        =$($resultsProxmoxWk2.data.data.host)
@@ -173,7 +169,7 @@ $PutBody = @{
     scsi0       ="storage1-nvme:120,format=raw,ssd=0,backup=0"
     net0        ="model=virtio,bridge=vmbr0,firewall=0,macaddr=$($resultsProxmoxWk2.data.data.mac)"
 }
-$worker2Vm = Invoke-DfProxmoxRequest -ProxmoxServer "pmx1.evorigin.com" -ProxmoxToken $proxmoxToken -Method "POST" -Endpoint "/api2/json/nodes/$($resultsProxmoxWk2.data.data.host)/qemu"
+$worker2Vm = Invoke-DfProxmoxRequest -ProxmoxServer "pmx1.evorigin.com" -ProxmoxToken $proxmoxToken -Method "POST" -Body $PutBody -Endpoint "/api2/json/nodes/$($resultsProxmoxWk2.data.data.host)/qemu"
 Remove-Variable PutBody
 Wait-DfProxmoxTask -proxmoxTask $worker2Vm -proxmoxToken $proxmoxToken
 
