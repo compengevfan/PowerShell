@@ -95,6 +95,7 @@ $PutBody = @{
     ostype      ="l26"
     machine     ="q35"
     bios        ="ovmf"
+    efidisk0    ="local-nvme:5,format=raw,pre-enrolled-keys=1"
     scsihw      ="virtio-scsi-pci"
     agent       =1
     cores       =4
@@ -116,6 +117,7 @@ $PutBody = @{
     ostype      ="l26"
     machine     ="q35"
     bios        ="ovmf"
+    efidisk0    ="local-nvme:5,format=raw,pre-enrolled-keys=1"
     scsihw      ="virtio-scsi-pci"
     agent       =1
     cores       =4
@@ -137,6 +139,7 @@ $PutBody = @{
     ostype      ="l26"
     machine     ="q35"
     bios        ="ovmf"
+    efidisk0    ="storage1-nvme:5,format=qcow2,pre-enrolled-keys=1"
     scsihw      ="virtio-scsi-pci"
     agent       =1
     cores       =4
@@ -158,6 +161,7 @@ $PutBody = @{
     ostype      ="l26"
     machine     ="q35"
     bios        ="ovmf"
+    efidisk0    ="storage1-nvme:5,format=qcow2,pre-enrolled-keys=1"
     scsihw      ="virtio-scsi-pci"
     agent       =1
     cores       =4
