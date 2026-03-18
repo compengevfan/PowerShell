@@ -190,9 +190,37 @@ do {
     Start-Sleep -Seconds 5
 } until (Test-Connection -ComputerName "okd-$clusterToDeploy-cp1" -Count 1 -Quiet)
 
-Write-Host "okd-$clusterToDeploy-bs1 is online!" -ForegroundColor Green
+Write-Host "okd-$clusterToDeploy-cp1 is online!" -ForegroundColor Green
 
-Write-Host "Open a new session and run the following command: `n`n 'openshift-install --dir $deployPath wait-for bootstrap-complete --log-level=info'"
+Write-Host "Open a new session and run the following command: `n`n`topenshift-install --dir $deployPath wait-for bootstrap-complete --log-level=info"
+Read-Host "Press enter to continue..."
+Write-Host "Open another new session and run the following commands: `n`n`texport KUBECONFIG=/root/avrora-install/auth/kubeconfig"
+Write-Host " and: `n`n`toc get csr -o go-template='{{range .items}}{{if not .status}}{{.metadata.name}}{{"\n"}}{{end}}{{end}}' | xargs --no-run-if-empty oc adm certificate approve"
+Read-Host "When bootstrap is complete, press enter..."
+
+#Start Worker VMs
+$startWk1Vm = Invoke-DfProxmoxRequest -ProxmoxServer "pmx1.evorigin.com" -ProxmoxToken $proxmoxToken -Method "POST" -Body $PutBody -Endpoint "/api2/json/nodes/$($resultsProxmoxWk1.data.data.host)/qemu/$($bootstrapVm.data.Split(":"))[6]/status/start"
+Wait-DfProxmoxTask -proxmoxTask $startWk1Vm -proxmoxToken $proxmoxToken
+
+do {
+    Write-Host "Waiting for okd-$clusterToDeploy-wk1 to respond..." -ForegroundColor Yellow
+    Start-Sleep -Seconds 5
+} until (Test-Connection -ComputerName "okd-$clusterToDeploy-wk1" -Count 1 -Quiet)
+
+Write-Host "okd-$clusterToDeploy-wk1 is online!" -ForegroundColor Green
+
+$startWk2Vm = Invoke-DfProxmoxRequest -ProxmoxServer "pmx1.evorigin.com" -ProxmoxToken $proxmoxToken -Method "POST" -Body $PutBody -Endpoint "/api2/json/nodes/$($resultsProxmoxWk2.data.data.host)/qemu/$($bootstrapVm.data.Split(":"))[6]/status/start"
+Wait-DfProxmoxTask -proxmoxTask $startWk2Vm -proxmoxToken $proxmoxToken
+
+do {
+    Write-Host "Waiting for okd-$clusterToDeploy-wk2 to respond..." -ForegroundColor Yellow
+    Start-Sleep -Seconds 5
+} until (Test-Connection -ComputerName "okd-$clusterToDeploy-wk2" -Count 1 -Quiet)
+
+Write-Host "okd-$clusterToDeploy-wk2 is online!" -ForegroundColor Green
+
+Write-Host "In the bootstrap check session, run this command: `n`n`yopenshift-install --dir . wait-for install-complete --log-level=info"
+Write-host "In the CSR session, run the Post Install CSR commands from the wiki."
 
 #Install Root CA and Replace Default Ingress Cert
 $success = Read-Host "Was cluster creation successful? (y|n)"
