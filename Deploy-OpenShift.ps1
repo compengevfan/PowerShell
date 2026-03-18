@@ -172,7 +172,7 @@ Wait-DfProxmoxTask -proxmoxTask $worker2Vm -proxmoxToken $proxmoxToken
 Start-Sleep 10
 
 #Start Bootstrap VM
-$startBsVm = Invoke-DfProxmoxRequest -ProxmoxServer "pmx1.evorigin.com" -ProxmoxToken $proxmoxToken -Method "POST" -Body $PutBody -Endpoint "/api2/json/nodes/$($resultsProxmoxBs.data.data.host)/qemu/$($bootstrapVm.data.Split(":"))[6]/status/start"
+$startBsVm = Invoke-DfProxmoxRequest -ProxmoxServer "pmx1.evorigin.com" -ProxmoxToken $proxmoxToken -Method "POST" -Body $PutBody -Endpoint "/api2/json/nodes/$($resultsProxmoxBs.data.data.host)/qemu/$($($bootstrapVm.data.Split(":"))[6])/status/start"
 Wait-DfProxmoxTask -proxmoxTask $startBsVm -proxmoxToken $proxmoxToken
 
 do {
@@ -182,7 +182,7 @@ do {
 
 Write-Host "okd-$clusterToDeploy-bs1 is online!" -ForegroundColor Green
 
-$startCpVm = Invoke-DfProxmoxRequest -ProxmoxServer "pmx1.evorigin.com" -ProxmoxToken $proxmoxToken -Method "POST" -Body $PutBody -Endpoint "/api2/json/nodes/$($resultsProxmoxCp.data.data.host)/qemu/$($controlPlaneVm.data.Split(":"))[6]/status/start"
+$startCpVm = Invoke-DfProxmoxRequest -ProxmoxServer "pmx1.evorigin.com" -ProxmoxToken $proxmoxToken -Method "POST" -Body $PutBody -Endpoint "/api2/json/nodes/$($resultsProxmoxCp.data.data.host)/qemu/$($($controlPlaneVm.data.Split(":"))[6])/status/start"
 Wait-DfProxmoxTask -proxmoxTask $startCpVm -proxmoxToken $proxmoxToken
 
 do {
@@ -199,7 +199,7 @@ Write-Host " and: `n`n`toc get csr -o go-template='{{range .items}}{{if not .sta
 Read-Host "When bootstrap is complete, press enter..."
 
 #Start Worker VMs
-$startWk1Vm = Invoke-DfProxmoxRequest -ProxmoxServer "pmx1.evorigin.com" -ProxmoxToken $proxmoxToken -Method "POST" -Body $PutBody -Endpoint "/api2/json/nodes/$($resultsProxmoxWk1.data.data.host)/qemu/$($bootstrapVm.data.Split(":"))[6]/status/start"
+$startWk1Vm = Invoke-DfProxmoxRequest -ProxmoxServer "pmx1.evorigin.com" -ProxmoxToken $proxmoxToken -Method "POST" -Body $PutBody -Endpoint "/api2/json/nodes/$($resultsProxmoxWk1.data.data.host)/qemu/$($($bootstrapVm.data.Split(":"))[6])/status/start"
 Wait-DfProxmoxTask -proxmoxTask $startWk1Vm -proxmoxToken $proxmoxToken
 
 do {
@@ -209,7 +209,7 @@ do {
 
 Write-Host "okd-$clusterToDeploy-wk1 is online!" -ForegroundColor Green
 
-$startWk2Vm = Invoke-DfProxmoxRequest -ProxmoxServer "pmx1.evorigin.com" -ProxmoxToken $proxmoxToken -Method "POST" -Body $PutBody -Endpoint "/api2/json/nodes/$($resultsProxmoxWk2.data.data.host)/qemu/$($bootstrapVm.data.Split(":"))[6]/status/start"
+$startWk2Vm = Invoke-DfProxmoxRequest -ProxmoxServer "pmx1.evorigin.com" -ProxmoxToken $proxmoxToken -Method "POST" -Body $PutBody -Endpoint "/api2/json/nodes/$($resultsProxmoxWk2.data.data.host)/qemu/$($($bootstrapVm.data.Split(":"))[6])/status/start"
 Wait-DfProxmoxTask -proxmoxTask $startWk2Vm -proxmoxToken $proxmoxToken
 
 do {
