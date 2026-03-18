@@ -124,7 +124,7 @@ $PutBody = @{
     scsi0       ="local-nvme:120,format=raw,ssd=1,backup=0"
     net0        ="model=virtio,bridge=vmbr0,firewall=0,macaddr=$($resultsProxmoxCp.data.data.mac)"
 }
-$controlPlaneVm = Invoke-DfProxmoxRequest -ProxmoxServer "pmx1.evorigin.com" -ProxmoxToken $proxmoxToken -Method "POST" -Body $PutBody -Endpoint "/api2/json/nodes/$($resultsProxmoxCp.data.data.host)/qemu"
+$controlPlaneVm = Invoke-DfProxmoxRequest -ProxmoxServer "pmx1.evorigin.com" -ProxmoxToken $proxmoxToken -Method "POST" -Body $PutBody -Endpoint "/api2/json/nodes/$($resultsProxmoxCp.data.data.host)/qemu/"
 Remove-Variable PutBody
 Wait-DfProxmoxTask -proxmoxTask $controlPlaneVm -proxmoxToken $proxmoxToken
 
@@ -169,6 +169,30 @@ $PutBody = @{
 $worker2Vm = Invoke-DfProxmoxRequest -ProxmoxServer "pmx1.evorigin.com" -ProxmoxToken $proxmoxToken -Method "POST" -Body $PutBody -Endpoint "/api2/json/nodes/$($resultsProxmoxWk2.data.data.host)/qemu"
 Remove-Variable PutBody
 Wait-DfProxmoxTask -proxmoxTask $worker2Vm -proxmoxToken $proxmoxToken
+Start-Sleep 10
+
+#Start Bootstrap VM
+$startBsVm = Invoke-DfProxmoxRequest -ProxmoxServer "pmx1.evorigin.com" -ProxmoxToken $proxmoxToken -Method "POST" -Body $PutBody -Endpoint "/api2/json/nodes/$($resultsProxmoxBs.data.data.host)/qemu/$($bootstrapVm.data.Split(":"))[6]/status/start"
+Wait-DfProxmoxTask -proxmoxTask $startBsVm -proxmoxToken $proxmoxToken
+
+do {
+    Write-Host "Waiting for okd-$clusterToDeploy-bs1 to respond..." -ForegroundColor Yellow
+    Start-Sleep -Seconds 5
+} until (Test-Connection -ComputerName "okd-$clusterToDeploy-bs1" -Count 1 -Quiet)
+
+Write-Host "okd-$clusterToDeploy-bs1 is online!" -ForegroundColor Green
+
+$startCpVm = Invoke-DfProxmoxRequest -ProxmoxServer "pmx1.evorigin.com" -ProxmoxToken $proxmoxToken -Method "POST" -Body $PutBody -Endpoint "/api2/json/nodes/$($resultsProxmoxCp.data.data.host)/qemu/$($controlPlaneVm.data.Split(":"))[6]/status/start"
+Wait-DfProxmoxTask -proxmoxTask $startCpVm -proxmoxToken $proxmoxToken
+
+do {
+    Write-Host "Waiting for okd-$clusterToDeploy-cp1 to respond..." -ForegroundColor Yellow
+    Start-Sleep -Seconds 5
+} until (Test-Connection -ComputerName "okd-$clusterToDeploy-cp1" -Count 1 -Quiet)
+
+Write-Host "okd-$clusterToDeploy-bs1 is online!" -ForegroundColor Green
+
+Write-Host "Open a new session and run the following command: `n`n 'openshift-install --dir $deployPath wait-for bootstrap-complete --log-level=info'"
 
 #Install Root CA and Replace Default Ingress Cert
 $success = Read-Host "Was cluster creation successful? (y|n)"
