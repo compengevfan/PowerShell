@@ -92,6 +92,7 @@ $PutBody = @{
     vmid        =$($bsVmid.data)
     node        =$($resultsProxmoxBs.data.data.host)
     name        ="okd-$clusterToDeploy-bs1"
+    cpu         ="cputype=x86-64-v3"
     ostype      ="l26"
     machine     ="q35"
     bios        ="ovmf"
@@ -114,6 +115,7 @@ $PutBody = @{
     vmid        =$($cpVmid.data)
     node        =$($resultsProxmoxCp.data.data.host)
     name        ="okd-$clusterToDeploy-cp1"
+    cpu         ="cputype=x86-64-v3"
     ostype      ="l26"
     machine     ="q35"
     bios        ="ovmf"
@@ -136,6 +138,7 @@ $PutBody = @{
     vmid        =$($wk1Vmid.data)
     node        =$($resultsProxmoxWk1.data.data.host)
     name        ="okd-$clusterToDeploy-wk1"
+    cpu         ="cputype=x86-64-v3"
     ostype      ="l26"
     machine     ="q35"
     bios        ="ovmf"
@@ -158,6 +161,7 @@ $PutBody = @{
     vmid        =$($wk2Vmid.data)
     node        =$($resultsProxmoxWk2.data.data.host)
     name        ="okd-$clusterToDeploy-wk2"
+    cpu         ="cputype=x86-64-v3"
     ostype      ="l26"
     machine     ="q35"
     bios        ="ovmf"
