@@ -201,10 +201,29 @@ do {
 Write-Host "okd-$clusterToDeploy-cp1 is online!" -ForegroundColor Green
 
 Write-Host "Open a new session and run the following command: `n`n`topenshift-install --dir $deployPath wait-for bootstrap-complete --log-level=info"
-Read-Host "Press enter to continue..."
-Write-Host "Open another new session and run the following commands: `n`n`texport KUBECONFIG=/root/avrora-install/auth/kubeconfig"
-Write-Host " and: `n`n`toc get csr -o go-template='{{range .items}}{{if not .status}}{{.metadata.name}}{{"\n"}}{{end}}{{end}}' | xargs --no-run-if-empty oc adm certificate approve"
-Read-Host "When bootstrap is complete, press enter..."
+Read-Host "Press enter once this is running..."
+Write-Host "Open another new session and run this script..."
+
+Write-Host @"
+===============================================================
+  CSR AUTO-APPROVAL COMMAND
+  Once the install process has started, open a NEW terminal
+  and run the following command:
+===============================================================
+
+export KUBECONFIG="/root/$clusterToDeploy-install/auth/kubeconfig"; \
+while true; do \
+  oc get csr --no-headers 2>/dev/null | awk '/Pending/{print \$1}' | \
+  xargs -r oc adm certificate approve; \
+  sleep 15; \
+done
+
+===============================================================
+  Keep it running until all nodes show 'Ready'.
+  Press Ctrl+C to stop once the cluster is fully up.
+===============================================================
+"@
+Read-Host "Press enter once bootstrap is complete..."
 
 #Start Worker VMs
 $startWk1Vm = Invoke-DfProxmoxRequest -ProxmoxServer "pmx1.evorigin.com" -ProxmoxToken $proxmoxToken -Method "POST" -Body $PutBody -Endpoint "/api2/json/nodes/$($resultsProxmoxWk1.data.data.host)/qemu/$($($bootstrapVm.data.Split(":"))[6])/status/start"
@@ -228,7 +247,6 @@ do {
 Write-Host "okd-$clusterToDeploy-wk2 is online!" -ForegroundColor Green
 
 Write-Host "In the bootstrap check session, run this command: `n`n`yopenshift-install --dir . wait-for install-complete --log-level=info"
-Write-host "In the CSR session, run the Post Install CSR commands from the wiki."
 
 #Install Root CA and Replace Default Ingress Cert
 $success = Read-Host "Was cluster creation successful? (y|n)"
