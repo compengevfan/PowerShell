@@ -65,16 +65,6 @@ Start-Sleep 5
 Copy-Item ~/scos*.iso $deployPath/scos-original.iso
 Start-Sleep 5
 
-#Inject ignition files
-$saveLocation = Get-Location
-Set-Location $deployPath
-podman run --privileged --rm -v .:/data -w /data quay.io/coreos/coreos-installer:release iso customize --dest-device /dev/sda --dest-ignition bootstrap.ign -o scos-bootstrap.iso scos-original.iso
-podman run --privileged --rm -v .:/data -w /data quay.io/coreos/coreos-installer:release iso customize --dest-device /dev/sda --dest-ignition master.ign -o scos-master.iso scos-original.iso
-podman run --privileged --rm -v .:/data -w /data quay.io/coreos/coreos-installer:release iso customize --dest-device /dev/sda --dest-ignition worker.ign -o scos-worker.iso scos-original.iso
-Set-Location $saveLocation
-
-Read-Host "Download ISOs from worker VM and upload to proxmox ISO storage. Press enter when complete..."
-
 #Shutdown and Delete VMs if they exist
 $allVms = Invoke-DfProxmoxRequest -ProxmoxServer "pmx1.evorigin.com" -ProxmoxToken $proxmoxToken -Method "GET" -Endpoint "/api2/json/cluster/resources?type=vm"
 $clusterVms = $allVms.data | Where-Object {$_.name -like "*$clusterToDeploy*"}
@@ -86,6 +76,16 @@ foreach ($Vm in $clusterVms) {
     Invoke-DfProxmoxRequest -ProxmoxServer "pmx1.evorigin.com" -ProxmoxToken $proxmoxToken -Method "DELETE" -Endpoint "/api2/json/nodes/$($Vm.node)/qemu/$($Vm.vmid)"
 }
 Start-Sleep 10
+
+#Inject ignition files
+$saveLocation = Get-Location
+Set-Location $deployPath
+podman run --privileged --rm -v .:/data -w /data quay.io/coreos/coreos-installer:release iso customize --dest-device /dev/sda --dest-ignition bootstrap.ign -o scos-bootstrap.iso scos-original.iso
+podman run --privileged --rm -v .:/data -w /data quay.io/coreos/coreos-installer:release iso customize --dest-device /dev/sda --dest-ignition master.ign -o scos-master.iso scos-original.iso
+podman run --privileged --rm -v .:/data -w /data quay.io/coreos/coreos-installer:release iso customize --dest-device /dev/sda --dest-ignition worker.ign -o scos-worker.iso scos-original.iso
+Set-Location $saveLocation
+
+Read-Host "Download ISOs from worker VM and upload to proxmox ISO storage. Press enter when complete..."
 
 #Create New VMs
 #Bootstrap
