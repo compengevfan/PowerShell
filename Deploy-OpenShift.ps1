@@ -73,6 +73,8 @@ podman run --privileged --rm -v .:/data -w /data quay.io/coreos/coreos-installer
 podman run --privileged --rm -v .:/data -w /data quay.io/coreos/coreos-installer:release iso customize --dest-device /dev/sda --dest-ignition worker.ign -o scos-worker.iso scos-original.iso
 Set-Location $saveLocation
 
+Read-Host "Download ISOs from worker VM and upload to proxmox ISO storage. Press enter when complete..."
+
 #Shutdown and Delete VMs if they exist
 $allVms = Invoke-DfProxmoxRequest -ProxmoxServer "pmx1.evorigin.com" -ProxmoxToken $proxmoxToken -Method "GET" -Endpoint "/api2/json/cluster/resources?type=vm"
 $clusterVms = $allVms.data | Where-Object {$_.name -like "*$clusterToDeploy*"}
