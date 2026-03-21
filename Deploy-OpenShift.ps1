@@ -1,6 +1,7 @@
 [CmdletBinding()]
 Param(
-    [Parameter(Mandatory = $true)] [string] [ValidateSet("avrora","phoenix")] $clusterToDeploy
+    [Parameter(Mandatory = $true)] [string] [ValidateSet("avrora","phoenix")] $clusterToDeploy,
+    [Parameter()] [switch] $rebuildIsos
 )
 
 #Requires -Version 7
@@ -49,23 +50,26 @@ $resultsProxmoxWk2 = Invoke-RestMethod -Uri $uriProxmox -Method Get -Headers $he
 $uriK8s = "https://vault.evorigin.com:8200/v1/HomeLabSecrets/data/okd/install"
 $resultsK8s = Invoke-RestMethod -Uri $uriK8s -Method Get -Headers $header -SkipCertificateCheck
 
-$installContent = Get-Content $deployPath/install-config.yaml
-$installContent = $installContent.Replace("[clustername]",$clusterToDeploy)
-$installContent = $installContent.Replace("[pullsecret]",$resultsK8s.data.data.pullSecret)
-$installContent = $installContent.Replace("[sshkey]",$resultsK8s.data.data.sshKey_public)
-Set-Content -Value $installContent -Path $deployPath/install-config.yaml -Force
+if ($rebuildIsos){
+    $installContent = Get-Content $deployPath/install-config.yaml
+    $installContent = $installContent.Replace("[clustername]",$clusterToDeploy)
+    $installContent = $installContent.Replace("[pullsecret]",$resultsK8s.data.data.pullSecret)
+    $installContent = $installContent.Replace("[sshkey]",$resultsK8s.data.data.sshKey_public)
+    Set-Content -Value $installContent -Path $deployPath/install-config.yaml -Force
 
-#Create Manifests
-openshift-install create manifests --dir="$deployPath"
-Start-Sleep 5
+    #Create Manifests
+    openshift-install create manifests --dir="$deployPath"
+    Start-Sleep 5
 
-#Create Ignition Files
-openshift-install create ignition-configs --dir="$deployPath"
-Start-Sleep 5
+    #Create Ignition Files
+    openshift-install create ignition-configs --dir="$deployPath"
+    Start-Sleep 5
 
-# Copy the SCOS ISO to the install folder
-Copy-Item ~/scos*.iso $deployPath/scos-original.iso
-Start-Sleep 5
+    # Copy the SCOS ISO to the install folder
+    Copy-Item ~/scos*.iso $deployPath/scos-original.iso
+    Start-Sleep 5
+}
+
 
 #Shutdown and Delete VMs if they exist
 $allVms = Invoke-DfProxmoxRequest -ProxmoxServer "pmx1.evorigin.com" -ProxmoxToken $proxmoxToken -Method "GET" -Endpoint "/api2/json/cluster/resources?type=vm"
@@ -88,7 +92,7 @@ podman run --privileged --rm -v .:/data -w /data quay.io/coreos/coreos-installer
 podman run --privileged --rm -v .:/data -w /data quay.io/coreos/coreos-installer:release iso customize --dest-device /dev/sda --dest-ignition worker.ign -o scos-worker.iso scos-original.iso
 Set-Location $saveLocation
 
-Read-Host "Download ISOs from worker VM and upload to proxmox ISO storage. Press enter when complete..."
+if ($rebuildIsos){ Read-Host "Download ISOs from worker VM and upload to proxmox ISO storage. Press enter when complete..." }
 
 #Create New VMs
 #Bootstrap
@@ -97,7 +101,7 @@ $putBsBody = @{
     vmid        =$($bsVmid.data)
     node        =$($resultsProxmoxBs.data.data.host)
     name        ="okd-$clusterToDeploy-bs1"
-    cpu         ="cputype=x86-64-v3"
+    cpu         ="host"
     ostype      ="l26"
     machine     ="q35"
     bios        ="ovmf"
@@ -120,7 +124,7 @@ $putCpBody = @{
     vmid        =$($cpVmid.data)
     node        =$($resultsProxmoxCp.data.data.host)
     name        ="okd-$clusterToDeploy-cp1"
-    cpu         ="cputype=x86-64-v3"
+    cpu         ="host"
     ostype      ="l26"
     machine     ="q35"
     bios        ="ovmf"
@@ -143,7 +147,7 @@ $putWk1Body = @{
     vmid        =$($wk1Vmid.data)
     node        =$($resultsProxmoxWk1.data.data.host)
     name        ="okd-$clusterToDeploy-wk1"
-    cpu         ="cputype=x86-64-v3"
+    cpu         ="host"
     ostype      ="l26"
     machine     ="q35"
     bios        ="ovmf"
@@ -166,7 +170,7 @@ $putWk2Body = @{
     vmid        =$($wk2Vmid.data)
     node        =$($resultsProxmoxWk2.data.data.host)
     name        ="okd-$clusterToDeploy-wk2"
-    cpu         ="cputype=x86-64-v3"
+    cpu         ="host"
     ostype      ="l26"
     machine     ="q35"
     bios        ="ovmf"
