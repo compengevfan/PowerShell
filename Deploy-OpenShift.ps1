@@ -73,6 +73,7 @@ $clusterVms = $allVms.data | Where-Object {$_.name -like "*$clusterToDeploy*"}
 foreach ($Vm in $clusterVms) {
     if ($Vm.status -eq "running") { 
         Invoke-DfProxmoxRequest -ProxmoxServer "pmx1.evorigin.com" -ProxmoxToken $proxmoxToken -Method "POST" -Endpoint "/api2/json/nodes/$($Vm.node)/qemu/$($Vm.vmid)/status/stop"
+        $Check = $null
         while ($Check.data.status -ne "stopped") {start-sleep 10; $Check = Invoke-DfProxmoxRequest -ProxmoxServer "pmx1.evorigin.com" -ProxmoxToken $proxmoxToken -Method "GET" -Endpoint "/api2/json/nodes/$($Vm.node)/qemu/$($Vm.vmid)/status/current" } 
     }
     Invoke-DfProxmoxRequest -ProxmoxServer "pmx1.evorigin.com" -ProxmoxToken $proxmoxToken -Method "DELETE" -Endpoint "/api2/json/nodes/$($Vm.node)/qemu/$($Vm.vmid)"
@@ -183,28 +184,31 @@ $worker2Vm = Invoke-DfProxmoxRequest -ProxmoxServer "pmx1.evorigin.com" -Proxmox
 Wait-DfProxmoxTask -proxmoxTask $worker2Vm -proxmoxToken $proxmoxToken
 Start-Sleep 10
 
+Write-Host "Starting the bootstrap VM"
 #Start Bootstrap VM
 $startBsVm = Invoke-DfProxmoxRequest -ProxmoxServer "pmx1.evorigin.com" -ProxmoxToken $proxmoxToken -Method "POST" -Endpoint "/api2/json/nodes/$($resultsProxmoxBs.data.data.host)/qemu/$($($bootstrapVm.data.Split(":"))[6])/status/start"
 Wait-DfProxmoxTask -proxmoxTask $startBsVm -proxmoxToken $proxmoxToken
 
-do {
-    Write-Host "Waiting for okd-$clusterToDeploy-bs1 to respond..." -ForegroundColor Yellow
-    Start-Sleep -Seconds 5
-} until (Test-Connection -ComputerName "okd-$clusterToDeploy-bs1" -Count 1 -Quiet)
+# do {
+#     Write-Host "Waiting for okd-$clusterToDeploy-bs1 to respond..." -ForegroundColor Yellow
+#     Start-Sleep -Seconds 5
+# } until (Test-Connection -ComputerName "okd-$clusterToDeploy-bs1" -Count 1 -Quiet)
 
-Write-Host "okd-$clusterToDeploy-bs1 is online!" -ForegroundColor Green
+# Write-Host "okd-$clusterToDeploy-bs1 is online!" -ForegroundColor Green
+
+Read-Host "Press enter to start the control plane VM..."
 
 $startCpVm = Invoke-DfProxmoxRequest -ProxmoxServer "pmx1.evorigin.com" -ProxmoxToken $proxmoxToken -Method "POST" -Endpoint "/api2/json/nodes/$($resultsProxmoxCp.data.data.host)/qemu/$($($controlPlaneVm.data.Split(":"))[6])/status/start"
 Wait-DfProxmoxTask -proxmoxTask $startCpVm -proxmoxToken $proxmoxToken
 
-do {
-    Write-Host "Waiting for okd-$clusterToDeploy-cp1 to respond..." -ForegroundColor Yellow
-    Start-Sleep -Seconds 5
-} until (Test-Connection -ComputerName "okd-$clusterToDeploy-cp1" -Count 1 -Quiet)
+# do {
+#     Write-Host "Waiting for okd-$clusterToDeploy-cp1 to respond..." -ForegroundColor Yellow
+#     Start-Sleep -Seconds 5
+# } until (Test-Connection -ComputerName "okd-$clusterToDeploy-cp1" -Count 1 -Quiet)
 
-Write-Host "okd-$clusterToDeploy-cp1 is online!" -ForegroundColor Green
+# Write-Host "okd-$clusterToDeploy-cp1 is online!" -ForegroundColor Green
 
-Write-Host "Open a new session and run the following command: `n`n`topenshift-install --dir $deployPath wait-for bootstrap-complete --log-level=info"
+Write-Host "Open a new session and run the following command: `n`n`topenshift-install --dir $deployPath wait-for bootstrap-complete --log-level=debug"
 Read-Host "Press enter once this is running..."
 Write-Host "Open another new session and run this script..."
 
@@ -250,7 +254,7 @@ do {
 
 Write-Host "okd-$clusterToDeploy-wk2 is online!" -ForegroundColor Green
 
-Write-Host "In the bootstrap check session, run this command: `n`n`topenshift-install --dir . wait-for install-complete --log-level=info"
+Write-Host "In the bootstrap check session, run this command: `n`n`topenshift-install --dir $deployPath wait-for install-complete --log-level=debug"
 
 #Install Root CA and Replace Default Ingress Cert
 $success = Read-Host "Was cluster creation successful? (y|n)"
