@@ -15,14 +15,6 @@ $ErrorActionPreference = "Stop"
 if (!(Get-Module -ListAvailable -Name DupreeFunctions)) { Write-Host "'DupreeFunctions' module not available!!! Please check with Dupree!!! Script exiting!!!" -ForegroundColor Red; throw 66 }
 if (!(Get-Module -Name DupreeFunctions)) { Import-Module DupreeFunctions }
 
-#Setup cluster install folder and copy generic yaml file
-$genericYamlFile = Get-Item -Path "~/git/okd/clusterinstall/install-config.yaml"
-if (Test-Path "~/$clusterToDeploy-install") {
-    Remove-Item -Path "~/$clusterToDeploy-install" -Recurse -Force
-}
-$deployPath = New-Item -Path "~" -Name "$clusterToDeploy-install" -ItemType "directory"
-Copy-Item $genericYamlFile $deployPath
-
 #Get Info From Vault
 #Set Common Info
 Import-DfCredentials
@@ -64,6 +56,14 @@ foreach ($Vm in $clusterVms) {
 Start-Sleep 10
 
 if ($rebuildIsos){
+    #Setup cluster install folder and copy generic yaml file
+    $genericYamlFile = Get-Item -Path "~/git/okd/clusterinstall/install-config.yaml"
+    if (Test-Path "~/$clusterToDeploy-install") {
+        Remove-Item -Path "~/$clusterToDeploy-install" -Recurse -Force
+    }
+    $deployPath = New-Item -Path "~" -Name "$clusterToDeploy-install" -ItemType "directory"
+    Copy-Item $genericYamlFile $deployPath
+
     $installContent = Get-Content $deployPath/install-config.yaml
     $installContent = $installContent.Replace("[clustername]",$clusterToDeploy)
     $installContent = $installContent.Replace("[pullsecret]",$resultsK8s.data.data.pullSecret)
