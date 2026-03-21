@@ -210,27 +210,7 @@ Wait-DfProxmoxTask -proxmoxTask $startCpVm -proxmoxToken $proxmoxToken
 
 Write-Host "Open a new session and run the following command: `n`n`topenshift-install --dir $deployPath wait-for bootstrap-complete --log-level=debug"
 Read-Host "Press enter once this is running..."
-Write-Host "Open another new session and run this script..."
-
-Write-Host @"
-===============================================================
-  CSR AUTO-APPROVAL COMMAND
-  Once the install process has started, open a NEW terminal
-  and run the following command:
-===============================================================
-
-export KUBECONFIG="/root/$clusterToDeploy-install/auth/kubeconfig"; \
-while true; do \
-  oc get csr --no-headers 2>/dev/null | awk '/Pending/{print \$1}' | \
-  xargs -r oc adm certificate approve; \
-  sleep 15; \
-done
-
-===============================================================
-  Keep it running until all nodes show 'Ready'.
-  Press Ctrl+C to stop once the cluster is fully up.
-===============================================================
-"@
+Write-Host "Open another new session and execute './auto-approve-csrs.sh'"
 Read-Host "Press enter once bootstrap is complete..."
 
 #Start Worker VMs
