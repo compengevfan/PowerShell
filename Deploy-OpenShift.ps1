@@ -75,7 +75,6 @@ if ($rebuildIsos){
     Start-Sleep 5
 
     #Modify ingress operator
-    # After creating manifests, before creating ignition configs
     $ingressManifest = @"
 apiVersion: operator.openshift.io/v1
 kind: IngressController
