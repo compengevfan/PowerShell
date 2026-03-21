@@ -50,6 +50,19 @@ $resultsProxmoxWk2 = Invoke-RestMethod -Uri $uriProxmox -Method Get -Headers $he
 $uriK8s = "https://vault.evorigin.com:8200/v1/HomeLabSecrets/data/okd/install"
 $resultsK8s = Invoke-RestMethod -Uri $uriK8s -Method Get -Headers $header -SkipCertificateCheck
 
+#Shutdown and Delete VMs if they exist
+$allVms = Invoke-DfProxmoxRequest -ProxmoxServer "pmx1.evorigin.com" -ProxmoxToken $proxmoxToken -Method "GET" -Endpoint "/api2/json/cluster/resources?type=vm"
+$clusterVms = $allVms.data | Where-Object {$_.name -like "*$clusterToDeploy*"}
+foreach ($Vm in $clusterVms) {
+    if ($Vm.status -eq "running") { 
+        Invoke-DfProxmoxRequest -ProxmoxServer "pmx1.evorigin.com" -ProxmoxToken $proxmoxToken -Method "POST" -Endpoint "/api2/json/nodes/$($Vm.node)/qemu/$($Vm.vmid)/status/stop"
+        $Check = $null
+        while ($Check.data.status -ne "stopped") {start-sleep 10; $Check = Invoke-DfProxmoxRequest -ProxmoxServer "pmx1.evorigin.com" -ProxmoxToken $proxmoxToken -Method "GET" -Endpoint "/api2/json/nodes/$($Vm.node)/qemu/$($Vm.vmid)/status/current" } 
+    }
+    Invoke-DfProxmoxRequest -ProxmoxServer "pmx1.evorigin.com" -ProxmoxToken $proxmoxToken -Method "DELETE" -Endpoint "/api2/json/nodes/$($Vm.node)/qemu/$($Vm.vmid)"
+}
+Start-Sleep 10
+
 if ($rebuildIsos){
     $installContent = Get-Content $deployPath/install-config.yaml
     $installContent = $installContent.Replace("[clustername]",$clusterToDeploy)
@@ -68,31 +81,17 @@ if ($rebuildIsos){
     # Copy the SCOS ISO to the install folder
     Copy-Item ~/scos*.iso $deployPath/scos-original.iso
     Start-Sleep 5
+
+    #Inject ignition files
+    $saveLocation = Get-Location
+    Set-Location $deployPath
+    podman run --privileged --rm -v .:/data -w /data quay.io/coreos/coreos-installer:release iso customize --dest-device /dev/sda --dest-ignition bootstrap.ign -o scos-bootstrap.iso scos-original.iso
+    podman run --privileged --rm -v .:/data -w /data quay.io/coreos/coreos-installer:release iso customize --dest-device /dev/sda --dest-ignition master.ign -o scos-master.iso scos-original.iso
+    podman run --privileged --rm -v .:/data -w /data quay.io/coreos/coreos-installer:release iso customize --dest-device /dev/sda --dest-ignition worker.ign -o scos-worker.iso scos-original.iso
+    Set-Location $saveLocation
+
+    Read-Host "Download ISOs from worker VM and upload to proxmox ISO storage. Press enter when complete..." 
 }
-
-
-#Shutdown and Delete VMs if they exist
-$allVms = Invoke-DfProxmoxRequest -ProxmoxServer "pmx1.evorigin.com" -ProxmoxToken $proxmoxToken -Method "GET" -Endpoint "/api2/json/cluster/resources?type=vm"
-$clusterVms = $allVms.data | Where-Object {$_.name -like "*$clusterToDeploy*"}
-foreach ($Vm in $clusterVms) {
-    if ($Vm.status -eq "running") { 
-        Invoke-DfProxmoxRequest -ProxmoxServer "pmx1.evorigin.com" -ProxmoxToken $proxmoxToken -Method "POST" -Endpoint "/api2/json/nodes/$($Vm.node)/qemu/$($Vm.vmid)/status/stop"
-        $Check = $null
-        while ($Check.data.status -ne "stopped") {start-sleep 10; $Check = Invoke-DfProxmoxRequest -ProxmoxServer "pmx1.evorigin.com" -ProxmoxToken $proxmoxToken -Method "GET" -Endpoint "/api2/json/nodes/$($Vm.node)/qemu/$($Vm.vmid)/status/current" } 
-    }
-    Invoke-DfProxmoxRequest -ProxmoxServer "pmx1.evorigin.com" -ProxmoxToken $proxmoxToken -Method "DELETE" -Endpoint "/api2/json/nodes/$($Vm.node)/qemu/$($Vm.vmid)"
-}
-Start-Sleep 10
-
-#Inject ignition files
-$saveLocation = Get-Location
-Set-Location $deployPath
-podman run --privileged --rm -v .:/data -w /data quay.io/coreos/coreos-installer:release iso customize --dest-device /dev/sda --dest-ignition bootstrap.ign -o scos-bootstrap.iso scos-original.iso
-podman run --privileged --rm -v .:/data -w /data quay.io/coreos/coreos-installer:release iso customize --dest-device /dev/sda --dest-ignition master.ign -o scos-master.iso scos-original.iso
-podman run --privileged --rm -v .:/data -w /data quay.io/coreos/coreos-installer:release iso customize --dest-device /dev/sda --dest-ignition worker.ign -o scos-worker.iso scos-original.iso
-Set-Location $saveLocation
-
-if ($rebuildIsos){ Read-Host "Download ISOs from worker VM and upload to proxmox ISO storage. Press enter when complete..." }
 
 #Create New VMs
 #Bootstrap
