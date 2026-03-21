@@ -58,10 +58,10 @@ Start-Sleep 10
 if ($rebuildIsos){
     #Setup cluster install folder and copy generic yaml file
     $genericYamlFile = Get-Item -Path "~/git/okd/clusterinstall/install-config.yaml"
-    if (Test-Path "~/$clusterToDeploy-install") {
-        Remove-Item -Path "~/$clusterToDeploy-install" -Recurse -Force
+    if (Test-Path "/root/$clusterToDeploy-install") {
+        Remove-Item -Path "/root/$clusterToDeploy-install" -Recurse -Force
     }
-    $deployPath = New-Item -Path "~" -Name "$clusterToDeploy-install" -ItemType "directory"
+    $deployPath = New-Item -Path "/root" -Name "$clusterToDeploy-install" -ItemType "directory"
     Copy-Item $genericYamlFile $deployPath
 
     $installContent = Get-Content $deployPath/install-config.yaml
@@ -73,6 +73,27 @@ if ($rebuildIsos){
     #Create Manifests
     openshift-install create manifests --dir="$deployPath"
     Start-Sleep 5
+
+    #Modify ingress operator
+    # After creating manifests, before creating ignition configs
+    $ingressManifest = @"
+apiVersion: operator.openshift.io/v1
+kind: IngressController
+metadata:
+  name: default
+  namespace: openshift-ingress-operator
+spec:
+  nodePlacement:
+    nodeSelector:
+      matchLabels:
+        node-role.kubernetes.io/master: ""
+    tolerations:
+      - effect: NoSchedule
+        key: node-role.kubernetes.io/master
+        operator: Exists
+"@
+
+    $ingressManifest | Set-Content -Path "$deployPath/manifests/cluster-ingress-default-ingresscontroller.yaml"
 
     #Create Ignition Files
     openshift-install create ignition-configs --dir="$deployPath"
