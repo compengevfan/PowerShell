@@ -112,6 +112,9 @@ spec:
 
     Read-Host "Download ISOs from worker VM and upload to proxmox ISO storage. Press enter when complete..." 
 }
+else {
+    $deployPath = Get-Item -Path "/root/$clusterToDeploy-install"
+}
 
 #Create New VMs
 #Bootstrap
