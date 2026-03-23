@@ -15,6 +15,7 @@ function Invoke-DfProxmoxRequest {
         [Parameter(Mandatory = $true)] [string]$ProxmoxServer,
         [Parameter(Mandatory = $true)] [string]$ProxmoxToken,
         [Parameter(Mandatory = $true)] [string]$Method,
+        [Parameter(Mandatory = $false)] [object] $Body = $null,
         [Parameter(Mandatory = $true)] [string]$Endpoint
     )
     $headers = New-Object "System.Collections.Generic.Dictionary[[String],[String]]"
@@ -24,7 +25,7 @@ function Invoke-DfProxmoxRequest {
         $headers.Add("Accept-Encoding", "gzip, deflate, br")
     }
     $ProxmoxURL = "https://" + $ProxmoxServer + ":8006"
-    Invoke-RestMethod -Method $Method -Uri "$ProxmoxUrl$Endpoint" -Headers $headers -SkipHeaderValidation -SkipCertificateCheck
+    Invoke-RestMethod -Method $Method -Uri "$ProxmoxUrl$Endpoint" -Headers $headers -Body $Body -SkipHeaderValidation -SkipCertificateCheck
 }
 
 function Invoke-DfProxmoxBalanceHosts {
@@ -124,4 +125,24 @@ function Invoke-DfProxmoxEvacuateHost {
 
         Start-Sleep 5 
     }
+}
+
+function Wait-DfProxmoxTask {
+    [CmdletBinding()]
+    Param(
+        [Parameter(Mandatory = $true)] $proxmoxTask,
+        [Parameter(Mandatory = $true)] [string] $proxmoxToken
+    )
+
+    $proxmoxTaskHost = $($proxmoxTask.data.Split(":"))[1]
+    Write-Host "Waiting for task to complete."
+    $taskStatus = "notDone"
+    while ($taskStatus -eq "notDone") {
+        Start-Sleep 5
+        $taskResponse = Invoke-DfProxmoxRequest -ProxmoxServer "pmx1.evorigin.com" -ProxmoxToken $proxmoxToken -Method "Get" -Endpoint "/api2/json/nodes/$proxmoxTaskHost/tasks/$($proxmoxTask.data)/status"
+        if ( $taskResponse.data.status -eq "stopped" ) { $taskStatus = "Done" }
+    }
+
+    if ($taskResponse.data.exitstatus -eq "OK") { Write-Host "Task completed successfully." }
+    else { Write-Host "Task encountered a problem. Exit status: $($taskResponse.data.exitstatus)" -ForegroundColor Red; throw }
 }
