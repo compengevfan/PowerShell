@@ -1,39 +1,29 @@
-﻿[CmdletBinding()]
+﻿<#
+.SYNOPSIS
+    Balances memory load across Proxmox cluster nodes by live-migrating VMs.
+
+.DESCRIPTION
+    Queries the Proxmox cluster for node memory usage, then repeatedly migrates a
+    randomly selected running VM from the most-loaded node to the least-loaded node
+    until the memory difference between any two nodes is 4 GB or less.
+    Requires the DupreeFunctions module (loaded via profile) for Invoke-DfProxmoxRequest.
+
+.PARAMETER CredProxmoxToken
+    A PSCredential where the UserName is the Proxmox API token ID
+    (format: user@realm!tokenname) and the Password is the token secret.
+
+.EXAMPLE
+    .\Invoke-ProxmoxBalanceHosts.ps1 -CredProxmoxToken $CredProxmoxToken
+#>
+[CmdletBinding()]
 Param(
-    [Parameter(Mandatory = $true)] [string] $ProxmoxToken
+    [Parameter(Mandatory=$true)] [pscredential] $CredProxmoxToken
 )
 
-function Invoke-ProxmoxRequest {
-    param (
-        [Parameter(Mandatory = $true)] [string]$ProxmoxServer,
-        [Parameter(Mandatory = $true)] [string]$ProxmoxToken,
-        [Parameter(Mandatory = $true)] [string]$Method,
-        [Parameter(Mandatory = $true)] [string]$Endpoint
-    )
-    $headers = New-Object "System.Collections.Generic.Dictionary[[String],[String]]"
-    $headers.add("Authorization", "$ProxmoxToken")
-    if ($Method -eq "Get") {
-        $headers.Add("Accept", "*/*")
-        $headers.Add("Accept-Encoding", "gzip, deflate, br")
-    }
-    $ProxmoxURL = "https://" + $ProxmoxServer + ":8006"
-    Invoke-RestMethod -Method $Method -Uri "$ProxmoxUrl$Endpoint" -Headers $headers -SkipHeaderValidation
-}
-
-# $ScriptPath = $PSScriptRoot
-# Set-Location $ScriptPath
-  
-# $ScriptStarted = Get-Date -Format MM-dd-yyyy_HH-mm-ss
-# $ScriptName = $MyInvocation.MyCommand.Name
-  
-# $ErrorActionPreference = "SilentlyContinue"
-  
-# if (!(Get-Module -ListAvailable -Name DupreeFunctions)) { Write-Host "'DupreeFunctions' module not available!!! Please check with Dupree!!! Script exiting!!!" -ForegroundColor Red; exit }
-# if (!(Get-Module -Name DupreeFunctions)) { Import-Module DupreeFunctions }
-# if (!(Test-Path .\~Logs)) { New-Item -Name "~Logs" -ItemType Directory | Out-Null }
+$ProxmoxToken = "PVEAPIToken=$($CredProxmoxToken.UserName)=$($CredProxmoxToken.GetNetworkCredential().password)"
 
 #Determine if cluster needs balancing
-$clusterResponse = Invoke-ProxmoxRequest -ProxmoxServer "pmx1.evorigin.com" -Method "GET" -Endpoint "/api2/json/nodes"
+$clusterResponse = Invoke-DfProxmoxRequest -ProxmoxServer "pmx1.evorigin.com" -ProxmoxToken $ProxmoxToken -Method "GET" -Endpoint "/api2/json/nodes"
 $ProxmoxNodes = $clusterResponse.data
 $ProxmoxNodesSorted = $ProxmoxNodes | Sort-Object -Property mem
 
@@ -54,19 +44,19 @@ else {
 
 while ($RunAgain) {
     #Get list of VMs on host with most memory used and pick a random VM
-    $SourceVMs = (Invoke-ProxmoxRequest -ProxmoxServer "pmx1.evorigin.com" -Method "GET" -Endpoint "/api2/json/nodes/$($mostMemNode.node)/qemu").data | Where-Object { $_.status -eq "running" }
+    $SourceVMs = (Invoke-DfProxmoxRequest -ProxmoxServer "pmx1.evorigin.com" -ProxmoxToken $ProxmoxToken -Method "GET" -Endpoint "/api2/json/nodes/$($mostMemNode.node)/qemu").data | Where-Object { $_.status -eq "running" }
     $RandomNumber = Get-Random -Maximum $($SourceVMs.Count)
 
     $VMtoMove = $SourceVMs[$RandomNumber]
     
     Write-Host "Migrating VM ID $($VMtoMove.vmid) from $($mostMemNode.node) to $($leastMemNode.node)."
-    $migrateResponse = Invoke-ProxmoxRequest -ProxmoxServer "pmx1.evorigin.com" -Method "Post" -Endpoint "/api2/json/nodes/$($mostMemNode.node)/qemu/$($VMtoMove.vmid)/migrate?target=$($leastMemNode.node)&online=1"
+    $migrateResponse = Invoke-DfProxmoxRequest -ProxmoxServer "pmx1.evorigin.com" -ProxmoxToken $ProxmoxToken -Method "Post" -Endpoint "/api2/json/nodes/$($mostMemNode.node)/qemu/$($VMtoMove.vmid)/migrate?target=$($leastMemNode.node)&online=1"
 
     Write-Host "Waiting for migration task to complete."
     $migrationStatus = "notDone"
     while ($migrationStatus -eq "notDone") {
         Start-Sleep 5
-        $taskResponse = Invoke-ProxmoxRequest -ProxmoxServer "pmx1.evorigin.com" -Method "Get" -Endpoint "/api2/json/nodes/$($mostMemNode.node)/tasks/$($migrateResponse.data)/status"
+        $taskResponse = Invoke-DfProxmoxRequest -ProxmoxServer "pmx1.evorigin.com" -ProxmoxToken $ProxmoxToken -Method "Get" -Endpoint "/api2/json/nodes/$($mostMemNode.node)/tasks/$($migrateResponse.data)/status"
         if ( $taskResponse.data.status -eq "stopped" ) { $migrationStatus = "Done" }
     }
 
@@ -76,7 +66,7 @@ while ($RunAgain) {
     Start-Sleep 5
 
     #Determine if cluster still needs balancing
-    $response = Invoke-ProxmoxRequest -ProxmoxServer "pmx1.evorigin.com" -Method "GET" -Endpoint "/api2/json/nodes"
+    $response = Invoke-DfProxmoxRequest -ProxmoxServer "pmx1.evorigin.com" -ProxmoxToken $ProxmoxToken -Method "GET" -Endpoint "/api2/json/nodes"
     $ProxmoxNodes = $response.data
     $ProxmoxNodesSorted = $ProxmoxNodes | Sort-Object -Property mem
 
@@ -94,5 +84,4 @@ while ($RunAgain) {
         $RunAgain = $false
         Write-Host ("Exiting script. Cluster is balanced.")
     }
-    # $RunAgain = $false
 }
