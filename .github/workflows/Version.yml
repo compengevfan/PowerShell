@@ -24,20 +24,20 @@ jobs:
 
       # Update repository on JAX-TASK001
       - name: Update Repo
-        shell: cmd
+        shell: bash
         run: |
-          git -C C:\git\PowerShell pull origin version
+          git -C /home/runner/git/PowerShell pull origin version
 
       - name: Update Version
-        shell: PowerShell
+        shell: pwsh
         run: |
           Update-DfModuleVersion
 
       # Publish DupreeFunctions to PSG
       - name: Update Branch
-        shell: cmd
+        shell: bash
         run: |
-          git add C:\actions-runner\_work\PowerShell\PowerShell\DupreeFunctions\DupreeFunctions.psd1
+          git add $GITHUB_WORKSPACE/DupreeFunctions/DupreeFunctions.psd1
           git commit -m "Version Updated"
           git push origin version
       #V12
