@@ -369,14 +369,20 @@ Function Update-DfLabBoxes {
     }
 }
 
-Function Update-DfModuleVersion{
-    $PsgModuleVersion = Find-Module DupreeFunctions
-    $OldPsgModuleVersion = $PsgModuleVersion.Version.Major.ToString() + "." + $PsgModuleVersion.Version.Minor.ToString() + "." + $PsgModuleVersion.Version.Build.ToString()
-    $NewPsgModuleVersion = $PsgModuleVersion.Version.Major.ToString() + "." + $PsgModuleVersion.Version.Minor.ToString() + "." + $(($PsgModuleVersion.Version.Build + 1)).ToString()
+Function Update-DfModuleVersion {
+    $LocalPsdPath = if ($IsWindows) { "C:\Git\PowerShell\DupreeFunctions\DupreeFunctions.psd1" } else { "/home/runner/git/PowerShell/DupreeFunctions/DupreeFunctions.psd1" }
 
-    $PsdContent = Get-Content C:\Git\PowerShell\DupreeFunctions\DupreeFunctions.psd1 -Raw
-    $NewPsdContent = $PsdContent.Replace("$OldPsgModuleVersion","$NewPsgModuleVersion")
-    $NewPsdContent | Out-File C:\actions-runner\_work\PowerShell\PowerShell\DupreeFunctions\DupreeFunctions.psd1 -Force
+    $CurrentVersion = [System.Version](Import-PowerShellDataFile $LocalPsdPath).ModuleVersion
+    $NewVersion = "{0}.{1}.{2}" -f $CurrentVersion.Major, $CurrentVersion.Minor, ($CurrentVersion.Build + 1)
+
+    $WritePath = if ($env:GITHUB_WORKSPACE) {
+        Join-Path $env:GITHUB_WORKSPACE "DupreeFunctions" "DupreeFunctions.psd1"
+    } else {
+        $LocalPsdPath
+    }
+
+    $PsdContent = Get-Content $LocalPsdPath -Raw
+    $PsdContent.Replace($CurrentVersion.ToString(), $NewVersion) | Out-File $WritePath -Force
 }
 
 Function Invoke-UserSetup {
