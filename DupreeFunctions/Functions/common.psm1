@@ -322,37 +322,48 @@ Function Invoke-DfMenu {
 
 Function Update-DfLabBoxes {
     [CmdletBinding()]
-    Param(
-    )
+    Param()
 
     $destinations = @(
-        "jax-pc001.evorigin.com"
-        "jax-pc002.evorigin.com"
-    ) | Sort-Object
+        @{ Name = "jax-pc001.evorigin.com"; OS = "Windows" }
+        @{ Name = "jax-pc002.evorigin.com"; OS = "Windows" }
+    ) | Sort-Object Name
 
-    $CredImport = Import-Clixml C:\actions-runner\Cred.xml
+    $CredPath = if ($IsWindows) { "C:\actions-runner\Cred.xml" } else { "/home/runner/Cred.xml" }
+    $CredImport = Import-Clixml $CredPath
     New-Variable -Name Credential -Value $CredImport -Scope Global
 
     foreach ($destination in $destinations) {
-        Write-Host "Processing $destination"
-        Invoke-Command -ComputerName $destination -Credential $Credential -ScriptBlock {
-            #Check if PowerShell Gallery Repository is set as trusted.
-            $PsgInstallPolicy = Get-PSRepository -Name PSGallery
-            if ($($PsgInstallPolicy.InstallationPolicy) -ne "Trusted") {
-                Write-Host "Setting PSGallery Install Policy to Trusted"
-                Set-PSRepository -Name PSGallery -InstallationPolicy Trusted
-            }
-            else { Write-Host "PSGallery Install Policy already set to Trusted" }
+        Write-Host "Processing $($destination.Name) [$($destination.OS)]"
 
-            #Check if DupreeFunctions Exists. if not, install, if so, update.
-            $DfCheck = Get-Module -ListAvailable DupreeFunctions
-            if (!($DfCheck)) {
-                Write-Host "Installing DupreeFunctions"
-                Install-Module DupreeFunctions
+        if ($destination.OS -eq "Windows") {
+            Invoke-Command -ComputerName $destination.Name -Credential $Credential -ScriptBlock {
+                $TempPath = "C:\Temp\PowerShell"
+                if (Test-Path $TempPath) { Remove-Item $TempPath -Recurse -Force -Confirm:$false }
+                git clone https://github.com/compengevfan/PowerShell.git $TempPath
+
+                $DfVersion = (Import-PowerShellDataFile "$TempPath\DupreeFunctions\DupreeFunctions.psd1").ModuleVersion
+                $DestPath = "C:\Program Files\WindowsPowerShell\Modules\DupreeFunctions\$DfVersion"
+                New-Item -Path $DestPath -ItemType Directory -Force | Out-Null
+                Copy-Item -Path "$TempPath\DupreeFunctions\*" -Destination $DestPath -Recurse -Force
+                Remove-Item $TempPath -Recurse -Force -Confirm:$false
+
+                Write-Host "DupreeFunctions $DfVersion installed on $env:COMPUTERNAME"
             }
-            else {
-                Write-Host "Updating DupreeFunctions"
-                Update-Module DupreeFunctions
+        }
+        elseif ($destination.OS -eq "Linux") {
+            Invoke-Command -HostName $destination.Name -UserName $Credential.UserName -ScriptBlock {
+                $TempPath = "/tmp/PowerShell"
+                if (Test-Path $TempPath) { Remove-Item $TempPath -Recurse -Force }
+                git clone https://github.com/compengevfan/PowerShell.git $TempPath
+
+                $DfVersion = (Import-PowerShellDataFile "$TempPath/DupreeFunctions/DupreeFunctions.psd1").ModuleVersion
+                $DestPath = "/usr/local/share/powershell/Modules/DupreeFunctions/$DfVersion"
+                New-Item -Path $DestPath -ItemType Directory -Force | Out-Null
+                Copy-Item -Path "$TempPath/DupreeFunctions/*" -Destination $DestPath -Recurse -Force
+                Remove-Item $TempPath -Recurse -Force
+
+                Write-Host "DupreeFunctions $DfVersion installed on $(hostname)"
             }
         }
     }

@@ -1,52 +1,33 @@
-# This is a basic workflow to help you get started with Actions
-
 name: DeployToLab
 
-# Controls when the workflow will run
 on:
-  # Triggers the workflow on pull request events but only for the "master" branch
   pull_request:
     types: [closed]
     branches:
       - master
 
-# A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
-  # This workflow contains a single job called "build"
   build:
-    # The type of runner that the job will run on
     runs-on: self-hosted
 
-    # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
-      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
       - uses: actions/checkout@v3
 
-      # Update repository on JAX-TASK001
       - name: Update Repo
-        shell: cmd
+        shell: bash
         run: |
-          git -C C:\git\PowerShell pull origin master
+          git -C /home/runner/git/PowerShell pull origin master
 
-      # Publish DupreeFunctions to PSG
-      - name: Publish to PowerShell Gallery
-        shell: PowerShell
+      - name: Install-DupreeFunctions-Local
+        shell: pwsh
         run: |
-          Publish-Module -Path C:\git\PowerShell\DupreeFunctions -NuGetApiKey ${{secrets.PSG_API_KEY}}
-
-      # - name: Check-NuGet
-      #   shell: powershell
-      #   run: |
-      #     C:\actions-runner\Check-NuGet.ps1
-
-      - name: Update-Task-Server
-        shell: powershell
-        run: |
-          Start-Sleep -Seconds 30
-          Update-Module DupreeFunctions
+          $DfVersion = (Import-PowerShellDataFile /home/runner/git/PowerShell/DupreeFunctions/DupreeFunctions.psd1).ModuleVersion
+          $DestPath = "/usr/local/share/powershell/Modules/DupreeFunctions/$DfVersion"
+          New-Item -Path $DestPath -ItemType Directory -Force | Out-Null
+          Copy-Item -Path /home/runner/git/PowerShell/DupreeFunctions/* -Destination $DestPath -Recurse -Force
 
       - name: Update-DfLabBoxes
-        shell: powershell
+        shell: pwsh
         run: |
           Import-Module DupreeFunctions
           Update-DfLabBoxes
