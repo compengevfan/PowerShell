@@ -28,16 +28,40 @@ Function Set-DfGitPath {
 }
 
 Function Sync-DfProfileScript {
-    if ($env:githome) {
-        Write-Host "Copying primary profile script using temporary variable." -ForegroundColor Green
-        Copy-Item -Path $githome\PowerShell\Profile\Microsoft.PowerShell_profile.ps1 -Destination $PROFILE -Force
-        Write-Host "Creating ISE profile script." -ForegroundColor Green
-        Copy-Item -Path $PROFILE -Destination $PROFILE.Replace("Microsoft.PowerShell_profile.ps1", "Microsoft.PowerShellISE_profile.ps1") -Force
-        Write-Host "Copying VS Code profile script." -ForegroundColor Green
-        Copy-Item -Path $PROFILE -Destination $PROFILE.Replace("Microsoft.PowerShell_profile.ps1", "Microsoft.VSCode_profile.ps1") -Force
-    }
-    else {
+    if (-not $env:githome) {
         Write-Host "Git environment variable NOT found." -ForegroundColor Red
+        return
+    }
+
+    # Read $env:githome, not $githome. The bare variable is only set by the profile
+    # itself, so calling this from -NoProfile or any child scope silently built the
+    # relative path '\PowerShell\Profile\...' and copied the wrong file.
+    $Source = Join-Path $env:githome 'PowerShell\Profile\Microsoft.PowerShell_profile.ps1'
+    if (-not (Test-Path -LiteralPath $Source)) {
+        Write-Host "Profile source NOT found at $Source" -ForegroundColor Red
+        return
+    }
+
+    $ProfileDirectory = Split-Path -Parent $PROFILE
+    if (-not (Test-Path -LiteralPath $ProfileDirectory)) {
+        New-Item -ItemType Directory -Path $ProfileDirectory -Force | Out-Null
+    }
+
+    # Every target is copied from $Source. Chaining copies off $PROFILE meant a
+    # failed first copy propagated the stale profile to the ISE and VS Code hosts.
+    $Targets = "Microsoft.PowerShell_profile.ps1",
+    "Microsoft.PowerShellISE_profile.ps1",
+    "Microsoft.VSCode_profile.ps1"
+
+    foreach ($Target in $Targets) {
+        $Destination = Join-Path $ProfileDirectory $Target
+        try {
+            Copy-Item -LiteralPath $Source -Destination $Destination -Force -ErrorAction Stop
+            Write-Host "Copied $Target" -ForegroundColor Green
+        }
+        catch {
+            Write-Host "Failed to copy $Target - $($_.Exception.Message)" -ForegroundColor Red
+        }
     }
 }
 
