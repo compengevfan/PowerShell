@@ -1,6 +1,6 @@
 <#PSScriptInfo
 
-.VERSION 2.0.6
+.VERSION 3.0.0
 
 .GUID b53cae85-1769-4697-ba24-a6fd87efb453
 
@@ -10,7 +10,7 @@
 
 .COPYRIGHT
 
-.TAGS
+.TAGS profile prompt
 
 .LICENSEURI
 
@@ -18,128 +18,277 @@
 
 .ICONURI
 
-.EXTERNALMODULEDEPENDENCIES 
+.EXTERNALMODULEDEPENDENCIES
 
 .REQUIREDSCRIPTS
 
 .EXTERNALSCRIPTDEPENDENCIES
 
 .RELEASENOTES
-
+3.0.0 Nothing in the profile can abort the load any more (a missing module is
+      reported, not thrown). Module imports happen once instead of twice.
+      Machine detection reads the registry instead of doing a DNS lookup.
+      .NET table understands 4.8.1 and anything newer. PowerCLI version no
+      longer breaks when several versions are side by side. Prompt gained a
+      git branch, elevation marker and failure marker, and now returns a
+      single string so PSReadLine can redraw it. PSReadLine is configured.
+      Set $env:PSPROFILE_QUIET = '1' to start without the banner.
 
 .PRIVATEDATA
 
 #>
 
-<# 
+# A floor, not a pin: -Version means "this version or newer", so this covers
+# Windows PowerShell 5.1 and every PowerShell 7.x. Nothing below runs 5.1-only
+# or 7-only syntax; version-specific features are feature-detected at the point
+# of use rather than branched on $PSVersionTable.
+#Requires -Version 5.1
 
-.DESCRIPTION 
- PowerShell Profile 
+<#
 
-#> 
+.DESCRIPTION
+ PowerShell profile. One file serves Windows PowerShell 5.1, PowerShell 7+,
+ the ISE and VS Code; Sync-DfProfileScript copies it to all of them.
+
+#>
 Param()
 
-#Display .NET Versions Installed
-Write-Host ".NET version installed: " -NoNewline
-$dotNetVersion = (Get-ItemProperty "HKLM:\SOFTWARE\Microsoft\NET Framework Setup\NDP\v4\Full").Release
-switch ($dotNetVersion) {
-	378389 { Write-Host "4.5" }
-	{ ($_ -eq 378675) -or ($_ -eq 378758) } { Write-Host "4.5.1" }
-	379893 { Write-Host "4.5.2" }
-	{ ($_ -eq 393295) -or ($_ -eq 393297) } { Write-Host "4.6" }
-	{ ($_ -eq 394254) -or ($_ -eq 394271) } { Write-Host "4.6.1" }
-	{ ($_ -eq 394802) -or ($_ -eq 394806) } { Write-Host "4.6.2" }
-	{ ($_ -eq 460798) -or ($_ -eq 460805) } { Write-Host "4.7" }
-	{ ($_ -eq 461308) -or ($_ -eq 461310) } { Write-Host "4.7.1" }
-	{ ($_ -eq 461808) -or ($_ -eq 461814) } { Write-Host "4.7.2" }
-	{ ($_ -eq 528040) -or ($_ -eq 528372) -or ($_ -eq 528049) -or ($_ -eq 528449) } { Write-Host "4.8" }
-	Default { Write-Host "Unknown build $dotNetVersion found." }
+$ProfileTimer = [System.Diagnostics.Stopwatch]::StartNew()
+$ProfileQuiet = [bool]$env:PSPROFILE_QUIET
+
+#region Helpers ---------------------------------------------------------------
+
+# ISE has no virtual terminal, so the prompt falls back to plain text there.
+$global:ProfileAnsi = @{}
+$SupportsVT = $false
+try { $SupportsVT = [bool]$Host.UI.SupportsVirtualTerminal } catch { }
+$Esc = [char]27
+$Palette = [ordered]@{
+	Reset = '0'; Dim = '90'; Red = '91'; Green = '92'
+	Yellow = '93'; Cyan = '96'; Magenta = '95'
+}
+foreach ($Color in $Palette.GetEnumerator()) {
+	$global:ProfileAnsi[$Color.Key] = if ($SupportsVT) { "$Esc[$($Color.Value)m" } else { '' }
 }
 
-#Display PowerShell Version
-Write-Host "`nPowerShell Version:"
-$PSVersionTable.PSVersion
+$global:ProfileIsAdmin = $false
+try {
+	$Identity = [Security.Principal.WindowsIdentity]::GetCurrent()
+	$global:ProfileIsAdmin = ([Security.Principal.WindowsPrincipal]$Identity).IsInRole(
+		[Security.Principal.WindowsBuiltInRole]::Administrator)
+}
+catch { }
 
-#Check for PowerCLI and version
-$PowerCLICheck = Get-Module -ListAvailable VMware.Vim
-if ($null -ne $PowerCLICheck) { Write-Host "`nPowerCLI $($PowerCLICheck.Version.Major).$($PowerCLICheck.Version.Minor) is installed." -ForegroundColor green }
-else { Write-Host "`nPowerCLI not found." -ForegroundColor red }
+function Write-ProfileStatus {
+	param(
+		[string] $Label,
+		[string] $Value,
+		[System.ConsoleColor] $Color = [System.ConsoleColor]::Gray
+	)
+	if ($ProfileQuiet) { return }
+	Write-Host ('  {0,-16}' -f $Label) -NoNewline -ForegroundColor DarkGray
+	Write-Host $Value -ForegroundColor $Color
+}
 
-#Check for Git environment variable
-if ($env:githome) { $githome = $env:githome; Write-Host "`nGit path found." -ForegroundColor Green }
-else { Write-Host "`nGit path NOT found." -ForegroundColor Red }
+function Get-DotNetFrameworkVersion {
+	# Highest release number that is <= what is installed wins, so builds newer
+	# than this table still report the last version we know about.
+	$Release = (Get-ItemProperty -Path 'HKLM:\SOFTWARE\Microsoft\NET Framework Setup\NDP\v4\Full' `
+			-Name Release -ErrorAction SilentlyContinue).Release
+	if (-not $Release) { return $null }
 
-$LocalComputerName = [System.Net.Dns]::GetHostByName($env:computerName).HostName
+	$Releases = @(
+		@(533320, '4.8.1'), @(528040, '4.8'), @(461808, '4.7.2'), @(461308, '4.7.1'),
+		@(460798, '4.7'), @(394802, '4.6.2'), @(394254, '4.6.1'), @(393295, '4.6'),
+		@(379893, '4.5.2'), @(378675, '4.5.1'), @(378389, '4.5')
+	)
+	foreach ($Entry in $Releases) {
+		if ($Release -ge $Entry[0]) { return '{0} (release {1})' -f $Entry[1], $Release }
+	}
+	return "unrecognized release $Release"
+}
 
-if ($LocalComputerName -like "*.evorigin.com") {
-	Write-Host "Detected EvOrigin Computer..." -ForegroundColor Green
+function Get-ComputerDomain {
+	# The computer's own domain, not the logon domain, and no network round trip.
+	$TcpipParameters = Get-ItemProperty -Path 'HKLM:\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters' `
+		-ErrorAction SilentlyContinue
+	foreach ($Name in 'Domain', 'NV Domain') {
+		if ($TcpipParameters -and $TcpipParameters.$Name) { return [string]$TcpipParameters.$Name }
+	}
+	if ($env:USERDNSDOMAIN) { return $env:USERDNSDOMAIN }
+	try { return [System.Net.Dns]::GetHostEntry($env:COMPUTERNAME).HostName -replace '^[^.]+\.?', '' }
+	catch { return '' }
+}
+
+function Import-ProfileModule {
+	param([Parameter(Mandatory)][string] $Name)
 
 	try {
-		Write-Host "Importing DupreeFunctions..." -ForegroundColor Gray
-		Import-Module DupreeFunctions -Force -ErrorAction Continue
-
-		Import-Module DupreeFunctions -Force -ErrorAction Stop
-
-		Write-Host "Importing credentials..." -ForegroundColor Gray
-		Import-DfCredentials
+		Import-Module -Name $Name -ErrorAction Stop
+		$Module = Get-Module -Name $Name | Select-Object -First 1
+		Write-ProfileStatus $Name ('{0} loaded' -f $Module.Version) Green
+		return $true
 	}
 	catch {
-		# Write-Host "DupreeFunctions NOT found." -ForegroundColor Red
-		throw
+		Write-ProfileStatus $Name "not loaded - $($_.Exception.Message)" Red
+		return $false
 	}
-
-	#Check for Dropbox environment variable
-	if ($env:dropboxhome) { $dropboxhome = $env:dropboxhome; Write-Host "Dropbox path found." -ForegroundColor Green }
-	else { Write-Host "Dropbox path NOT found." -ForegroundColor Yellow }
 }
 
+#endregion
+
+#region Environment -----------------------------------------------------------
+
+Write-ProfileStatus 'PowerShell' ('{0} ({1})' -f $PSVersionTable.PSVersion, $PSVersionTable.PSEdition) Cyan
+
+# RuntimeInformation arrived in .NET Framework 4.7.1, so Windows PowerShell on an
+# older box has no such type. Fall back to the CLR version it always exposes.
+$Runtime = try { [System.Runtime.InteropServices.RuntimeInformation]::FrameworkDescription }
+catch { 'CLR {0}' -f [System.Environment]::Version }
+Write-ProfileStatus 'Runtime' $Runtime
+
+$FrameworkVersion = Get-DotNetFrameworkVersion
+if ($FrameworkVersion) { Write-ProfileStatus '.NET Framework' $FrameworkVersion }
+
+$ComputerDomain = Get-ComputerDomain
+$Fqdn = if ($ComputerDomain) { "$env:COMPUTERNAME.$ComputerDomain".ToLower() } else { $env:COMPUTERNAME }
+Write-ProfileStatus 'Host' "$Fqdn$(if ($global:ProfileIsAdmin) { ' (elevated)' })" Cyan
+
+# Sync-DfProfileScript reads $githome, so keep these as variables, not just env vars.
+$global:githome = $env:githome
+if ($githome) { Write-ProfileStatus 'Git home' $githome Green }
+else { Write-ProfileStatus 'Git home' 'not set - $env:githome is empty' Yellow }
+
+$global:dropboxhome = $env:dropboxhome
+if ($dropboxhome) { Write-ProfileStatus 'Dropbox home' $dropboxhome Green }
+
+$PowerCLI = Get-Module -ListAvailable VMware.Vim | Sort-Object Version -Descending | Select-Object -First 1
+if ($PowerCLI) { Write-ProfileStatus 'PowerCLI' ('{0}.{1}' -f $PowerCLI.Version.Major, $PowerCLI.Version.Minor) Green }
+else { Write-ProfileStatus 'PowerCLI' 'not installed' Yellow }
+
+if ($ComputerDomain -like '*evorigin.com') {
+	if (Import-ProfileModule 'DupreeFunctions') {
+		try {
+			# 6> swallows the module's own Write-Host banner; this line replaces it.
+			Import-DfCredentials 6> $null | Out-Null
+			Write-ProfileStatus 'Credentials' 'imported' Green
+		}
+		catch {
+			Write-ProfileStatus 'Credentials' "import failed - $($_.Exception.Message)" Red
+		}
+	}
+}
 else {
-	Write-Host "Must be a work Computer..." -ForegroundColor Green
+	Import-ProfileModule 'DC.Automation' | Out-Null
+}
 
+#endregion
+
+#region PSReadLine ------------------------------------------------------------
+
+# Absent in the ISE, and too old on stock Windows PowerShell to predict.
+$PSReadLine = Get-Module -Name PSReadLine
+if ($PSReadLine) {
 	try {
-		Write-Host "Importing DC.Automation..." -ForegroundColor Gray
-		Import-Module DC.Automation -Force -ErrorAction Continue
+		Set-PSReadLineOption -EditMode Windows -BellStyle None -HistoryNoDuplicates `
+			-HistorySearchCursorMovesToEnd -MaximumHistoryCount 8192
+		Set-PSReadLineKeyHandler -Key UpArrow -Function HistorySearchBackward
+		Set-PSReadLineKeyHandler -Key DownArrow -Function HistorySearchForward
+		Set-PSReadLineKeyHandler -Key Tab -Function MenuComplete
+		Set-PSReadLineKeyHandler -Key 'Ctrl+w' -Function BackwardKillWord
+		if ($PSReadLine.Version -ge [version]'2.2.0') {
+			Set-PSReadLineOption -PredictionSource HistoryAndPlugin -PredictionViewStyle ListView
+		}
 	}
 	catch {
-		Write-Host "DC.Automation NOT found." -ForegroundColor Red
+		Write-ProfileStatus 'PSReadLine' "not configured - $($_.Exception.Message)" Yellow
 	}
 }
 
+#endregion
 
-<# Write-Host "Checking DupreeFunctions module available and latest version..."
-$DupreeFunctionsMinVersion = (Find-Module DupreeFunctions).Version
-if (!(Get-InstalledModule -Name DupreeFunctions -MinimumVersion $DupreeFunctionsMinVersion -ErrorAction SilentlyContinue))
-{
-	try 
-	{
-		if (!(Get-Module -ListAvailable -Name DupreeFunctions)) { Install-Module -Name DupreeFunctions -Scope CurrentUser -Force -ErrorAction Stop }
-		else { Update-Module -Name DupreeFunctions -RequiredVersion $DupreeFunctionsMinVersion -Force -ErrorAction Stop }
-		$DupreeFunctionInstallSuccess = $true
+#region Prompt ----------------------------------------------------------------
+
+function Get-PromptGitBranch {
+	param([string] $Path)
+
+	$Directory = $Path
+	while ($Directory) {
+		$GitPath = Join-Path $Directory '.git'
+		if (Test-Path -LiteralPath $GitPath) {
+			# In a worktree or submodule .git is a file pointing at the real one.
+			if (Test-Path -LiteralPath $GitPath -PathType Leaf) {
+				$Pointer = Get-Content -LiteralPath $GitPath -TotalCount 1
+				if ($Pointer -match '^gitdir:\s*(.+)$') {
+					$GitPath = $Matches[1].Trim()
+					if (-not [System.IO.Path]::IsPathRooted($GitPath)) { $GitPath = Join-Path $Directory $GitPath }
+				}
+			}
+			$Head = Join-Path $GitPath 'HEAD'
+			if (Test-Path -LiteralPath $Head) {
+				$Ref = Get-Content -LiteralPath $Head -TotalCount 1
+				if ($Ref -match '^ref:\s*refs/heads/(.+)$') { return $Matches[1] }
+				if ($Ref) { return $Ref.Substring(0, [Math]::Min(7, $Ref.Length)) }  # detached HEAD
+			}
+			return $null
+		}
+		$Parent = Split-Path -Parent $Directory
+		if (-not $Parent -or $Parent -eq $Directory) { break }
+		$Directory = $Parent
 	}
-	catch { Write-Host "Failed to install 'DupreeFunctions' module from PSGallery!!! Error encountered is:`n`r`t$($Error[0])" -ForegroundColor Red ; $DupreeFunctionInstallSuccess = $false}
+	return $null
 }
-else { $DupreeFunctionInstallSuccess = $true } #>
 
-#Make it pretty
-function prompt {
-	$FullPath = Get-Location
-	$SplitPath = $FullPath.Path.Split("\")
-	if ($SplitPath.Count -eq 1) { $PromptFolder = "root" }
-	else { $PromptFolder = $SplitPath[-1] }
-	$vCenter = $global:DefaultVIServers.Name
-	if (($vCenter -eq "") -or ($null -eq $vCenter)) { $vCenter = "NotConnected" }
-	# $path = ""
-	# $pathbits = ([string]$pwd).split("\", [System.StringSplitOptions]::RemoveEmptyEntries)
-	# if($pathbits.length -eq 1) {
-	# 	$path = $pathbits[0] + "\"
-	# } else {
-	# 	$path = $pathbits[$pathbits.length - 1]
-	# }
-	$FullLocation = $env:username + ' ' + $FullPath + ' ' + $vCenter
-	$PartialLocation = $env:username + ' ' + $FullPath.Drive + ' ' + $PromptFolder + ' ' + $vCenter
-	$host.UI.RawUi.WindowTitle = $FullLocation
-	Write-Host($PartialLocation) -nonewline -foregroundcolor DarkYellow
+function Get-PromptPath {
+	param([string] $Path)
 
-	Write-Host('>') -nonewline -foregroundcolor DarkYellow    
-	return " "
+	if ($HOME -and $Path.StartsWith($HOME, [System.StringComparison]::OrdinalIgnoreCase)) {
+		$Path = '~' + $Path.Substring($HOME.Length)
+	}
+	$Segments = $Path.Split('\', [System.StringSplitOptions]::RemoveEmptyEntries)
+	if ($Segments.Count -le 3) { return $Path }
+	return '{0}\...\{1}\{2}' -f $Segments[0], $Segments[-2], $Segments[-1]
 }
+
+function global:prompt {
+	$Succeeded = $?   # must stay the first statement
+
+	$Ansi = $global:ProfileAnsi
+	$Location = $ExecutionContext.SessionState.Path.CurrentLocation
+	$IsFileSystem = $Location.Provider.Name -eq 'FileSystem'
+	$FullPath = $Location.Path
+	$ShortPath = if ($IsFileSystem) { Get-PromptPath -Path $FullPath } else { $FullPath }
+
+	$vCenter = ''
+	if ($global:DefaultVIServers) {
+		$vCenter = (($global:DefaultVIServers | Where-Object { $_.IsConnected }).Name) -join ','
+	}
+
+	$Branch = if ($IsFileSystem) { Get-PromptGitBranch -Path $FullPath } else { $null }
+
+	$Title = '{0}{1} {2}' -f $env:USERNAME, $(if ($global:ProfileIsAdmin) { ' (Admin)' }), $FullPath
+	if ($vCenter) { $Title += " - $vCenter" }
+	try { $Host.UI.RawUI.WindowTitle = $Title } catch { }
+
+	$Line = New-Object System.Text.StringBuilder
+	[void]$Line.Append($Ansi.Dim).Append($env:USERNAME)
+	if ($global:ProfileIsAdmin) { [void]$Line.Append($Ansi.Red).Append('#') }
+	[void]$Line.Append(' ').Append($Ansi.Yellow).Append($ShortPath)
+	if ($Branch) { [void]$Line.Append(' ').Append($Ansi.Cyan).Append('(').Append($Branch).Append(')') }
+	if ($vCenter) { [void]$Line.Append(' ').Append($Ansi.Magenta).Append('[').Append($vCenter).Append(']') }
+	if (-not $Succeeded) {
+		# Only trust $LASTEXITCODE when the last command actually failed, otherwise
+		# a stale code from an old native command sticks to every prompt.
+		$Marker = if ($global:LASTEXITCODE) { "!$global:LASTEXITCODE" } else { '!' }
+		[void]$Line.Append(' ').Append($Ansi.Red).Append($Marker)
+	}
+	if ($NestedPromptLevel -gt 0) { [void]$Line.Append(' ').Append($Ansi.Dim).Append('+' * $NestedPromptLevel) }
+	[void]$Line.Append($Ansi.Yellow).Append('>').Append($Ansi.Reset).Append(' ')
+
+	return $Line.ToString()
+}
+
+#endregion
+
+Write-ProfileStatus 'Ready' ('{0:N0} ms' -f $ProfileTimer.Elapsed.TotalMilliseconds) DarkGray
+if (-not $ProfileQuiet) { Write-Host '' }
