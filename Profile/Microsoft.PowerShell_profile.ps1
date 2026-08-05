@@ -1,6 +1,6 @@
 <#PSScriptInfo
 
-.VERSION 4.5.0
+.VERSION 4.6.0
 
 .GUID b53cae85-1769-4697-ba24-a6fd87efb453
 
@@ -25,6 +25,10 @@
 .EXTERNALSCRIPTDEPENDENCIES
 
 .RELEASENOTES
+4.6.0 Dropped VMware entirely: no PowerCLI banner line, and the prompt no longer
+      reads $global:DefaultVIServers, so there is no connected-vCenter segment in
+      the prompt or the window title.
+
 4.5.0 Sync-ClaudeSkills pulls $giteahome\skills and mirrors it into
       ~\.claude\skills; cld runs it before showing the menu. Mirror means a skill
       removed from the repo is removed locally. Skipped entirely when
@@ -210,10 +214,6 @@ $global:protonhome = $env:protonhome
 if ($protonhome) { Write-ProfileStatus 'Proton home' $protonhome Green }
 else { Write-ProfileStatus 'Proton home' 'not set - $env:protonhome is empty' Yellow }
 
-$PowerCLI = Get-Module -ListAvailable VMware.Vim | Sort-Object Version -Descending | Select-Object -First 1
-if ($PowerCLI) { Write-ProfileStatus 'PowerCLI' ('{0}.{1}' -f $PowerCLI.Version.Major, $PowerCLI.Version.Minor) Green }
-else { Write-ProfileStatus 'PowerCLI' 'not installed' Yellow }
-
 # Version comes free from the executable's file metadata. Never shell out to
 # `claude --version` here - that alone costs more than this whole profile load.
 # Machines without Claude Code simply do not get the line.
@@ -333,11 +333,6 @@ function global:prompt {
 	$FullPath = $Location.Path
 	$ShortPath = if ($IsFileSystem) { Get-PromptPath -Path $FullPath } else { $FullPath }
 
-	$vCenter = ''
-	if ($global:DefaultVIServers) {
-		$vCenter = (($global:DefaultVIServers | Where-Object { $_.IsConnected }).Name) -join ','
-	}
-
 	$Branch = if ($IsFileSystem) { Get-PromptGitBranch -Path $FullPath } else { $null }
 
 	# Invoke-ClaudePicker pins the tab to a project name. Without this check the very
@@ -347,7 +342,6 @@ function global:prompt {
 	}
 	else {
 		$Title = '{0}{1} {2}' -f $env:USERNAME, $(if ($global:ProfileIsAdmin) { ' (Admin)' }), $FullPath
-		if ($vCenter) { $Title += " - $vCenter" }
 	}
 	try { $Host.UI.RawUI.WindowTitle = $Title } catch { }
 
@@ -356,7 +350,6 @@ function global:prompt {
 	if ($global:ProfileIsAdmin) { [void]$Line.Append($Ansi.Red).Append('#') }
 	[void]$Line.Append(' ').Append($Ansi.Yellow).Append($ShortPath)
 	if ($Branch) { [void]$Line.Append(' ').Append($Ansi.Cyan).Append('(').Append($Branch).Append(')') }
-	if ($vCenter) { [void]$Line.Append(' ').Append($Ansi.Magenta).Append('[').Append($vCenter).Append(']') }
 	if (-not $Succeeded) {
 		# Only trust $LASTEXITCODE when the last command actually failed, otherwise
 		# a stale code from an old native command sticks to every prompt.
