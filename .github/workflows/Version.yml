@@ -26,7 +26,7 @@ jobs:
       - name: Update Repo
         shell: cmd
         run: |
-          git -C C:\git\PowerShell pull origin version
+          git -C ~/git/PowerShell pull origin master
 
       - name: Update Version
         shell: PowerShell
@@ -37,7 +37,7 @@ jobs:
       - name: Update Branch
         shell: cmd
         run: |
-          git add C:\actions-runner\_work\PowerShell\PowerShell\DupreeFunctions\DupreeFunctions.psd1
+          git add ~/git/PowerShell/DupreeFunctions/DupreeFunctions.psd1
           git commit -m "Version Updated"
           git push origin version
       #V12

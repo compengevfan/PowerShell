@@ -348,38 +348,22 @@ Function Invoke-DfMenu {
 Function Update-DfLabBoxes {
     [CmdletBinding()]
     Param(
+        [Parameter(Mandatory = $true)] $WinData,
+        [Parameter(Mandatory = $true)] $LnxData
     )
 
+    $WinUser = $WinData.Split(';')[0]
+    $WinPass = $WinData.Split(';')[1]
+
+    $LnxUser = $LnxData.Split(';')[0]
+    $LnxPass = $LnxData.Split(';')[1]
+
     $destinations = @(
-        "jax-pc001.evorigin.com"
-        "jax-pc002.evorigin.com"
+        "JAX-WKN002.evorigin.com"
     ) | Sort-Object
 
-    $CredImport = Import-Clixml C:\actions-runner\Cred.xml
-    New-Variable -Name Credential -Value $CredImport -Scope Global
-
     foreach ($destination in $destinations) {
-        Write-Host "Processing $destination"
-        Invoke-Command -ComputerName $destination -Credential $Credential -ScriptBlock {
-            #Check if PowerShell Gallery Repository is set as trusted.
-            $PsgInstallPolicy = Get-PSRepository -Name PSGallery
-            if ($($PsgInstallPolicy.InstallationPolicy) -ne "Trusted") {
-                Write-Host "Setting PSGallery Install Policy to Trusted"
-                Set-PSRepository -Name PSGallery -InstallationPolicy Trusted
-            }
-            else { Write-Host "PSGallery Install Policy already set to Trusted" }
-
-            #Check if DupreeFunctions Exists. if not, install, if so, update.
-            $DfCheck = Get-Module -ListAvailable DupreeFunctions
-            if (!($DfCheck)) {
-                Write-Host "Installing DupreeFunctions"
-                Install-Module DupreeFunctions
-            }
-            else {
-                Write-Host "Updating DupreeFunctions"
-                Update-Module DupreeFunctions
-            }
-        }
+        
     }
 }
 

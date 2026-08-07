@@ -26,27 +26,36 @@ jobs:
       - name: Update Repo
         shell: cmd
         run: |
-          git -C C:\git\PowerShell pull origin master
+          git -C ~/git/PowerShell pull origin master
 
-      # Publish DupreeFunctions to PSG
-      - name: Publish to PowerShell Gallery
+      - name: Get new version number and install on task server
         shell: PowerShell
         run: |
-          Publish-Module -Path C:\git\PowerShell\DupreeFunctions -NuGetApiKey ${{secrets.PSG_API_KEY}}
+          $Version = (Select-String -Path ~/git/PowerShell/DupreeFunctions/DupreeFunctions.psd1 -Pattern "ModuleVersion").Line.Split('=')[1].Trim().Trim("'")
+          mkdir /usr/local/share/powershell/Modules/DupreeFunctions/$Version
+          mkdir /opt/microsoft/powershell/7/Modules/DupreeFunctions/$Version
+          cp -r ~/git/PowerShell/DupreeFunctions/* /usr/local/share/powershell/Modules/DupreeFunctions/$Version
+          cp -r ~/git/PowerShell/DupreeFunctions/* /opt/microsoft/powershell/7/Modules/DupreeFunctions/$Version
+
+      # Publish DupreeFunctions to PSG
+      # - name: Publish to PowerShell Gallery
+      #   shell: PowerShell
+      #   run: |
+      #     Publish-Module -Path ~/git/PowerShell/DupreeFunctions -NuGetApiKey ${{secrets.PSG_API_KEY}}
 
       # - name: Check-NuGet
       #   shell: powershell
       #   run: |
       #     C:\actions-runner\Check-NuGet.ps1
 
-      - name: Update-Task-Server
-        shell: powershell
-        run: |
-          Start-Sleep -Seconds 30
-          Update-Module DupreeFunctions
+      # - name: Update-Task-Server
+      #   shell: powershell
+      #   run: |
+      #     Start-Sleep -Seconds 30
+      #     Update-Module DupreeFunctions
 
       - name: Update-DfLabBoxes
         shell: powershell
         run: |
           Import-Module DupreeFunctions
-          Update-DfLabBoxes
+          Update-DfLabBoxes -WinData ${{secrets.WINDATA}} -LnxData ${{secrets.LNXDATA}}
