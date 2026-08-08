@@ -31,7 +31,7 @@ jobs:
       - name: Update Version
         shell: pwsh
         run: |
-          Import-Module ~/git/PowerShell/DupreeFunctions/DupreeFunctions.psm1
+          Import-Module ~/git/PowerShell/DupreeFunctions/DupreeFunctions.psd1 -Force
           Update-DfModuleVersion
 
       # Publish DupreeFunctions to PSG
