@@ -368,13 +368,13 @@ Function Update-DfLabBoxes {
 }
 
 Function Update-DfModuleVersion{
-    $PsgModuleVersion = Find-Module DupreeFunctions
-    $OldPsgModuleVersion = $PsgModuleVersion.Version.Major.ToString() + "." + $PsgModuleVersion.Version.Minor.ToString() + "." + $PsgModuleVersion.Version.Build.ToString()
-    $NewPsgModuleVersion = $PsgModuleVersion.Version.Major.ToString() + "." + $PsgModuleVersion.Version.Minor.ToString() + "." + $(($PsgModuleVersion.Version.Build + 1)).ToString()
+    $v = [version]($PsgModuleVersion.Version -replace '-.*$')   # strip any prerelease tag
+    $OldPsgModuleVersion = '{0}.{1}.{2}' -f $v.Major, $v.Minor, $v.Build
+    $NewPsgModuleVersion = '{0}.{1}.{2}' -f $v.Major, $v.Minor, ($v.Build + 1)
 
-    $PsdContent = Get-Content C:\Git\PowerShell\DupreeFunctions\DupreeFunctions.psd1 -Raw
+    $PsdContent = Get-Content ~/git/PowerShell/DupreeFunctions/DupreeFunctions.psd1 -Raw
     $NewPsdContent = $PsdContent.Replace("$OldPsgModuleVersion","$NewPsgModuleVersion")
-    $NewPsdContent | Out-File C:\actions-runner\_work\PowerShell\PowerShell\DupreeFunctions\DupreeFunctions.psd1 -Force
+    $NewPsdContent | Out-File ~/git/PowerShell/DupreeFunctions/DupreeFunctions.psd1 -Force
 }
 
 Function Invoke-UserSetup {

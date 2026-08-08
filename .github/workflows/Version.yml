@@ -26,7 +26,7 @@ jobs:
       - name: Update Repo
         shell: pwsh
         run: |
-          git -C ~/git/PowerShell pull origin master
+          git -C ~/git/PowerShell pull origin version
 
       - name: Update Version
         shell: pwsh
