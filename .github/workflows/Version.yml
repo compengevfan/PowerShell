@@ -29,7 +29,7 @@ jobs:
           git -C ~/git/PowerShell pull origin master
 
       - name: Update Version
-        shell: PowerShell
+        shell: pwsh
         run: |
           Import-Module ~/git/PowerShell/DupreeFunctions/DupreeFunctions.psm1
           Update-DfModuleVersion
