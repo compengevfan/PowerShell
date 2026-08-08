@@ -16,6 +16,8 @@ jobs:
   build:
     # The type of runner that the job will run on
     runs-on: self-hosted
+    permissions:
+      contents: write
     if: github.event.pull_request.merged == true
 
     # Steps represent a sequence of tasks that will be executed as part of the job
@@ -40,8 +42,10 @@ jobs:
       # Publish DupreeFunctions to PSG
       - name: Update Branch
         shell: pwsh
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           git -C ~/git/PowerShell add ~/git/PowerShell/DupreeFunctions/DupreeFunctions.psd1
           git -C ~/git/PowerShell commit -m "Version Updated"
-          git -C ~/git/PowerShell push origin version
+          git -C ~/git/PowerShell push "https://x-access-token:$env:GH_TOKEN@github.com/compengevfan/PowerShell.git" version
       #V12
