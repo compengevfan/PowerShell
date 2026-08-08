@@ -24,7 +24,7 @@ jobs:
 
       # Update repository on JAX-TASK001
       - name: Update Repo
-        shell: cmd
+        shell: pwsh
         run: |
           git -C ~/git/PowerShell pull origin master
 
@@ -35,7 +35,7 @@ jobs:
 
       # Publish DupreeFunctions to PSG
       - name: Update Branch
-        shell: cmd
+        shell: pwsh
         run: |
           git add ~/git/PowerShell/DupreeFunctions/DupreeFunctions.psd1
           git commit -m "Version Updated"
