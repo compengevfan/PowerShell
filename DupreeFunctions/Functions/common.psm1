@@ -374,7 +374,7 @@ Function Update-DfModuleVersion{
 
     $PsdContent = Get-Content ~/git/PowerShell/DupreeFunctions/DupreeFunctions.psd1 -Raw
     $NewPsdContent = $PsdContent.Replace("$OldPsgModuleVersion","$NewPsgModuleVersion")
-    $NewPsdContent | Out-File ~/git/PowerShell/DupreeFunctions/DupreeFunctions.psd1 -Force
+    $NewPsdContent | Out-File ~/git/PowerShell/DupreeFunctions/DupreeFunctions.psd1 -Force -NoNewline
 }
 
 Function Invoke-UserSetup {
