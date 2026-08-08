@@ -368,10 +368,9 @@ Function Update-DfLabBoxes {
 }
 
 Function Update-DfModuleVersion{
-    $PsgModuleVersion = Find-Module DupreeFunctions
-    $v = [version]($PsgModuleVersion.Version -replace '-.*$')   # strip any prerelease tag
-    $OldPsgModuleVersion = '{0}.{1}.{2}' -f $v.Major, $v.Minor, $v.Build
-    $NewPsgModuleVersion = '{0}.{1}.{2}' -f $v.Major, $v.Minor, ($v.Build + 1)
+    $PsgModuleVersion = (Get-Module DupreeFunctions).Version
+    $OldPsgModuleVersion = '{0}.{1}.{2}' -f $PsgModuleVersion.Major, $PsgModuleVersion.Minor, $PsgModuleVersion.Build
+    $NewPsgModuleVersion = '{0}.{1}.{2}' -f $PsgModuleVersion.Major, $PsgModuleVersion.Minor, ($PsgModuleVersion.Build + 1)
 
     $PsdContent = Get-Content ~/git/PowerShell/DupreeFunctions/DupreeFunctions.psd1 -Raw
     $NewPsdContent = $PsdContent.Replace("$OldPsgModuleVersion","$NewPsgModuleVersion")
