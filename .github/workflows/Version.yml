@@ -38,7 +38,7 @@ jobs:
       - name: Update Branch
         shell: pwsh
         run: |
-          git add ~/git/PowerShell/DupreeFunctions/DupreeFunctions.psd1
-          git commit -m "Version Updated"
-          git push origin version
+          git -C ~/git/PowerShell add ~/git/PowerShell/DupreeFunctions/DupreeFunctions.psd1
+          git -C ~/git/PowerShell commit -m "Version Updated"
+          git -C ~/git/PowerShell push origin version
       #V12
