@@ -368,6 +368,7 @@ Function Update-DfLabBoxes {
 }
 
 Function Update-DfModuleVersion{
+    $PsgModuleVersion = Find-Module DupreeFunctions
     $v = [version]($PsgModuleVersion.Version -replace '-.*$')   # strip any prerelease tag
     $OldPsgModuleVersion = '{0}.{1}.{2}' -f $v.Major, $v.Minor, $v.Build
     $NewPsgModuleVersion = '{0}.{1}.{2}' -f $v.Major, $v.Minor, ($v.Build + 1)
