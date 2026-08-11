@@ -1,6 +1,6 @@
 <#PSScriptInfo
 
-.VERSION 4.6.0
+.VERSION 5.0.0
 
 .GUID b53cae85-1769-4697-ba24-a6fd87efb453
 
@@ -25,21 +25,26 @@
 .EXTERNALSCRIPTDEPENDENCIES
 
 .RELEASENOTES
+5.0.0 Removed the claudthings launcher entirely: no Invoke-ClaudePicker / cld, no
+      Initialize-ClaudeThings, no Test-ClaudeSkills, no ~\claudthings paths, and
+      no pinned window title. Sync-ClaudeSkills survives as a standalone command
+      (run it yourself; nothing calls it automatically) and so does
+      Set-ClaudeDirectoryTrust. The banner still reports the Claude Code version.
+
 4.6.0 Dropped VMware entirely: no PowerCLI banner line, and the prompt no longer
       reads $global:DefaultVIServers, so there is no connected-vCenter segment in
       the prompt or the window title.
 
 4.5.0 Sync-ClaudeSkills pulls $giteahome\skills and mirrors it into
-      ~\.claude\skills; cld runs it before showing the menu. Mirror means a skill
-      removed from the repo is removed locally. Skipped entirely when
-      $env:giteahome is not set, and the pull is bounded so an unreachable Gitea
-      cannot hang the launcher.
+      ~\.claude\skills. Mirror means a skill removed from the repo is removed
+      locally. Skipped entirely when $env:giteahome is not set, and the pull is
+      bounded so an unreachable Gitea cannot hang the shell.
 
 4.4.0 A default shell now opens in $githome, so Claude Code starts in a directory
       it already trusts. Deliberate working directories (Open PowerShell here, a
       VS Code workspace, a configured startingDirectory) are left alone.
-      Set-ClaudeDirectoryTrust pre-accepts the workspace-trust dialog for new
-      claudthings projects; cld calls it before launching. PowerShell 7+ only.
+      Set-ClaudeDirectoryTrust pre-accepts the workspace-trust dialog for a
+      directory. PowerShell 7+ only.
 
 4.3.0 All four home paths now report identically: Git, Gitea, Dropbox and Proton
       each say so when their environment variable is empty.
@@ -52,11 +57,6 @@
 4.0.0 Self-contained: this one file is the whole setup, so copying it to a new
       machine is the entire install. Deployment no longer needs DupreeFunctions
       (Sync-Profile replaces Sync-DfProfileScript and finds its own source).
-      Absorbed the claudthings launcher: Invoke-ClaudePicker (alias cld) picks a
-      project under ~\claudthings and starts Claude Code there, Test-ClaudeSkills
-      reconciles ~\.claude\skills against SKILLS.md, Initialize-ClaudeThings lays
-      the folders down. All of it no-ops politely where Claude Code is absent.
-      Permission bypass is opt-in per launch (-Yolo), never the default.
 
 3.0.0 Nothing in the profile can abort the load any more (a missing module is
       reported, not thrown). Module imports happen once instead of twice.
@@ -226,7 +226,7 @@ if ($ClaudeCommand) {
 		}
 		else { $ClaudeCommand.Version.ToString() }
 	}
-	Write-ProfileStatus 'Claude Code' "$ClaudeVersion - 'cld' picks a project" Green
+	Write-ProfileStatus 'Claude Code' $ClaudeVersion Green
 }
 
 # Land in $githome so Claude Code starts somewhere it already trusts, instead of
@@ -335,14 +335,7 @@ function global:prompt {
 
 	$Branch = if ($IsFileSystem) { Get-PromptGitBranch -Path $FullPath } else { $null }
 
-	# Invoke-ClaudePicker pins the tab to a project name. Without this check the very
-	# next prompt render would wipe it the moment Claude Code exits.
-	if ($global:ProfilePinnedTitle) {
-		$Title = $global:ProfilePinnedTitle
-	}
-	else {
-		$Title = '{0}{1} {2}' -f $env:USERNAME, $(if ($global:ProfileIsAdmin) { ' (Admin)' }), $FullPath
-	}
+	$Title = '{0}{1} {2}' -f $env:USERNAME, $(if ($global:ProfileIsAdmin) { ' (Admin)' }), $FullPath
 	try { $Host.UI.RawUI.WindowTitle = $Title } catch { }
 
 	$Line = New-Object System.Text.StringBuilder
@@ -366,39 +359,10 @@ function global:prompt {
 
 #region Claude Code -----------------------------------------------------------
 
-# Absorbed from a friend's install-claudthings.ps1 / claude-pick.ps1. Adapted to
-# live inside a profile: no `exit` (it would kill the shell), no $PSScriptRoot
-# (it differs per host), state anchored to the projects root, and nothing here
-# runs at load time - these are definitions only.
-
-$global:ClaudeThingsRoot = Join-Path $HOME 'claudthings'
-$global:ClaudeThingsArchive = Join-Path $HOME 'claudoldignore'
-
-function Get-ClaudeCommand {
-	# Single choke point so a machine without Claude Code says so once, instead of
-	# throwing CommandNotFoundException from somewhere deeper in a menu.
-	$Command = Get-Command claude -ErrorAction SilentlyContinue | Select-Object -First 1
-	if (-not $Command) {
-		Write-Host "Claude Code is not installed on this machine (no 'claude' on PATH)." -ForegroundColor Yellow
-		Write-Host '  Everything else in this profile still works.' -ForegroundColor DarkGray
-		return $null
-	}
-	return $Command
-}
-
-function Test-ProfileInteractive {
-	# Read-Host against a redirected stdin either throws or blocks forever, so the
-	# menu-driven helpers refuse up front rather than wedging an agent shell or a
-	# scheduled task. The ISE has no console at all, hence the catch.
-	if (-not [System.Environment]::UserInteractive) { return $false }
-	try { if ([System.Console]::IsInputRedirected) { return $false } } catch { }
-	return $true
-}
-
-function Clear-ProfilePinnedTitle {
-	$global:ProfilePinnedTitle = $null
-	Remove-Item Env:\CLAUDE_CODE_DISABLE_TERMINAL_TITLE -ErrorAction SilentlyContinue
-}
+# Two conveniences for Claude Code, and nothing else: keep ~\.claude\skills in
+# step with the Gitea skills repo, and pre-accept the workspace-trust dialog for
+# a directory. Nothing here runs at load time - these are definitions only, so
+# call them when you want them.
 
 function Get-ClaudeSkillSignature {
 	# Relative path + content hash for every file, so a comparison catches edits,
@@ -427,7 +391,7 @@ function Sync-ClaudeSkills {
 	param(
 		[string] $Repo = $(if ($global:giteahome) { Join-Path $global:giteahome 'skills' }),
 		[string] $Destination = (Join-Path $HOME '.claude\skills'),
-		# A pull against an unreachable host would otherwise hang the launcher for
+		# A pull against an unreachable host would otherwise hang the shell for
 		# as long as TCP takes to give up.
 		[int] $TimeoutSeconds = 20
 	)
@@ -475,8 +439,8 @@ function Sync-ClaudeSkills {
 		New-Item -ItemType Directory -Path $Destination -Force | Out-Null
 	}
 
-	# A skill is a folder with a SKILL.md - same test Test-ClaudeSkills uses. This
-	# is why the repo's root README.md is not copied: it is not a skill.
+	# A skill is a folder with a SKILL.md. This is why the repo's root README.md
+	# is not copied: it is not a skill.
 	$Source = @(Get-ChildItem -LiteralPath $Repo -Directory -Force -ErrorAction SilentlyContinue |
 		Where-Object { $_.Name -notlike '.*' -and (Test-Path -LiteralPath (Join-Path $_.FullName 'SKILL.md')) })
 	$Existing = @(Get-ChildItem -LiteralPath $Destination -Directory -Force -ErrorAction SilentlyContinue)
@@ -615,574 +579,6 @@ function Set-ClaudeDirectoryTrust {
 		Write-Host "Could not update $ConfigPath - $($_.Exception.Message)" -ForegroundColor Yellow
 	}
 }
-
-function Get-ClaudeProjectDescription {
-	param([string] $Path)
-
-	$Markdown = Join-Path $Path 'CLAUDE.md'
-	if (-not (Test-Path -LiteralPath $Markdown)) { return '' }
-
-	# Runs once per project on every menu redraw, and the heading is always near
-	# the top, so there is no reason to read the whole file.
-	foreach ($Line in (Get-Content -LiteralPath $Markdown -TotalCount 40 -ErrorAction SilentlyContinue)) {
-		if ($Line.Trim() -match '^#{1,6}\s+(.+)$') {
-			$Description = $Matches[1].Trim()
-			if ($Description.Length -gt 48) { $Description = $Description.Substring(0, 45) + '...' }
-			return $Description
-		}
-	}
-	return ''
-}
-
-function Write-ClaudeFile {
-	# Never lose an existing file: back it up before overwriting.
-	param([string] $Path, [string] $Content)
-
-	if (Test-Path -LiteralPath $Path) {
-		$Backup = '{0}.bak-{1}' -f $Path, (Get-Date -Format 'yyyyMMdd-HHmmss')
-		Copy-Item -LiteralPath $Path -Destination $Backup
-		Write-Host "  backed up -> $Backup" -ForegroundColor Yellow
-	}
-	Set-Content -LiteralPath $Path -Value $Content -Encoding utf8
-	Write-Host "  wrote     $Path" -ForegroundColor Green
-}
-
-function Initialize-ClaudeThings {
-	[CmdletBinding()]
-	param(
-		[string] $Root = $global:ClaudeThingsRoot,
-		[string] $Archive = $global:ClaudeThingsArchive
-	)
-
-	$ErrorActionPreference = 'Stop'
-
-	$Meta = Join-Path $Root 'claudthings-setup'
-	$Skills = Join-Path $HOME '.claude\skills'
-
-	Write-Host ''
-	Write-Host "Setting up claudthings under $Root" -ForegroundColor Cyan
-
-	foreach ($Directory in @($Root, $Archive, $Skills, $Meta)) {
-		if (Test-Path -LiteralPath $Directory) {
-			Write-Host "  exists    $Directory" -ForegroundColor DarkGray
-		}
-		else {
-			New-Item -ItemType Directory -Path $Directory -Force | Out-Null
-			Write-Host "  created   $Directory" -ForegroundColor Green
-		}
-	}
-
-	$SkillsRegistry = @'
-# claudthings skills - master index
-
-Reusable Claude Code **personal skills** distilled from lessons learned across
-your claudthings projects. They live in `~/.claude/skills/<name>/SKILL.md` and are
-auto-available in EVERY Claude session/project (no install step). This file is the
-registry: which skill exists, what it's for, and which project it came from.
-
-## How this works
-- A skill = a folder `~/.claude/skills/<name>/` with a `SKILL.md` (YAML frontmatter
-  `name` + `description`, then markdown body).
-- Claude Code auto-discovers skills from `~/.claude/skills/` every session (create a
-  folder = live next session; remove it = gone). Only the `description` is loaded
-  into context - it's the trigger; the body loads on demand.
-- This registry is MANUAL - it does not auto-update. Keep it in sync by hand.
-- Distillation rule: keep the reusable METHOD; genericize/drop one-off environment
-  specifics (real hostnames, IPs, one server's settings).
-
-## Skills
-
-| Skill (`~/.claude/skills/...`) | Source project | What it covers |
-|---|---|---|
-| _(none yet - add a row per skill you create)_ | | |
-
-## Staying in sync
-Run `Test-ClaudeSkills` (or press `s` in the `cld` launcher menu). It is read-only:
-it flags skills on disk missing from this table and vice-versa, and reports whether
-each skill's source project is live, archived, or gone.
-
-## How to make a skill
-In any Claude Code session, after solving something reusable, say
-"make a skill out of this" - Claude writes `~/.claude/skills/<name>/SKILL.md`. Then
-add a row above. To update an existing skill later: "distill lessons into the skill".
-'@
-	Write-ClaudeFile -Path (Join-Path $Meta 'SKILLS.md') -Content $SkillsRegistry
-
-	$MetaClaudeMd = @"
-# claudthings-setup project
-
-The "meta" project that owns the claudthings system: the per-project self-contained
-conventions and the skills registry.
-
-## File location rules
-- Write every project file INSIDE this folder: ``$Meta``.
-- NEVER read or write project files in the home dir.
-  Archived/old work lives in claudoldignore - do not use it.
-- When memory or notes reference a file by bare name, it lives in THIS folder.
-
-## Key files
-- ``SKILLS.md`` - registry of your personal skills (in ~/.claude/skills/).
-
-## The launcher
-There is no launcher script. The picker lives in the PowerShell profile itself
-(```$PROFILE``) as ``Invoke-ClaudePicker``, aliased ``cld``. Companion commands:
-``Test-ClaudeSkills`` (read-only skills reconciliation), ``Initialize-ClaudeThings``
-(lay these folders down on a new machine) and ``Sync-Profile`` (deploy the profile
-to every host on this machine).
-"@
-	Write-ClaudeFile -Path (Join-Path $Meta 'CLAUDE.md') -Content $MetaClaudeMd
-
-	Write-Host ''
-	Write-Host "Done. Run 'cld' and press 'n' to make your first project." -ForegroundColor Green
-	Write-Host ''
-}
-
-function Test-ClaudeSkills {
-	<#
-	.SYNOPSIS
-	 READ-ONLY reconciliation of the claudthings skills system. Changes nothing.
-	.DESCRIPTION
-	 Cross-checks skills on disk (~/.claude/skills/*/SKILL.md) against the SKILLS.md
-	 registry, and reports whether each registered skill's source project is live,
-	 archived, or gone.
-	#>
-	[CmdletBinding()]
-	param(
-		[string] $SkillsDir = (Join-Path $HOME '.claude\skills'),
-		[string] $Registry = (Join-Path $global:ClaudeThingsRoot 'claudthings-setup\SKILLS.md'),
-		[string] $Root = $global:ClaudeThingsRoot,
-		[string] $Archive = $global:ClaudeThingsArchive
-	)
-
-	$ErrorActionPreference = 'Stop'
-	$Rule = { Write-Host ('-' * 70) -ForegroundColor DarkGray }
-	$Issues = 0
-
-	Write-Host ''
-	Write-Host ' CHECK-SKILLS  (read-only reconciliation)' -ForegroundColor Cyan
-	& $Rule
-
-	$OnDisk = @()
-	if (Test-Path -LiteralPath $SkillsDir) {
-		$OnDisk = @(Get-ChildItem -LiteralPath $SkillsDir -Directory -ErrorAction SilentlyContinue |
-			Where-Object { Test-Path (Join-Path $_.FullName 'SKILL.md') } |
-			Select-Object -ExpandProperty Name | Sort-Object)
-	}
-	else {
-		Write-Host "  Skills dir not found: $SkillsDir" -ForegroundColor Yellow
-	}
-	Write-Host ("  Skills on disk      : {0}" -f $OnDisk.Count) -ForegroundColor Gray
-
-	$Registered = @{}
-	if (Test-Path -LiteralPath $Registry) {
-		foreach ($Line in (Get-Content -LiteralPath $Registry)) {
-			if ($Line -notmatch '^\s*\|\s*`') { continue }
-			$Cells = $Line -split '\|'
-			if ($Cells.Count -lt 3) { continue }
-			$NameMatch = [regex]::Match($Cells[1], '`([^`]+)`')
-			if (-not $NameMatch.Success) { continue }
-			$Skill = $NameMatch.Groups[1].Value.Trim()
-			$Sources = @([regex]::Matches($Cells[2], '`([^`]+)`') | ForEach-Object { $_.Groups[1].Value.Trim() })
-			$Registered[$Skill] = $Sources
-		}
-	}
-	else {
-		Write-Host "  Registry not found: $Registry" -ForegroundColor Yellow
-	}
-	Write-Host ("  Skills in SKILLS.md : {0}" -f $Registered.Count) -ForegroundColor Gray
-	& $Rule
-
-	$Unregistered = @($OnDisk | Where-Object { -not $Registered.ContainsKey($_) })
-	if ($Unregistered.Count) {
-		$Issues += $Unregistered.Count
-		Write-Host '  [!] On disk but NOT in SKILLS.md (add a registry row):' -ForegroundColor Yellow
-		$Unregistered | ForEach-Object { Write-Host "        $_" -ForegroundColor Yellow }
-	}
-	else {
-		Write-Host '  [ok] Every on-disk skill is registered.' -ForegroundColor Green
-	}
-
-	$Missing = @($Registered.Keys | Where-Object { $_ -notin $OnDisk } | Sort-Object)
-	if ($Missing.Count) {
-		$Issues += $Missing.Count
-		Write-Host '  [!] In SKILLS.md but NOT on disk (stale row - skill archived/deleted?):' -ForegroundColor Yellow
-		$Missing | ForEach-Object { Write-Host "        $_" -ForegroundColor Yellow }
-	}
-	else {
-		Write-Host '  [ok] Every registered skill exists on disk.' -ForegroundColor Green
-	}
-	& $Rule
-
-	Write-Host '  Source-project status (skill is self-contained; this is source-of-record only):' -ForegroundColor Cyan
-	$SourceIssues = 0
-	foreach ($Skill in ($Registered.Keys | Sort-Object)) {
-		foreach ($Source in $Registered[$Skill]) {
-			if ($Source -match '\s') { continue }
-			if (Test-Path -LiteralPath (Join-Path $Root $Source)) { continue }   # live - healthy
-			$SourceIssues++
-			if (Test-Path -LiteralPath (Join-Path $Archive $Source)) {
-				Write-Host ("        [archived] {0}  <- source '{1}' is in claudoldignore" -f $Skill, $Source) -ForegroundColor DarkYellow
-			}
-			else {
-				Write-Host ("        [GONE]     {0}  <- source '{1}' not found live or archived" -f $Skill, $Source) -ForegroundColor Red
-			}
-		}
-	}
-	if ($SourceIssues -eq 0) {
-		Write-Host '        [ok] All source projects are live in claudthings.' -ForegroundColor Green
-	}
-	$Issues += $SourceIssues
-	& $Rule
-
-	if ($Issues -eq 0) {
-		Write-Host '  VERDICT: in sync - nothing to reconcile.' -ForegroundColor Green
-	}
-	else {
-		Write-Host ('  VERDICT: {0} item(s) to review above. Nothing was changed.' -f $Issues) -ForegroundColor Yellow
-	}
-	Write-Host ''
-}
-
-function Invoke-ClaudePicker {
-	<#
-	.SYNOPSIS
-	 Pick a claudthings project, cd into it, and start Claude Code there.
-	.PARAMETER Yolo
-	 Launch with --dangerously-skip-permissions. Opt-in on purpose: the original
-	 launcher did this for every project unconditionally.
-	#>
-	[CmdletBinding()]
-	param(
-		[switch] $Yolo,
-		[string] $Root = $global:ClaudeThingsRoot,
-		[string] $Archive = $global:ClaudeThingsArchive
-	)
-
-	$ErrorActionPreference = 'Stop'   # function-scoped; never leaks into the session
-
-	$Claude = Get-ClaudeCommand
-	if (-not $Claude) { return }
-
-	if (-not (Test-ProfileInteractive)) {
-		Write-Host 'Invoke-ClaudePicker needs an interactive console - it prompts for input.' -ForegroundColor Yellow
-		return
-	}
-
-	if (-not (Test-Path -LiteralPath $Root)) {
-		Write-Host "claudthings root not found: $Root" -ForegroundColor Yellow
-		if ((Read-Host 'Create it now? (Y/n)') -match '^[nN]') { return }
-		Initialize-ClaudeThings -Root $Root -Archive $Archive
-	}
-
-	# Refresh skills before the menu, so the 's' reconciliation sees current state
-	# and any session launched from here has the latest skills. Never fatal.
-	try { Sync-ClaudeSkills } catch { Write-Host "Skills sync failed - $($_.Exception.Message)" -ForegroundColor Yellow }
-
-	# Remember the last project opened so we can mark it (*) and let Enter re-open it.
-	$LastFile = Join-Path $Root '.last'
-	$LastName = ''
-	if (Test-Path -LiteralPath $LastFile) {
-		$Raw = Get-Content -LiteralPath $LastFile -TotalCount 1 -ErrorAction SilentlyContinue
-		if ($Raw) { $LastName = ([string]$Raw).Trim() }
-	}
-
-	# Loop so menu-only actions (archive/restore/open/dupe/info/skills/filter) return to the menu.
-	$TabName = $null
-	$Filter = ''
-	while ($null -eq $TabName) {
-		# Read the project list LIVE each pass. Skip dot-folders (e.g. .claude).
-		$AllProjects = @(Get-ChildItem -LiteralPath $Root -Directory |
-			Where-Object { $_.Name -notlike '.*' } | Sort-Object Name)
-		if ([string]::IsNullOrWhiteSpace($Filter)) { $Projects = $AllProjects }
-		else { $Projects = @($AllProjects | Where-Object { $_.Name -like "*$Filter*" }) }
-
-		$NameWidth = 0
-		foreach ($Project in $Projects) {
-			if ($Project.Name.Length -gt $NameWidth) { $NameWidth = $Project.Name.Length }
-		}
-
-		Write-Host ''
-		if ([string]::IsNullOrWhiteSpace($Filter)) {
-			Write-Host "Claude projects in $Root" -ForegroundColor Cyan
-		}
-		else {
-			Write-Host ("Claude projects in $Root  (filter: '{0}' - type 'c' to clear)" -f $Filter) -ForegroundColor Cyan
-		}
-		if ($Yolo) { Write-Host '  permissions: BYPASSED (-Yolo)' -ForegroundColor Red }
-		else { Write-Host '  permissions: normal prompts' -ForegroundColor DarkGray }
-
-		for ($i = 0; $i -lt $Projects.Count; $i++) {
-			$Mark = if ($Projects[$i].Name -eq $LastName) { '*' } else { ' ' }
-			$Description = Get-ClaudeProjectDescription $Projects[$i].FullName
-			if ([string]::IsNullOrWhiteSpace($Description)) {
-				Write-Host ("  {0,2}.{1} {2}" -f ($i + 1), $Mark, $Projects[$i].Name)
-			}
-			else {
-				Write-Host ("  {0,2}.{1} {2}   " -f ($i + 1), $Mark, $Projects[$i].Name.PadRight($NameWidth)) -NoNewline
-				Write-Host $Description -ForegroundColor DarkGray
-			}
-		}
-		if ($Projects.Count -eq 0) { Write-Host '  (no projects match this filter)' -ForegroundColor Yellow }
-
-		Write-Host '  n. (new project - create a new subfolder)'
-		Write-Host '  o. (open a project in Explorer / VS Code instead of Claude)'
-		Write-Host '  d. (duplicate/clone a project as a template)'
-		Write-Host '  i. (show info about a project)'
-		Write-Host '  r. (remove/archive a project -> claudoldignore)'
-		Write-Host '  u. (un-archive/restore a project <- claudoldignore)'
-		Write-Host '  s. (check skills - reconcile ~/.claude/skills vs SKILLS.md)'
-		Write-Host '  q. (quit - do not launch anything)'
-		Write-Host '  0. (none - just open claudthings root)'
-		Write-Host '  (or type part of a name to filter)'
-		Write-Host ''
-
-		$Question = 'Pick a project number, letter, or filter text'
-		if ($LastName -and ($AllProjects.Name -contains $LastName)) {
-			$Question = "Pick a project number, letter, or filter text (Enter = $LastName)"
-		}
-		$Choice = Read-Host $Question
-
-		if ($Choice -eq '0') {
-			Set-Location -LiteralPath $Root
-			$TabName = 'claudthings'
-		}
-		elseif ($Choice -match '^[qQ]$') {
-			Write-Host 'Cancelled - nothing launched.' -ForegroundColor DarkGray
-			return
-		}
-		elseif ([string]::IsNullOrWhiteSpace($Choice)) {
-			# Enter with no input re-opens the last-used project, if it still exists.
-			if ($LastName -and ($AllProjects.Name -contains $LastName)) {
-				$Target = ($AllProjects | Where-Object { $_.Name -eq $LastName })[0].FullName
-				Set-Location -LiteralPath $Target
-				$TabName = $LastName
-				Write-Host "-> $Target" -ForegroundColor Green
-			}
-			else {
-				Write-Host 'No last-used project to open. Pick a number.' -ForegroundColor Yellow
-			}
-		}
-		elseif ($Choice -match '^[nN]$') {
-			$NewName = ''
-			while ([string]::IsNullOrWhiteSpace($NewName)) {
-				# Sanitize: keep letters/digits/dash/underscore/dot, collapse anything else to a dash.
-				$NewName = ((Read-Host 'New project name') -replace '[^A-Za-z0-9._-]+', '-').Trim('-')
-				if ([string]::IsNullOrWhiteSpace($NewName)) {
-					Write-Host "Name can't be empty. Try again." -ForegroundColor Yellow
-				}
-			}
-			$Target = Join-Path $Root $NewName
-			if (Test-Path -LiteralPath $Target) {
-				Write-Host "Project '$NewName' already exists - opening it." -ForegroundColor Yellow
-			}
-			else {
-				New-Item -ItemType Directory -Path $Target | Out-Null
-				# Seed a CLAUDE.md so the new project is self-contained from the first session.
-				$Seed = @"
-# $NewName project
-
-This is a self-contained project folder. Keep ALL project files here.
-
-## File location rules
-- Write every project file INSIDE this folder: ``$Target``.
-  That includes notes, todos, documentation, scripts, and any output files.
-- NEVER read or write project files in the home dir.
-  Archived/old work lives in claudoldignore - do not use it.
-- When memory or notes reference a file by bare name, it lives in THIS folder. Read it from here.
-"@
-				Set-Content -LiteralPath (Join-Path $Target 'CLAUDE.md') -Value $Seed -Encoding utf8
-				Write-Host "Created new project: $Target (with CLAUDE.md)" -ForegroundColor Green
-			}
-			Set-Location -LiteralPath $Target
-			$TabName = $NewName
-		}
-		elseif ($Choice -match '^[oO]$') {
-			# Open in Explorer or VS Code instead of launching Claude. Returns to the menu.
-			if ($Projects.Count -eq 0) { Write-Host 'No projects to open.' -ForegroundColor Yellow }
-			else {
-				$Pick = Read-Host 'Open which project number (blank to cancel)'
-				if ($Pick -match '^\d+$' -and [int]$Pick -ge 1 -and [int]$Pick -le $Projects.Count) {
-					$Directory = $Projects[[int]$Pick - 1].FullName
-					if ((Read-Host 'Open in (e)xplorer or (v)s code? [e]') -match '^[vV]') {
-						if (Get-Command code -ErrorAction SilentlyContinue) {
-							& code $Directory
-							Write-Host "Opened in VS Code: $Directory" -ForegroundColor Green
-						}
-						else {
-							Write-Host "Could not launch 'code' - is VS Code on PATH?" -ForegroundColor Red
-						}
-					}
-					else {
-						Invoke-Item -LiteralPath $Directory
-						Write-Host "Opened in Explorer: $Directory" -ForegroundColor Green
-					}
-				}
-				elseif ($Pick -ne '') { Write-Host 'Invalid selection.' -ForegroundColor Yellow }
-			}
-		}
-		elseif ($Choice -match '^[dD]$') {
-			# Duplicate a project (minus its .claude session state) as a template.
-			if ($Projects.Count -eq 0) { Write-Host 'No projects to duplicate.' -ForegroundColor Yellow }
-			else {
-				$Pick = Read-Host 'Duplicate which project number (blank to cancel)'
-				if ($Pick -match '^\d+$' -and [int]$Pick -ge 1 -and [int]$Pick -le $Projects.Count) {
-					$SourceProject = $Projects[[int]$Pick - 1]
-					$NewName = ''
-					while ([string]::IsNullOrWhiteSpace($NewName)) {
-						$NewName = ((Read-Host 'Name for the copy') -replace '[^A-Za-z0-9._-]+', '-').Trim('-')
-						if ([string]::IsNullOrWhiteSpace($NewName)) {
-							Write-Host "Name can't be empty. Try again." -ForegroundColor Yellow
-						}
-					}
-					$Destination = Join-Path $Root $NewName
-					if (Test-Path -LiteralPath $Destination) {
-						Write-Host "'$NewName' already exists. Nothing copied." -ForegroundColor Yellow
-					}
-					else {
-						New-Item -ItemType Directory -Path $Destination | Out-Null
-						Get-ChildItem -LiteralPath $SourceProject.FullName -Force |
-							Where-Object { $_.Name -ne '.claude' } |
-							ForEach-Object { Copy-Item -LiteralPath $_.FullName -Destination $Destination -Recurse -Force }
-						Write-Host "Cloned '$($SourceProject.Name)' -> $Destination (without .claude)" -ForegroundColor Green
-					}
-				}
-				elseif ($Pick -ne '') { Write-Host 'Invalid selection.' -ForegroundColor Yellow }
-			}
-		}
-		elseif ($Choice -match '^[iI]$') {
-			if ($Projects.Count -eq 0) { Write-Host 'No projects to inspect.' -ForegroundColor Yellow }
-			else {
-				$Pick = Read-Host 'Info for which project number (blank to cancel)'
-				if ($Pick -match '^\d+$' -and [int]$Pick -ge 1 -and [int]$Pick -le $Projects.Count) {
-					$Project = $Projects[[int]$Pick - 1]
-					$Files = @(Get-ChildItem -LiteralPath $Project.FullName -Recurse -File -Force -ErrorAction SilentlyContinue)
-					$Newest = $Files | Sort-Object LastWriteTime -Descending | Select-Object -First 1
-					$Modified = if ($Newest) { $Newest.LastWriteTime } else { $Project.LastWriteTime }
-					Write-Host ''
-					Write-Host ("  {0}" -f $Project.Name) -ForegroundColor Cyan
-					Write-Host ("    path         : {0}" -f $Project.FullName)
-					Write-Host ("    files        : {0}" -f $Files.Count)
-					Write-Host ("    last modified: {0}" -f $Modified.ToString('yyyy-MM-dd HH:mm'))
-					Write-Host ("    CLAUDE.md    : {0}" -f
-						$(if (Test-Path -LiteralPath (Join-Path $Project.FullName 'CLAUDE.md')) { 'yes' } else { 'no' }))
-				}
-				elseif ($Pick -ne '') { Write-Host 'Invalid selection.' -ForegroundColor Yellow }
-			}
-		}
-		elseif ($Choice -match '^[rR]$') {
-			# Archive (move, never delete) into claudoldignore, then re-show the menu.
-			if ($Projects.Count -eq 0) { Write-Host 'No projects to remove.' -ForegroundColor Yellow }
-			else {
-				$Pick = Read-Host 'Remove which project number (blank to cancel)'
-				if ($Pick -match '^\d+$' -and [int]$Pick -ge 1 -and [int]$Pick -le $Projects.Count) {
-					$Victim = $Projects[[int]$Pick - 1]
-					if ((Read-Host "Move '$($Victim.Name)' to claudoldignore? (y/N)") -match '^[yY]') {
-						if (-not (Test-Path -LiteralPath $Archive)) {
-							New-Item -ItemType Directory -Path $Archive -Force | Out-Null
-						}
-						$Destination = Join-Path $Archive $Victim.Name
-						if (Test-Path -LiteralPath $Destination) {
-							$Destination = '{0}.removed-{1}' -f $Destination, (Get-Date -Format 'yyyyMMdd-HHmmss')
-						}
-						try {
-							Move-Item -LiteralPath $Victim.FullName -Destination $Destination -ErrorAction Stop
-							Write-Host "Archived to: $Destination" -ForegroundColor Green
-						}
-						catch {
-							Write-Host "Could not move '$($Victim.Name)' - it's in use by another process." -ForegroundColor Red
-							Write-Host 'Close any terminal tab / editor / Claude session in that folder, then retry.' -ForegroundColor Yellow
-						}
-					}
-					else { Write-Host 'Cancelled.' -ForegroundColor Yellow }
-				}
-				elseif ($Pick -ne '') { Write-Host 'Invalid selection. Nothing removed.' -ForegroundColor Yellow }
-			}
-		}
-		elseif ($Choice -match '^[uU]$') {
-			$Archived = @()
-			if (Test-Path -LiteralPath $Archive) {
-				$Archived = @(Get-ChildItem -LiteralPath $Archive -Directory |
-					Where-Object { $_.Name -notlike '.*' } | Sort-Object Name)
-			}
-			if ($Archived.Count -eq 0) { Write-Host "Nothing archived in $Archive." -ForegroundColor Yellow }
-			else {
-				Write-Host ''
-				Write-Host "Archived projects in $Archive" -ForegroundColor Cyan
-				for ($i = 0; $i -lt $Archived.Count; $i++) {
-					Write-Host ("  {0}. {1}" -f ($i + 1), $Archived[$i].Name)
-				}
-				$Pick = Read-Host 'Restore which project number (blank to cancel)'
-				if ($Pick -match '^\d+$' -and [int]$Pick -ge 1 -and [int]$Pick -le $Archived.Count) {
-					$Revive = $Archived[[int]$Pick - 1]
-					$Destination = Join-Path $Root $Revive.Name
-					if (Test-Path -LiteralPath $Destination) {
-						$Destination = '{0}.restored-{1}' -f $Destination, (Get-Date -Format 'yyyyMMdd-HHmmss')
-					}
-					try {
-						Move-Item -LiteralPath $Revive.FullName -Destination $Destination -ErrorAction Stop
-						Write-Host "Restored to: $Destination" -ForegroundColor Green
-					}
-					catch {
-						Write-Host "Could not move '$($Revive.Name)' - it's in use by another process." -ForegroundColor Red
-					}
-				}
-				elseif ($Pick -ne '') { Write-Host 'Invalid selection. Nothing restored.' -ForegroundColor Yellow }
-			}
-		}
-		elseif ($Choice -match '^[sS]$') {
-			Test-ClaudeSkills -Root $Root -Archive $Archive
-			Write-Host '(press Enter to return to the menu)' -ForegroundColor DarkGray
-			[void](Read-Host)
-		}
-		elseif ($Choice -match '^[cC]$') {
-			$Filter = ''
-		}
-		elseif ($Choice -match '^\d+$' -and [int]$Choice -ge 1 -and [int]$Choice -le $Projects.Count) {
-			$Target = $Projects[[int]$Choice - 1].FullName
-			Set-Location -LiteralPath $Target
-			$TabName = $Projects[[int]$Choice - 1].Name
-			Write-Host "-> $Target" -ForegroundColor Green
-		}
-		else {
-			# Anything else non-empty is type-to-filter text. A single hit opens directly.
-			$Hits = @($AllProjects | Where-Object { $_.Name -like "*$Choice*" })
-			if ($Hits.Count -eq 1) {
-				Set-Location -LiteralPath $Hits[0].FullName
-				$TabName = $Hits[0].Name
-				Write-Host "-> $($Hits[0].FullName)" -ForegroundColor Green
-			}
-			elseif ($Hits.Count -gt 1) { $Filter = $Choice }
-			else { Write-Host "No projects match '$Choice'. Try again." -ForegroundColor Yellow }
-		}
-	}
-
-	# Record the opened project (skip the root pseudo-target) as last-used. Best effort.
-	if ($TabName -and $TabName -ne 'claudthings') {
-		try { Set-Content -LiteralPath $LastFile -Value $TabName -Encoding utf8 } catch { }
-	}
-
-	# Every project folder is its own untrusted directory, so without this you meet the
-	# workspace-trust dialog once per project. Best effort - never block the launch.
-	try { Set-ClaudeDirectoryTrust -Path (Get-Location).Path } catch { }
-
-	# Stop Claude Code from overriding the tab title, then pin it. The prompt function
-	# honours ProfilePinnedTitle, so the name survives after Claude exits.
-	$env:CLAUDE_CODE_DISABLE_TERMINAL_TITLE = '1'
-	$global:ProfilePinnedTitle = $TabName
-	try { $Host.UI.RawUI.WindowTitle = $TabName } catch { }
-
-	if ($Yolo) {
-		Write-Host 'Launching Claude Code with ALL permission prompts bypassed (-Yolo).' -ForegroundColor Red
-		& $Claude.Source --dangerously-skip-permissions
-	}
-	else {
-		& $Claude.Source
-	}
-
-	Write-Host ("Tab pinned to '{0}'. Run Clear-ProfilePinnedTitle to restore the normal title." -f $TabName) -ForegroundColor DarkGray
-}
-
-Set-Alias -Name cld -Value Invoke-ClaudePicker -Force
 
 #endregion
 
