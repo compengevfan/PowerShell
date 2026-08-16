@@ -1,114 +1,110 @@
+<#
+.SYNOPSIS
+ Bootstrap a new Windows or Linux machine to use this PowerShell profile.
+.DESCRIPTION
+ One-time setup: works out where this git repo lives, persists the environment
+ variables the profile reports on, and copies the profile script into place for
+ the PowerShell host you're running this from.
+
+ Everything the profile itself needs beyond that (modules, git, Claude Code) is
+ optional and the profile already degrades gracefully when they're missing, so
+ this script doesn't install them - it just gets the profile loading.
+
+ After this runs once, use the profile's own Sync-Profile function to deploy it
+ to every other PowerShell host (ISE, VS Code, Windows PowerShell vs PowerShell 7)
+ on the machine.
+#>
 [CmdletBinding()]
-Param(
-)
+param()
 
-#Display PowerShell Version
-Write-Host "`nPowerShell Version:"
-$PSVersionTable.PSVersion
+# Linux only ever runs PowerShell 7+, where $IsWindows exists. On Windows
+# PowerShell 5.1, $IsWindows doesn't exist at all, so its absence means Windows.
+$OnWindows = if ($null -ne $IsWindows) { $IsWindows } else { $true }
 
-#Check for NuGet and PowerShellGet
-$NuGetCheck = Get-PackageProvider | Where-Object {$_.Name -eq "NuGet"}
-if ($null -ne $NuGetCheck) {Write-Host "`nNuGet Version $($NuGetCheck.Version) installed." -ForegroundColor green; $NuGetGood = $true}
-else {Write-Host "`nNuGet is not installed."-ForegroundColor red; $NuGetGood = $false}
+Write-Host "PowerShell $($PSVersionTable.PSVersion) ($($PSVersionTable.PSEdition)) on $(if ($OnWindows) { 'Windows' } else { 'Linux/macOS' })`n"
 
-$PowerShellGetCheck = Get-PackageProvider | Where-Object {$_.Name -eq "PowerShellGet"}
-if ($null -ne $NuGetCheck) {Write-Host "`nPowerShellGet Version $($PowerShellGetCheck.Version) installed." -ForegroundColor green; $PowerShellGetGood = $true}
-else {Write-Host "`nPowerShellGet is not installed." -ForegroundColor red; $PowerShellGetGood = $false}
+function Set-PersistentEnvironmentVariable {
+	param(
+		[Parameter(Mandatory)][string] $Name,
+		[Parameter(Mandatory)][string] $Value
+	)
 
-if ($NuGetGood -and $PowerShellGetGood)
-{
-    #Check for Profile scripts
-    if ($null -eq (Test-Path -Path "$([Environment]::GetFolderPath("MyDocuments"))\PowerShell")) 
-    {
-        New-Item -Path "$([Environment]::GetFolderPath("MyDocuments"))" -Name "PowerShell" -ItemType "directory"
-        Install-Script -Name Microsoft.PowerShell_profile
-        Install-Script -Name Microsoft.PowerShellISE_profile
-        Install-Script -Name Microsoft.VSCode_profile
-        Write-Host "PowerShell Profile Scripts installed. Restart PowerShell for change to take effect." -ForegroundColor Yellow
-    }
-    else
-    {
-        #Get Latest Profile Script Version
-        $ProfileScriptUpdated = $false
-        $LatestProfileScriptVersion = (Find-Script -Name "Microsoft.PowerShell_profile").Version
-        $ProfileScripts = Get-ChildItem "$([Environment]::GetFolderPath("MyDocuments"))\PowerShell\*" -Include *.ps1
-        foreach ($ProfileScript in $ProfileScripts) 
-        {
-            $ProfileScriptInfo = Test-ScriptFileInfo $ProfileScript -ErrorAction SilentlyContinue
-            $ProfileScriptVersion = $ProfileScriptInfo.Version
-            if ($ProfileScriptVersion -ne $LatestProfileScriptVersion) 
-            {
-                Save-Script -Name $($ProfileScript.BaseName) -Path "$([Environment]::GetFolderPath("MyDocuments"))\PowerShell\" -Force
-                $ProfileScriptUpdated = $true
-            }
-        }
-        if ($ProfileScriptUpdated) { Write-Host "PowerShell Profile Script(s) updated. Restart PowerShell for change to take effect." -ForegroundColor Yellow }
-        else { Write-Host "PowerShell Profile Scripts are the correct version." -ForegroundColor Green }
-    }
-    #Check for DupreeFunctions
-    $DupreeFunctionsCheck = Get-Module DupreeFunctions
-    if ($null -ne $DupreeFunctionsCheck){
-        Write-Host "DupreeFunctions is installed. Checking Version..." -ForegroundColor green
+	Set-Item -Path "Env:$Name" -Value $Value
 
-        $DupreeFunctionsCurrentVersion = $($DupreeFunctionsCheck.Version.Major).ToString() + "." + $($DupreeFunctionsCheck.Version.Minor).ToString() + "." + $($DupreeFunctionsCheck.Version.Build).ToString()
-        try {
-            $DupreeFunctionsLatestVersion = Find-Module DupreeFunctions -ErrorAction SilentlyContinue
-            if ($DupreeFunctionsCurrentVersion -eq $($DupreeFunctionsLatestVersion.Version)){Write-Host "Latest version of DupreeFunctions installed." -ForegroundColor green}
-            else {Write-Host "The version of DupreeFunctions installed does not match the latest." -ForegroundColor yellow}
-        }
-        catch {
-            Write-Host "Unable to connect to PowerShell Gallery and determine latest version" -ForegroundColor red
-        }
-    }
+	if ($OnWindows) {
+		[System.Environment]::SetEnvironmentVariable($Name, $Value, [System.EnvironmentVariableTarget]::User)
+		return
+	}
+
+	# No per-user environment store on Linux/macOS outside of shell startup files,
+	# so persist it the same way a user would by hand: export it from ~/.profile.
+	$RcFile = Join-Path $HOME '.profile'
+	$ExportLine = "export $Name=`"$Value`""
+	$Existing = if (Test-Path -LiteralPath $RcFile) { Get-Content -LiteralPath $RcFile } else { @() }
+	$Existing = @($Existing | Where-Object { $_ -notmatch "^export $Name=" })
+	Set-Content -LiteralPath $RcFile -Value ($Existing + $ExportLine)
 }
 
-#Check for PowerCLI and version
-$PowerCLICheck = Get-Module -ListAvailable VMware.Vim
-if ($null -ne $PowerCLICheck){ Write-Host "`nPowerCLI $($PowerCLICheck.Version.Major).$($PowerCLICheck.Version.Minor) is installed." -ForegroundColor green}
-else { Write-Host "`nPowerCLI not found." -ForegroundColor red; Install-Module VMware.PowerCLI -Scope CurrentUser -Force }
+# --- githome --------------------------------------------------------------
+# This script lives at $githome\PowerShell\SystemSetup.ps1, so githome is just
+# its own grandparent directory. No need to guess or prompt for it.
+$GitHome = Split-Path -Parent $PSScriptRoot
+Write-Host "Git home: $GitHome" -ForegroundColor Green
+Set-PersistentEnvironmentVariable -Name 'githome' -Value $GitHome
 
-try {
-    git | Out-Null
-    Write-Host "Git is installed" -ForegroundColor Green
-    if ($env:githome) { 
-        Write-Host "Git environment variable found." -ForegroundColor Green
-        $githome = $env:githome
-        Write-Host "Copying primary profile script using environment variable." -ForegroundColor Green
-        Copy-Item -Path $githome\PowerShell\Profile\Microsoft.PowerShell_profile.ps1 -Destination $PROFILE -Force
-    }
-    else { 
-        Write-Host "Git environment variable NOT found." -ForegroundColor Yellow
-        if (Test-Path C:\git) { $GitPath = "C:\git" } 
-        elseif (Test-Path E:\Dupree\git) { $GitPath = "E:\Dupree\git" }
-        else { $GitPath = Read-Host "Please provide the git path." -ForegroundColor Yellow }
-        Write-Host "Creating Git environment variable." -ForegroundColor Green
-        [System.Environment]::SetEnvironmentVariable('githome', $GitPath, [System.EnvironmentVariableTarget]::User)
-        Write-Host "Copying primary profile script using temporary variable." -ForegroundColor Green
-        Copy-Item -Path $GitPath\PowerShell\Profile\Microsoft.PowerShell_profile.ps1 -Destination $PROFILE -Force
-    }
-    Write-Host "Creating ISE profile script." -ForegroundColor Green
-    Copy-Item -Path $PROFILE -Destination $PROFILE.Replace("Microsoft.PowerShell_profile.ps1", "Microsoft.PowerShellISE_profile.ps1")
-    Write-Host "Copying VS Code profile script." -ForegroundColor Green
-    Copy-Item -Path $PROFILE -Destination $PROFILE.Replace("Microsoft.PowerShell_profile.ps1", "Microsoft.VSCode_profile.ps1")
-}
-catch [System.Management.Automation.CommandNotFoundException] {
-    Write-Host "Git install not found" -ForegroundColor red
-}
-catch {
-    Write-Host "An error occurred:"
-    Write-Host $_
+# --- optional homes ---------------------------------------------------------
+# Purely informational to the profile, so only ask, and skip on a blank answer.
+function Set-OptionalHome {
+	param([string] $Name, [string] $Prompt)
+
+	$Current = [System.Environment]::GetEnvironmentVariable($Name)
+	if ($Current) {
+		Write-Host "$Name already set: $Current" -ForegroundColor Green
+		return
+	}
+	$Value = Read-Host "$Prompt (press Enter to skip)"
+	if ($Value) { Set-PersistentEnvironmentVariable -Name $Name -Value $Value }
 }
 
-$DropboxProcess = Get-Process -Name Dropbox -ErrorAction SilentlyContinue
-if ($($DropboxProcess).Count -gt 0) {
-    Write-Host "Dropbox is installed and running." -ForegroundColor Green
-    Write-Host "Checking for Dropbox environment variable..." -ForegroundColor Green
-    if ($env:dropboxhome) { Write-Host "Dropbox environment variable found." -ForegroundColor Green }
-    else {
-        Write-Host "Dropbox environment variable NOT found." -ForegroundColor Yellow
-        if (Test-Path "C:\Cloud\Dropbox") { $GitPath = "C:\Cloud\Dropbox" }
-        else { $GitPath = Read-Host "Please provide the Dropbox path." -ForegroundColor Yellow }
-        Write-Host "Creating Dropbox environment variable." -ForegroundColor Green
-        [System.Environment]::SetEnvironmentVariable('dropboxhome', $GitPath, [System.EnvironmentVariableTarget]::User)
-    }
+Set-OptionalHome -Name 'giteahome' -Prompt 'Path to the Gitea skills repo'
+Set-OptionalHome -Name 'dropboxhome' -Prompt 'Path to Dropbox'
+Set-OptionalHome -Name 'protonhome' -Prompt 'Path to Proton Drive'
+
+# --- deploy the profile -----------------------------------------------------
+$ProfileSource = Join-Path $GitHome 'PowerShell\Profile\Microsoft.PowerShell_profile.ps1'
+if (-not (Test-Path -LiteralPath $ProfileSource)) {
+	Write-Host "`nProfile source not found: $ProfileSource" -ForegroundColor Red
+	return
 }
+
+$ProfileDir = Split-Path -Parent $PROFILE
+if (-not (Test-Path -LiteralPath $ProfileDir)) {
+	New-Item -ItemType Directory -Path $ProfileDir -Force | Out-Null
+}
+
+# Cover every host that shares this profile directory. ISE only exists on
+# Windows; VS Code's PowerShell extension looks for its own name everywhere.
+$ProfileNames = @('Microsoft.PowerShell_profile.ps1', 'Microsoft.VSCode_profile.ps1')
+if ($OnWindows) { $ProfileNames += 'Microsoft.PowerShellISE_profile.ps1' }
+
+Write-Host ''
+foreach ($Name in $ProfileNames) {
+	$Destination = Join-Path $ProfileDir $Name
+	Copy-Item -LiteralPath $ProfileSource -Destination $Destination -Force
+	Write-Host "Installed profile: $Destination" -ForegroundColor Green
+}
+
+# --- report on optional companions -----------------------------------------
+# Not installed here - the profile already handles their absence gracefully.
+Write-Host ''
+foreach ($Command in 'git', 'claude') {
+	if (Get-Command $Command -ErrorAction SilentlyContinue) {
+		Write-Host "$Command is installed." -ForegroundColor Green
+	}
+	else {
+		Write-Host "$Command was not found on PATH." -ForegroundColor Yellow
+	}
+}
+
+Write-Host "`nDone. Restart PowerShell to load the new profile." -ForegroundColor Cyan
+Write-Host "Once it's loaded, run Sync-Profile to deploy it to any other PowerShell host on this machine." -ForegroundColor Cyan
