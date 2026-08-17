@@ -383,14 +383,30 @@ Function Update-DfLabBoxes {
     }
 }
 
-Function Update-DfModuleVersion{
-    $PsgModuleVersion = Find-Module DupreeFunctions
-    $OldPsgModuleVersion = $PsgModuleVersion.Version.Major.ToString() + "." + $PsgModuleVersion.Version.Minor.ToString() + "." + $PsgModuleVersion.Version.Build.ToString()
-    $NewPsgModuleVersion = $PsgModuleVersion.Version.Major.ToString() + "." + $PsgModuleVersion.Version.Minor.ToString() + "." + $(($PsgModuleVersion.Version.Build + 1)).ToString()
+Function Update-DfModuleVersion {
+    [CmdletBinding()]
+    Param(
+        [Parameter(Mandatory = $true)] [string] $Path
+    )
 
-    $PsdContent = Get-Content C:\Git\PowerShell\DupreeFunctions\DupreeFunctions.psd1 -Raw
-    $NewPsdContent = $PsdContent.Replace("$OldPsgModuleVersion","$NewPsgModuleVersion")
-    $NewPsdContent | Out-File C:\actions-runner\_work\PowerShell\PowerShell\DupreeFunctions\DupreeFunctions.psd1 -Force
+    if (!(Test-Path $Path)) { throw "Module manifest not found: $Path" }
+
+    $PsdContent = Get-Content $Path -Raw
+    $VersionPattern = "(?m)^(\s*ModuleVersion\s*=\s*')([^']+)(')"
+
+    $VersionMatch = [regex]::Match($PsdContent, $VersionPattern)
+    if (!$VersionMatch.Success) { throw "Could not find a ModuleVersion entry in $Path" }
+
+    $OldModuleVersion = $VersionMatch.Groups[2].Value
+    $ParsedVersion = [version]$OldModuleVersion
+    $NewModuleVersion = "{0}.{1}.{2}" -f $ParsedVersion.Major, $ParsedVersion.Minor, ([Math]::Max($ParsedVersion.Build, 0) + 1)
+
+    Write-Host "Updating module version from $OldModuleVersion to $NewModuleVersion"
+
+    $NewPsdContent = [regex]::Replace($PsdContent, $VersionPattern, "`${1}$NewModuleVersion`${3}")
+
+    #Write explicitly as UTF-8 with BOM so the encoding does not shift between Windows and Linux runners
+    [System.IO.File]::WriteAllText($Path, $NewPsdContent, [System.Text.UTF8Encoding]::new($true))
 }
 
 Function Invoke-UserSetup {
