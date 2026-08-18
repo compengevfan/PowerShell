@@ -1,0 +1,9 @@
+{
+    "_comment": "Machines that receive DupreeFunctions on merge to master. Add or remove a line in targets to add or remove a server. host is required; user is optional and overrides defaultUser. OS is detected on the target, so it is not listed here.",
+
+    "defaultUser": "dfdeploy",
+
+    "targets": [
+        { "host": "JAX-K3S001L.evorigin.com" }
+    ]
+}
