@@ -53,12 +53,20 @@ Write-Host "Installing DupreeFunctions on $([System.Net.Dns]::GetHostName())"
 #Refresh the staging clone
 if (Test-Path (Join-Path $StagingPath ".git")) {
     Write-Host "Refreshing staging clone at $StagingPath"
-    git -C $StagingPath fetch origin --prune
+    #--quiet throughout because this runs inside a remoting session, where anything git
+    #writes to stderr becomes a remote error record and anything it writes to stdout is
+    #collected as pipeline output. Both corrupt the caller. Real failures are still caught
+    #by the exit code checks below, and genuine git errors still reach stderr.
+    git -C $StagingPath fetch --quiet origin --prune
     if ($LASTEXITCODE -ne 0) { throw "git fetch failed in $StagingPath" }
-    git -C $StagingPath reset --hard "origin/$Branch"
+    git -C $StagingPath reset --quiet --hard "origin/$Branch"
     if ($LASTEXITCODE -ne 0) { throw "git reset failed in $StagingPath" }
-    git -C $StagingPath clean -fd
+    git -C $StagingPath clean -qfd
     if ($LASTEXITCODE -ne 0) { throw "git clean failed in $StagingPath" }
+
+    #--quiet drops the commit git would otherwise report, so state it deliberately
+    $DeployedCommit = git -C $StagingPath rev-parse --short HEAD
+    Write-Host "  now at $DeployedCommit"
 }
 else {
     #An existing directory with content but no .git makes git clone fail with a confusing
@@ -70,7 +78,7 @@ else {
     Write-Host "Cloning $RepoUrl to $StagingPath"
     $StagingParent = Split-Path $StagingPath -Parent
     if (!(Test-Path $StagingParent)) { New-Item -ItemType Directory -Path $StagingParent -Force | Out-Null }
-    git clone --branch $Branch $RepoUrl $StagingPath
+    git clone --quiet --branch $Branch $RepoUrl $StagingPath
     if ($LASTEXITCODE -ne 0) { throw "git clone of $RepoUrl failed" }
 }
 
