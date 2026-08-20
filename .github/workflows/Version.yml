@@ -1,51 +1,55 @@
-# This is a basic workflow to help you get started with Actions
+# Bumps the DupreeFunctions module version when a PR is merged into the version branch
 
 name: VersionUpdate
 
 # Controls when the workflow will run
 on:
-  # Triggers the workflow on pull request events but only for the "master" branch
+  # Triggers the workflow on pull request events but only for the "version" branch
   pull_request:
     types: [closed]
     branches:
       - version
 
+# Only one version bump at a time so concurrent merges cannot race on the branch
+concurrency:
+  group: version-update
+  cancel-in-progress: false
+
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
   # This workflow contains a single job called "build"
   build:
-    # The type of runner that the job will run on
-    runs-on: self-hosted
+    # Dedicated label so this only ever lands on JAX-WKN001L (linux, runs as github-runner)
+    runs-on: [self-hosted, jax-wkn001l]
     permissions:
       contents: write
     if: github.event.pull_request.merged == true
 
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
-      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
-      - uses: actions/checkout@v3
-
-      # Update repository on JAX-TASK001
-      - name: Update Repo
-        shell: pwsh
-        run: |
-          git -C ~/git/PowerShell fetch origin
-          git -C ~/git/PowerShell checkout version
-          git -C ~/git/PowerShell reset --hard origin/version
+      # Checks-out the version branch under $GITHUB_WORKSPACE.
+      # ref is required because a pull_request event otherwise checks out a detached merge ref.
+      - uses: actions/checkout@v5
+        with:
+          ref: version
+          fetch-depth: 0
 
       - name: Update Version
         shell: pwsh
         run: |
-          Import-Module ~/git/PowerShell/DupreeFunctions/DupreeFunctions.psd1 -Force
-          Update-DfModuleVersion
+          Import-Module "$env:GITHUB_WORKSPACE/DupreeFunctions/DupreeFunctions.psd1" -Force
+          Update-DfModuleVersion -Path "$env:GITHUB_WORKSPACE/DupreeFunctions/DupreeFunctions.psd1"
 
-      # Publish DupreeFunctions to PSG
       - name: Update Branch
         shell: pwsh
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          git -C ~/git/PowerShell add ~/git/PowerShell/DupreeFunctions/DupreeFunctions.psd1
-          git -C ~/git/PowerShell commit -m "Version Updated"
-          git -C ~/git/PowerShell push "https://x-access-token:$env:GH_TOKEN@github.com/compengevfan/PowerShell.git" version
-      #V12
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add DupreeFunctions/DupreeFunctions.psd1
+          # --quiet exits 0 when there is nothing staged, 1 when there is
+          git diff --cached --quiet
+          if ($LASTEXITCODE -eq 0) { Write-Host "No version change to commit."; exit 0 }
+          git commit -m "Version Updated"
+          if ($LASTEXITCODE -ne 0) { throw "git commit failed" }
+          git push origin HEAD:version
+          if ($LASTEXITCODE -ne 0) { throw "git push failed" }

@@ -345,52 +345,30 @@ Function Invoke-DfMenu {
     return $ReturnObject
 }
 
-Function Update-DfLabBoxes {
+Function Update-DfModuleVersion {
     [CmdletBinding()]
     Param(
+        [Parameter(Mandatory = $true)] [string] $Path
     )
 
-    $destinations = @(
-        "jax-pc001.evorigin.com"
-        "jax-pc002.evorigin.com"
-    ) | Sort-Object
+    if (!(Test-Path $Path)) { throw "Module manifest not found: $Path" }
 
-    $CredImport = Import-Clixml C:\actions-runner\Cred.xml
-    New-Variable -Name Credential -Value $CredImport -Scope Global
+    $PsdContent = Get-Content $Path -Raw
+    $VersionPattern = "(?m)^(\s*ModuleVersion\s*=\s*')([^']+)(')"
 
-    foreach ($destination in $destinations) {
-        Write-Host "Processing $destination"
-        Invoke-Command -ComputerName $destination -Credential $Credential -ScriptBlock {
-            #Check if PowerShell Gallery Repository is set as trusted.
-            $PsgInstallPolicy = Get-PSRepository -Name PSGallery
-            if ($($PsgInstallPolicy.InstallationPolicy) -ne "Trusted") {
-                Write-Host "Setting PSGallery Install Policy to Trusted"
-                Set-PSRepository -Name PSGallery -InstallationPolicy Trusted
-            }
-            else { Write-Host "PSGallery Install Policy already set to Trusted" }
+    $VersionMatch = [regex]::Match($PsdContent, $VersionPattern)
+    if (!$VersionMatch.Success) { throw "Could not find a ModuleVersion entry in $Path" }
 
-            #Check if DupreeFunctions Exists. if not, install, if so, update.
-            $DfCheck = Get-Module -ListAvailable DupreeFunctions
-            if (!($DfCheck)) {
-                Write-Host "Installing DupreeFunctions"
-                Install-Module DupreeFunctions
-            }
-            else {
-                Write-Host "Updating DupreeFunctions"
-                Update-Module DupreeFunctions
-            }
-        }
-    }
-}
+    $OldModuleVersion = $VersionMatch.Groups[2].Value
+    $ParsedVersion = [version]$OldModuleVersion
+    $NewModuleVersion = "{0}.{1}.{2}" -f $ParsedVersion.Major, $ParsedVersion.Minor, ([Math]::Max($ParsedVersion.Build, 0) + 1)
 
-Function Update-DfModuleVersion{
-    $PsgModuleVersion = Find-Module DupreeFunctions
-    $OldPsgModuleVersion = $PsgModuleVersion.Version.Major.ToString() + "." + $PsgModuleVersion.Version.Minor.ToString() + "." + $PsgModuleVersion.Version.Build.ToString()
-    $NewPsgModuleVersion = $PsgModuleVersion.Version.Major.ToString() + "." + $PsgModuleVersion.Version.Minor.ToString() + "." + $(($PsgModuleVersion.Version.Build + 1)).ToString()
+    Write-Host "Updating module version from $OldModuleVersion to $NewModuleVersion"
 
-    $PsdContent = Get-Content C:\Git\PowerShell\DupreeFunctions\DupreeFunctions.psd1 -Raw
-    $NewPsdContent = $PsdContent.Replace("$OldPsgModuleVersion","$NewPsgModuleVersion")
-    $NewPsdContent | Out-File C:\actions-runner\_work\PowerShell\PowerShell\DupreeFunctions\DupreeFunctions.psd1 -Force
+    $NewPsdContent = [regex]::Replace($PsdContent, $VersionPattern, "`${1}$NewModuleVersion`${3}")
+
+    #Write explicitly as UTF-8 with BOM so the encoding does not shift between Windows and Linux runners
+    [System.IO.File]::WriteAllText($Path, $NewPsdContent, [System.Text.UTF8Encoding]::new($true))
 }
 
 Function Invoke-UserSetup {

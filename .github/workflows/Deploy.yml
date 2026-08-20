@@ -1,4 +1,4 @@
-# This is a basic workflow to help you get started with Actions
+# Deploys DupreeFunctions to the lab machines when a PR is merged into master
 
 name: DeployToLab
 
@@ -9,44 +9,28 @@ on:
     types: [closed]
     branches:
       - master
+  # Allows a redeploy to be kicked off by hand without merging anything
+  workflow_dispatch:
+
+# Only one deployment at a time so two merges cannot fight over the same targets
+concurrency:
+  group: deploy-to-lab
+  cancel-in-progress: false
 
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
-  # This workflow contains a single job called "build"
-  build:
-    # The type of runner that the job will run on
-    runs-on: self-hosted
+  deploy:
+    # Dedicated label so this only ever lands on JAX-WKN001L (linux, runs as github-runner)
+    runs-on: [self-hosted, jax-wkn001l]
+    if: github.event_name == 'workflow_dispatch' || github.event.pull_request.merged == true
 
-    # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
-      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v5
 
-      # Update repository on JAX-TASK001
-      - name: Update Repo
-        shell: cmd
-        run: |
-          git -C C:\git\PowerShell pull origin master
-
-      # Publish DupreeFunctions to PSG
-      - name: Publish to PowerShell Gallery
-        shell: PowerShell
-        run: |
-          Publish-Module -Path C:\git\PowerShell\DupreeFunctions -NuGetApiKey ${{secrets.PSG_API_KEY}}
-
-      # - name: Check-NuGet
-      #   shell: powershell
-      #   run: |
-      #     C:\actions-runner\Check-NuGet.ps1
-
-      - name: Update-Task-Server
-        shell: powershell
-        run: |
-          Start-Sleep -Seconds 30
-          Update-Module DupreeFunctions
-
-      - name: Update-DfLabBoxes
-        shell: powershell
-        run: |
-          Import-Module DupreeFunctions
-          Update-DfLabBoxes
+      # Reaches Windows and Linux targets alike over PowerShell SSH remoting.
+      # Each target refreshes its own git clone and installs into its system module paths.
+      - name: Deploy to lab machines
+        shell: pwsh
+        env:
+          DF_DEPLOY_SSH_KEY: ${{ secrets.DF_DEPLOY_SSH_KEY }}
+        run: ./GitHubActions/Invoke-DfDeploy.ps1
