@@ -226,7 +226,12 @@ else {
                 #someone else, so a root install would fail on the staging clone. Running as
                 #the deploy account also proves it has the permissions a real deployment needs.
                 Write-Host "Running as $DeployUser"
-                su -s /bin/bash $DeployUser -c "$PwshPath -File `"$Installer`""
+                #The login form matters. A plain su keeps the caller's working directory,
+                #which is /root when this is driven by Ansible or sudo, and $DeployUser
+                #cannot read that. Child processes then fail to even start, with git
+                #reporting a permission error against the working directory rather than
+                #against anything it was asked to touch.
+                su -s /bin/bash - $DeployUser -c "$PwshPath -File `"$Installer`""
                 if ($LASTEXITCODE -ne 0) { throw "the installer exited with code $LASTEXITCODE" }
             }
         }
