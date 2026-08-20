@@ -82,9 +82,13 @@ try {
         Write-Host "=== $TargetHost (as $TargetUser) ==="
 
         try {
+            #Out-Host so anything the target emits is shown but does not land in $Results.
+            #Without it, git's output from the remote reset is collected as an extra object
+            #and inflates both the target count and the summary table.
             Invoke-Command -HostName $TargetHost -UserName $TargetUser -KeyFilePath $KeyFile `
                 -Options @{ UserKnownHostsFile = $KnownHosts } `
-                -FilePath $InstallScript -ArgumentList @("https://github.com/compengevfan/PowerShell.git", $Branch)
+                -FilePath $InstallScript -ArgumentList @("https://github.com/compengevfan/PowerShell.git", $Branch) |
+                Out-Host
 
             [PSCustomObject]@{ Host = $TargetHost; Status = "Succeeded"; Detail = "" }
         }
