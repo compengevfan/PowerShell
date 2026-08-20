@@ -50,10 +50,19 @@ New-Item -ItemType Directory -Path $WorkDir -Force | Out-Null
 
 try {
     $KeyFile = Join-Path $WorkDir "deploy_key"
-    #WriteAllText rather than Out-File so no BOM is added, ssh rejects a key with one
-    [System.IO.File]::WriteAllText($KeyFile, ($PrivateKey.TrimEnd() + "`n"))
+    #WriteAllText rather than Out-File so no BOM is added, ssh rejects a key with one.
+    #Carriage returns are stripped because a key pasted into the secret from Windows
+    #carries CRLF, which ssh rejects with a misleading libcrypto error.
+    $Normalised = $PrivateKey.Replace("`r", "").TrimEnd() + "`n"
+    [System.IO.File]::WriteAllText($KeyFile, $Normalised)
     chmod 600 $KeyFile
     if ($LASTEXITCODE -ne 0) { throw "Failed to set permissions on the temporary key file" }
+
+    #Fail with something readable if the secret is not actually a usable private key
+    $null = ssh-keygen -y -f $KeyFile 2>&1
+    if ($LASTEXITCODE -ne 0) {
+        throw "DF_DEPLOY_SSH_KEY is not a valid private key. Paste the whole file, including the BEGIN and END lines."
+    }
 
     #Collect host keys up front so ssh does not stall on an interactive prompt
     $KnownHosts = Join-Path $WorkDir "known_hosts"
