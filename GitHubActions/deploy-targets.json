@@ -4,6 +4,7 @@
     "defaultUser": "dfdeploy",
 
     "targets": [
-        { "host": "JAX-K3S001L.evorigin.com" }
+        { "host": "JAX-K3S001L.evorigin.com" },
+        { "host": "JAX-WKN002.evorigin.com" }
     ]
 }
