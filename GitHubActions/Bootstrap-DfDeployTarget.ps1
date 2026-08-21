@@ -94,9 +94,12 @@ if ($OnWindows) {
     Write-Host "Creating the $DeployUser account"
     $ExistingUser = Get-LocalUser -Name $DeployUser -ErrorAction SilentlyContinue
     if (!$ExistingUser) {
-        #Key authentication is the only path in, so the password is random and discarded
+        #Key authentication is the only path in, so the password is random and discarded.
+        #Create plus GetBytes rather than RandomNumberGenerator::Fill, which is .NET Core
+        #only. Ansible's win_shell runs Windows PowerShell 5.1, where Fill does not exist.
         $RandomBytes = [byte[]]::new(32)
-        [System.Security.Cryptography.RandomNumberGenerator]::Fill($RandomBytes)
+        $Rng = [System.Security.Cryptography.RandomNumberGenerator]::Create()
+        try { $Rng.GetBytes($RandomBytes) } finally { $Rng.Dispose() }
         $RandomPassword = ConvertTo-SecureString ([Convert]::ToBase64String($RandomBytes)) -AsPlainText -Force
 
         New-LocalUser -Name $DeployUser -Password $RandomPassword -FullName "DupreeFunctions Deploy" `
