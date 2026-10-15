@@ -1,6 +1,6 @@
 <#PSScriptInfo
 
-.VERSION 5.0.0
+.VERSION 5.1.0
 
 .GUID b53cae85-1769-4697-ba24-a6fd87efb453
 
@@ -25,6 +25,12 @@
 .EXTERNALSCRIPTDEPENDENCIES
 
 .RELEASENOTES
+5.1.0 DC.Automation is no longer imported at load. Its import cost 2-15 s, mostly
+      a Get-WmiObject call that makes PowerShell 7 start a hidden powershell.exe
+      compatibility session. PowerShell's module auto-loading imports it on first
+      use of any of its commands, so nothing is lost. The banner no longer shows
+      a DC.Automation line.
+
 5.0.0 Removed the claudthings launcher entirely: no Invoke-ClaudePicker / cld, no
       Initialize-ClaudeThings, no Test-ClaudeSkills, no ~\claudthings paths, and
       no pinned window title. Sync-ClaudeSkills survives as a standalone command
@@ -252,9 +258,10 @@ if ($ComputerDomain -like '*evorigin.com') {
 		}
 	}
 }
-else {
-	Import-ProfileModule 'DC.Automation' | Out-Null
-}
+# DC.Automation is deliberately not imported here: it costs 2-15 s at load, mostly
+# a Get-WmiObject call that makes PowerShell 7 start a hidden powershell.exe for
+# compatibility. PowerShell's auto-loading imports it the first time one of its
+# commands is used, so nothing is lost by leaving it out.
 
 #endregion
 
